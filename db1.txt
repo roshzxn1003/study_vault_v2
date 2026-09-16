@@ -1,0 +1,76 @@
+  -- 1. Enable pgvector
+  CREATE EXTENSION IF NOT EXISTS vector;
+
+  -- 2. Document Processing Table
+  CREATE TABLE document_processing (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    file_id UUID NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK (status IN ('uploaded', 'processing', 'completed', 'failed')),
+    error_message TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- 3. Document Chunks Table
+  CREATE TABLE document_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    file_id UUID NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,  
+    chunk_index INTEGER NOT NULL,
+    page_number INTEGER,
+    token_count INTEGER,
+    metadata JSONB,
+    embedding vector(1536),
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- 4. Semantic Search RPC Function
+  CREATE OR REPLACE FUNCTION match_documents (
+    query_embedding vector(1536),
+    match_threshold float,
+    match_count int
+  )
+  RETURNS TABLE (
+    id UUID,
+    file_id UUID,
+    content TEXT,
+    page_number int,
+    similarity float,
+    metadata JSONB,
+    file_name TEXT
+  )
+  LANGUAGE plpgsql
+  AS $$
+  BEGIN
+    RETURN QUERY
+    SELECT
+      dc.id,
+      dc.file_id,
+      dc.content,
+      dc.page_number,
+      1 - (dc.embedding <=> query_embedding) AS similarity,
+      dc.metadata,
+      f.name as file_name
+    FROM document_chunks dc
+    JOIN files f ON dc.file_id = f.id
+    WHERE dc.user_id = auth.uid()
+      AND 1 - (dc.embedding <=> query_embedding) > match_threshold
+    ORDER BY dc.embedding <=> query_embedding
+    LIMIT match_count;
+  END;
+  $$;
+
+  -- 5. Enable RLS
+  ALTER TABLE document_processing ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE document_chunks ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "Users can manage their own processing records" ON document_processing
+    FOR ALL USING (auth.uid() = user_id);
+
+  CREATE POLICY "Users can manage their own chunks" ON document_chunks
+    FOR ALL USING (auth.uid() = user_id);
+
