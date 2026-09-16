@@ -1,6 +1,5 @@
 class SupabaseConfig {
-  // These can come from environment variables via --dart-define
-  // or default to the configured Supabase project.
+  // These come from environment variables via --dart-define-from-file=.env
   static const String url = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: '',
