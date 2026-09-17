@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/config/gemini_config.dart';
@@ -239,6 +240,14 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
           Card(
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.cloud_sync_outlined, color: AppColors.primary),
+                  title: const Text("Cloud Sync & Offline Storage", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  subtitle: const Text("Outbox queue, storage metrics, and sync controls", style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                  onTap: () => context.push('/settings/storage-sync'),
+                ),
+                const Divider(height: 1, color: AppColors.border),
                 const ListTile(
                   leading: Icon(Icons.storage_outlined, color: AppColors.primary),
                   title: Text("Local SQLite Database", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),

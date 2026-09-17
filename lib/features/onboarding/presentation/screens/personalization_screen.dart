@@ -90,7 +90,7 @@ class _PersonalizationScreenState extends ConsumerState<PersonalizationScreen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () {
-                  ref.read(onboardingProvider.notifier).completeOnboarding(
+                  ref.read(onboardingProvider.notifier).completeOnboardingLegacy(
                     course: _courseController.text.trim(),
                     subjects: _subjectsController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
                     studyGoal: _selectedGoal,

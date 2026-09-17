@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:study_vault/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:study_vault/features/gamification/presentation/widgets/streak_counter.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
 class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key});
@@ -55,23 +56,29 @@ class DashboardHeader extends ConsumerWidget {
         ),
         if (onboarding.course != null && onboarding.course!.isNotEmpty) ...[
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.school, size: 14, color: AppColors.primaryLight),
-                const SizedBox(width: 6),
-                Text(
-                  '${onboarding.course} • ${onboarding.studyGoal ?? 'Exam Prep'}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
-                ),
-              ],
+          InkWell(
+            onTap: () => context.push('/academic'),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.school, size: 14, color: AppColors.primaryLight),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${onboarding.course} • ${onboarding.studyGoal ?? 'Exam Prep'}',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, size: 14, color: AppColors.primaryLight),
+                ],
+              ),
             ),
           ),
         ],

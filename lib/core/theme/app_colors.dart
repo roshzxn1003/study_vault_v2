@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Dark Palette
-  static const Color background = Color(0xFF0B0C10);
-  static const Color surface = Color(0xFF14161F);
-  static const Color surfaceElevated = Color(0xFF1C1F2E);
-  static const Color surfaceVariant = Color(0xFF25293C);
-  static const Color cardBorder = Color(0xFF2E334D);
+  // Dark Palette (Obsidian / Zinc Academic)
+  static const Color background = Color(0xFF09090B);
+  static const Color surface = Color(0xFF18181B);
+  static const Color surfaceElevated = Color(0xFF202024);
+  static const Color surfaceVariant = Color(0xFF27272A);
+  static const Color cardBorder = Color(0xFF27272A);
 
   // Light Palette
   static const Color lightBackground = Color(0xFFF8FAFC);
@@ -28,9 +28,9 @@ class AppColors {
   static const Color rose = Color(0xFFF43F5E);
 
   // Text Colors
-  static const Color textPrimary = Color(0xFFF9FAFB);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textPrimary = Color(0xFFFAFAFA);
+  static const Color textSecondary = Color(0xFFA1A1AA);
+  static const Color textMuted = Color(0xFF71717A);
 
   static const Color lightTextPrimary = Color(0xFF0F172A);
   static const Color lightTextSecondary = Color(0xFF475569);
@@ -41,7 +41,7 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-  static const Color border = Color(0xFF2E334D);
+  static const Color border = Color(0xFF27272A);
   static const Color glassBackground = Color(0x1AFFFFFF);
 
   // Gradients
