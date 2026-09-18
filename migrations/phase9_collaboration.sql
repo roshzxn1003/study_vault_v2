@@ -3,31 +3,63 @@
 -- Student Sharing, Study Groups, Study Packs & Collaboration Schema
 -- ============================================================
 
--- 1. Profiles Enhancement for Student Identity & Discovery
-ALTER TABLE IF EXISTS public.profiles 
-    ADD COLUMN IF NOT EXISTS username TEXT UNIQUE,
-    ADD COLUMN IF NOT EXISTS institution TEXT,
-    ADD COLUMN IF NOT EXISTS degree TEXT,
-    ADD COLUMN IF NOT EXISTS branch TEXT,
-    ADD COLUMN IF NOT EXISTS semester TEXT,
-    ADD COLUMN IF NOT EXISTS is_searchable BOOLEAN DEFAULT true,
-    ADD COLUMN IF NOT EXISTS allow_group_invites TEXT DEFAULT 'anyone';
+-- 1. Profiles Table for Student Identity & Discovery
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    username TEXT UNIQUE,
+    avatar_url TEXT,
+    institution TEXT,
+    degree TEXT,
+    branch TEXT,
+    semester TEXT,
+    is_searchable BOOLEAN DEFAULT true,
+    allow_group_invites TEXT DEFAULT 'anyone',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_searchable ON public.profiles(is_searchable);
 
 -- Secure Profiles RLS:
--- Only authenticated users can view public searchable profiles; private academic fields remain hidden.
 DROP POLICY IF EXISTS "Users can view searchable profiles" ON public.profiles;
 CREATE POLICY "Users can view searchable profiles" ON public.profiles
     FOR SELECT TO authenticated
     USING (is_searchable = true OR id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile" ON public.profiles
+    FOR INSERT TO authenticated
+    WITH CHECK (id = auth.uid());
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles
     FOR UPDATE TO authenticated
     USING (id = auth.uid())
     WITH CHECK (id = auth.uid());
+
+-- Automatically create profile on user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, full_name, username)
+    VALUES (
+        new.id,
+        COALESCE(new.raw_user_meta_data->>'full_name', ''),
+        LOWER(SPLIT_PART(new.email, '@', 1)) || '_' || SUBSTRING(new.id::text, 1, 4)
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 2. Student Sharing Table (1-to-1 Sharing, Expiry, Status & Permissions)
 CREATE TABLE IF NOT EXISTS public.shares (
