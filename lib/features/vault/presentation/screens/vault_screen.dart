@@ -19,6 +19,9 @@ import '../widgets/rename_dialog.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../widgets/vault_search_bar.dart';
 import '../../../import/presentation/widgets/import_source_dialog.dart';
+import '../../../sharing/presentation/widgets/share_material_dialog.dart';
+import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
+import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
 
 /// Primary central Vault library screen.
 /// Implements complete material, folder, label, search, filter, and bulk operations.
@@ -235,6 +238,31 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }
   }
 
+  void _handleBulkShare(BuildContext context, VaultState state) {
+    final selectedIds = state.selectedMaterialIds.toList();
+    final titles = <String, String>{};
+    for (final m in state.materials) {
+      if (selectedIds.contains(m.id)) {
+        titles[m.id] = m.title;
+      }
+    }
+    ShareMaterialDialog.show(
+      context: context,
+      multipleResourceIds: selectedIds,
+      resourceTitles: titles,
+    );
+  }
+
+  void _handleBulkCreatePack(BuildContext context, VaultState state) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CreateStudyPackScreen(
+          initialMaterialIds: state.selectedMaterialIds.toList(),
+        ),
+      ),
+    );
+  }
+
   void _handleBulkDelete(BuildContext context, VaultState state) async {
     final count = state.selectedCount;
     final confirmed = await showDialog<bool>(
@@ -448,6 +476,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   onLabel: () => _handleBulkLabel(context, state),
                   onArchive: notifier.bulkArchive,
                   onDelete: () => _handleBulkDelete(context, state),
+                  onShare: () => _handleBulkShare(context, state),
+                  onCreatePack: () => _handleBulkCreatePack(context, state),
                 ),
               ),
           ],
@@ -636,6 +666,21 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                           onArchive: () => notifier.archiveMaterial(material.id),
                           onRestore: () => notifier.restoreMaterial(material.id),
                           onDelete: () => _handleDeleteMaterial(context, material),
+                          onShareStudent: () => ShareMaterialDialog.show(
+                            context: context,
+                            resourceId: material.id,
+                            resourceTitle: material.title,
+                          ),
+                          onShareGroup: () => ShareToGroupDialog.show(
+                            context,
+                            preselectedResourceId: material.id,
+                            preselectedResourceTitle: material.title,
+                          ),
+                          onCreatePack: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CreateStudyPackScreen(initialMaterialIds: [material.id]),
+                            ),
+                          ),
                         );
                       },
                       childCount: state.materials.length,
@@ -673,6 +718,21 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                               onArchive: () => notifier.archiveMaterial(material.id),
                               onRestore: () => notifier.restoreMaterial(material.id),
                               onDelete: () => _handleDeleteMaterial(context, material),
+                              onShareStudent: () => ShareMaterialDialog.show(
+                                context: context,
+                                resourceId: material.id,
+                                resourceTitle: material.title,
+                              ),
+                              onShareGroup: () => ShareToGroupDialog.show(
+                                context,
+                                preselectedResourceId: material.id,
+                                preselectedResourceTitle: material.title,
+                              ),
+                              onCreatePack: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => CreateStudyPackScreen(initialMaterialIds: [material.id]),
+                                ),
+                              ),
                             ),
                           ),
                         );

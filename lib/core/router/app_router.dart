@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import '../../features/search/search_screen.dart';
 import '../../features/ai/ai_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/account_settings_screen.dart';
+import '../../features/profile/ai_settings_screen.dart';
 import '../../features/gamification/presentation/screens/progress_screen.dart';
 import '../../features/vault/presentation/screens/vault_screen.dart';
 import '../../features/vault/presentation/screens/material_detail_screen.dart';
@@ -63,7 +65,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                              state.matchedLocation == '/signup' || 
                              state.matchedLocation == '/forgot-password';
       
-      // Let splash and dev preview screens run uninterrupted
+      // Protect dev preview routes in production
+      if (!kDebugMode && isDevPage) {
+        return isAuthenticated ? '/home' : '/login';
+      }
+
+      // Let splash and dev preview screens (debug only) run uninterrupted
       if (isSplash || isDevPage) return null;
 
       if (!isAuthenticated && !isAuthPage) return '/login';
@@ -107,6 +114,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/privacy', builder: (context, state) => const PrivacyCenterScreen()),
           GoRoute(path: '/premium', builder: (context, state) => const PremiumScreen()),
           GoRoute(path: '/ai', builder: (context, state) => const AIScreen()),
+          GoRoute(path: '/ai/settings', builder: (context, state) => const AiSettingsScreen()),
         ],
       ),
       GoRoute(

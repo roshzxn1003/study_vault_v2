@@ -35,7 +35,7 @@ class LocalDbService {
     String path = _customPath ?? join(await getDatabasesPath(), 'study_vault_local.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: _onOpen,
@@ -233,9 +233,271 @@ class LocalDbService {
         } catch (_) {}
       }
     }
+
+    if (oldVersion < 4) {
+      await _createPhase9Tables(db);
+    }
+
+    if (oldVersion < 5) {
+      await _createPhase11Tables(db);
+    }
+  }
+
+  Future<void> _createPhase9Tables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS student_profiles (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE,
+        full_name TEXT,
+        avatar_url TEXT,
+        institution TEXT,
+        degree TEXT,
+        branch TEXT,
+        semester TEXT,
+        is_searchable INTEGER DEFAULT 1,
+        allow_group_invites TEXT DEFAULT 'anyone',
+        created_at TEXT,
+        updated_at TEXT
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_student_profiles_username ON student_profiles(username)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS shares (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        recipient_id TEXT,
+        resource_type TEXT NOT NULL DEFAULT 'material',
+        resource_id TEXT NOT NULL,
+        permission TEXT NOT NULL DEFAULT 'view',
+        status TEXT NOT NULL DEFAULT 'active',
+        message TEXT,
+        owner_username TEXT,
+        owner_name TEXT,
+        recipient_username TEXT,
+        resource_title TEXT,
+        created_at TEXT NOT NULL,
+        expires_at TEXT,
+        revoked_at TEXT,
+        sync_status TEXT DEFAULT 'synced'
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_owner ON shares(owner_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_recipient ON shares(recipient_id)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_resource ON shares(resource_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS study_groups (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        member_count INTEGER DEFAULT 1,
+        owner_username TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_groups_owner ON study_groups(owner_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS group_members (
+        id TEXT PRIMARY KEY,
+        group_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        username TEXT,
+        full_name TEXT,
+        role TEXT NOT NULL DEFAULT 'member',
+        status TEXT NOT NULL DEFAULT 'invited',
+        created_at TEXT NOT NULL,
+        joined_at TEXT,
+        UNIQUE(group_id, user_id)
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_group_members_group_user ON group_members(group_id, user_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS group_resources (
+        id TEXT PRIMARY KEY,
+        group_id TEXT NOT NULL,
+        resource_id TEXT NOT NULL,
+        resource_type TEXT NOT NULL DEFAULT 'material',
+        shared_by TEXT NOT NULL,
+        shared_by_username TEXT,
+        resource_title TEXT,
+        permission TEXT NOT NULL DEFAULT 'view',
+        created_at TEXT NOT NULL,
+        expires_at TEXT,
+        UNIQUE(group_id, resource_id)
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_group_resources_group ON group_resources(group_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS study_packs (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        owner_username TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        item_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_packs_owner ON study_packs(owner_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS study_pack_items (
+        id TEXT PRIMARY KEY,
+        study_pack_id TEXT NOT NULL,
+        material_id TEXT NOT NULL,
+        material_title TEXT,
+        material_type TEXT,
+        order_index INTEGER DEFAULT 0,
+        UNIQUE(study_pack_id, material_id)
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_pack_items_pack ON study_pack_items(study_pack_id)');
+    } catch (_) {}
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS share_notifications (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        reference_id TEXT,
+        reference_type TEXT,
+        is_read INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_share_notifications_user_read ON share_notifications(user_id, is_read)');
+    } catch (_) {}
+  }
+
+  Future<void> _createPhase11Tables(Database db) async {
+    // Document Chunks for Local Vector & Hybrid RAG Retrieval
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS document_chunks (
+        id TEXT PRIMARY KEY,
+        material_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        workspace_id TEXT,
+        academic_period_id TEXT,
+        subject_id TEXT,
+        folder_id TEXT,
+        page_number INTEGER DEFAULT 1,
+        chunk_index INTEGER DEFAULT 0,
+        text TEXT NOT NULL,
+        embedding TEXT,
+        token_count INTEGER DEFAULT 0,
+        metadata TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_material ON document_chunks(user_id, material_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_ws ON document_chunks(user_id, workspace_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_subj ON document_chunks(user_id, subject_id)');
+    } catch (_) {}
+
+    // Phase 11 AI Conversation Sessions
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ai_conversations (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        workspace_id TEXT,
+        subject_id TEXT,
+        material_id TEXT,
+        title TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id)');
+    } catch (_) {}
+
+    // Phase 11 AI Messages
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ai_messages (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        sources TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)');
+    } catch (_) {}
+
+    // Material indexing status columns
+    try {
+      await db.execute("ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE materials ADD COLUMN indexing_error TEXT');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE materials ADD COLUMN indexed_at TEXT');
+    } catch (_) {}
+
+    // AI Study Artifacts: Study Plans & Quizzes
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ai_study_plans (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        workspace_id TEXT,
+        subject_id TEXT,
+        title TEXT NOT NULL,
+        plan_data TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ai_quizzes (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        workspace_id TEXT,
+        subject_id TEXT,
+        material_id TEXT,
+        title TEXT NOT NULL,
+        questions_data TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onOpen(Database db) async {
+    // Ensure Phase 9 collaboration tables exist
+    await _createPhase9Tables(db);
     // Ensure all tables exist
     await db.execute('''
       CREATE TABLE IF NOT EXISTS flashcards (
@@ -406,6 +668,13 @@ class LocalDbService {
         remote_url TEXT,
         is_favorite INTEGER DEFAULT 0,
         is_archived INTEGER DEFAULT 0,
+        is_inbox INTEGER DEFAULT 0,
+        source TEXT,
+        import_status TEXT DEFAULT 'imported',
+        content_hash TEXT,
+        indexing_status TEXT DEFAULT 'NOT_INDEXED',
+        indexing_error TEXT,
+        indexed_at TEXT,
         last_opened_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
@@ -449,10 +718,40 @@ class LocalDbService {
       await db.execute('ALTER TABLE materials ADD COLUMN content_hash TEXT');
     } catch (_) {}
     try {
+      await db.execute("ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE materials ADD COLUMN indexing_error TEXT');
+    } catch (_) {}
+    try {
+      await db.execute('ALTER TABLE materials ADD COLUMN indexed_at TEXT');
+    } catch (_) {}
+    try {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_inbox ON materials(user_id, is_inbox)');
     } catch (_) {}
     try {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_hash ON materials(content_hash)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_ws ON materials(user_id, workspace_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_subj ON materials(user_id, subject_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_folder ON materials(user_id, folder_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_period ON materials(user_id, academic_period_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_folders_user_parent ON folders(user_id, parent_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_subjects_user_period ON academic_subjects(user_id, academic_period_id)');
+    } catch (_) {}
+    try {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_periods_user_year ON academic_periods(user_id, academic_year_id)');
     } catch (_) {}
 
     await db.execute('''
@@ -537,6 +836,9 @@ class LocalDbService {
       } catch (_) {}
     }
 
+    // Ensure Phase 11 AI & RAG tables exist
+    await _createPhase11Tables(db);
+
     // Clean up any legacy preseeded items if they exist
     await db.delete('folders', where: "id IN ('folder_dbms', 'folder_os', 'folder_cn', 'folder_ai')");
     await db.delete('files', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1')");
@@ -552,14 +854,67 @@ class LocalDbService {
       await txn.delete('materials', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('folders', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('labels', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('notes', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('files', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('flashcards', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('academic_subjects', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('academic_periods', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('academic_years', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('academic_structures', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('workspaces', where: 'user_id = ?', whereArgs: [userId]);
       await txn.delete('personal_topics', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('shares', where: 'owner_id = ? OR recipient_id = ?', whereArgs: [userId, userId]);
+      await txn.delete('study_pack_items', where: 'study_pack_id IN (SELECT id FROM study_packs WHERE owner_id = ?)', whereArgs: [userId]);
+      await txn.delete('study_packs', where: 'owner_id = ?', whereArgs: [userId]);
+      await txn.delete('group_resources', where: 'shared_by = ? OR group_id IN (SELECT id FROM study_groups WHERE owner_id = ?)', whereArgs: [userId, userId]);
+      await txn.delete('group_members', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('study_groups', where: 'owner_id = ?', whereArgs: [userId]);
+      await txn.delete('share_notifications', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('document_chunks', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('ai_conversations', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('ai_messages', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('ai_study_plans', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('ai_quizzes', where: 'user_id = ?', whereArgs: [userId]);
+      await txn.delete('student_profiles', where: 'id = ?', whereArgs: [userId]);
       await txn.delete('sync_metadata', where: 'key LIKE ?', whereArgs: ['%_$userId']);
     });
+  }
+
+  /// Exports all local user data in a portable structured map, ensuring zero credentials or secrets are leaked.
+  Future<Map<String, dynamic>> exportUserData(String userId) async {
+    final db = await database;
+    final workspaces = await db.query('workspaces', where: 'user_id = ?', whereArgs: [userId]);
+    final years = await db.query('academic_years', where: 'user_id = ?', whereArgs: [userId]);
+    final periods = await db.query('academic_periods', where: 'user_id = ?', whereArgs: [userId]);
+    final subjects = await db.query('academic_subjects', where: 'user_id = ?', whereArgs: [userId]);
+    final folders = await db.query('folders', where: 'user_id = ?', whereArgs: [userId]);
+    final materials = await db.query('materials', where: 'user_id = ?', whereArgs: [userId]);
+    final labels = await db.query('labels', where: 'user_id = ?', whereArgs: [userId]);
+    final notes = await db.query('notes', where: 'user_id = ?', whereArgs: [userId]);
+    final files = await db.query('files', where: 'user_id = ?', whereArgs: [userId]);
+    final flashcards = await db.query('flashcards', where: 'user_id = ?', whereArgs: [userId]);
+    final studyPacks = await db.query('study_packs', where: 'owner_id = ?', whereArgs: [userId]);
+    final studyPlans = await db.query('ai_study_plans', where: 'user_id = ?', whereArgs: [userId]);
+    final quizzes = await db.query('ai_quizzes', where: 'user_id = ?', whereArgs: [userId]);
+
+    return {
+      'user_id': userId,
+      'exported_at': DateTime.now().toUtc().toIso8601String(),
+      'version': '1.0.0',
+      'workspaces': workspaces,
+      'academic_years': years,
+      'academic_periods': periods,
+      'academic_subjects': subjects,
+      'folders': folders,
+      'materials': materials,
+      'labels': labels,
+      'notes': notes,
+      'files': files,
+      'flashcards': flashcards,
+      'study_packs': studyPacks,
+      'study_plans': studyPlans,
+      'quizzes': quizzes,
+    };
   }
 
   // --- STATS & METRICS ---
@@ -676,12 +1031,38 @@ class LocalDbService {
   // --- CLEAR ALL DATA ---
   Future<void> clearAllData() async {
     final db = await database;
-    await db.delete('folders');
-    await db.delete('notes');
-    await db.delete('files');
-    await db.delete('flashcards');
-    await db.delete('study_stats');
-    await db.delete('scratchpad');
-    await db.delete('exam_goals');
+    await db.transaction((txn) async {
+      await txn.delete('folders');
+      await txn.delete('notes');
+      await txn.delete('files');
+      await txn.delete('flashcards');
+      await txn.delete('study_stats');
+      await txn.delete('scratchpad');
+      await txn.delete('exam_goals');
+      await txn.delete('outbox_operations');
+      await txn.delete('material_labels');
+      await txn.delete('materials');
+      await txn.delete('labels');
+      await txn.delete('academic_subjects');
+      await txn.delete('academic_periods');
+      await txn.delete('academic_years');
+      await txn.delete('academic_structures');
+      await txn.delete('workspaces');
+      await txn.delete('personal_topics');
+      await txn.delete('sync_metadata');
+      await txn.delete('student_profiles');
+      await txn.delete('shares');
+      await txn.delete('study_groups');
+      await txn.delete('group_members');
+      await txn.delete('group_resources');
+      await txn.delete('study_packs');
+      await txn.delete('study_pack_items');
+      await txn.delete('share_notifications');
+      await txn.delete('document_chunks');
+      await txn.delete('ai_conversations');
+      await txn.delete('ai_messages');
+      await txn.delete('ai_study_plans');
+      await txn.delete('ai_quizzes');
+    });
   }
 }

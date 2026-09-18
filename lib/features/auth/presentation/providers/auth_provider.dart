@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/features/auth/data/repositories/supabase_auth_repository.dart';
 import 'package:study_vault/features/auth/domain/repositories/auth_repository.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 
 enum AuthStatus {
   initial,
@@ -157,6 +158,11 @@ class AuthController extends StateNotifier<AuthControllerState> {
   Future<void> signOut() async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
+      final currentUser = _repository.getCurrentUser();
+      final userId = currentUser?.id ?? state.userId;
+      if (userId != null && userId.isNotEmpty) {
+        await LocalDbService.instance.clearUserData(userId);
+      }
       await _repository.signOut();
     } catch (_) {}
     state = const AuthControllerState(status: AuthStatus.unauthenticated);

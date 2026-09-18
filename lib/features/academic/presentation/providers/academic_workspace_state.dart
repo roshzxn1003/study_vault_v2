@@ -62,6 +62,25 @@ class AcademicWorkspaceState {
     return academicProfile?['institution_name'] as String? ?? '';
   }
 
+  /// Active or selected academic period.
+  AcademicPeriodEntity? get activePeriod => currentPeriod ?? selectedPeriod;
+
+  /// Aggregated list of all periods across academic history and current period.
+  List<AcademicPeriodEntity> get periods {
+    final list = <AcademicPeriodEntity>[];
+    for (final h in history) {
+      for (final p in h.periods) {
+        if (!list.any((existing) => existing.id == p.period.id)) {
+          list.add(p.period);
+        }
+      }
+    }
+    if (currentPeriod != null && !list.any((existing) => existing.id == currentPeriod!.id)) {
+      list.insert(0, currentPeriod!);
+    }
+    return list;
+  }
+
   AcademicWorkspaceState copyWith({
     List<AcademicWorkspace>? workspaces,
     AcademicWorkspace? activeWorkspace,

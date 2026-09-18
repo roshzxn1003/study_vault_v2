@@ -1,48 +1,44 @@
+/// Prompt builder for generating realistic, milestone-driven exam study plans.
 class StudyPlanPromptBuilder {
   static String buildPlanPrompt({
-    required String examName,
+    required String subject,
     required List<String> topics,
-    required int daysUntilExam,
-    required String studyTimePerDay,
+    required int days,
+    required String dailyStudyTime,
+    String? difficulty,
   }) {
     return """
-You are a Study Strategist. Create a realistic, high-efficiency study plan.
+You are Study Vault's Academic Strategist.
+Create a structured, highly realistic $days-day study and revision schedule for "$subject".
 
-EXAM: $examName
-TOPICS TO COVER: ${topics.join(', ')}
-TIME UNTIL EXAM: $daysUntilExam days
-AVAILABLE TIME: $studyTimePerDay per day
+TOPICS TO MASTER: ${topics.join(', ')}
+AVAILABLE DAYS: $days
+DAILY STUDY TIME: $dailyStudyTime
+${difficulty != null ? "EXAM DIFFICULTY: $difficulty" : ""}
 
-PLANNING RULES:
-1. Prioritize topics by typical importance in academic exams.
-2. Distribute topics logically over the available days.
-3. Include a "Revision" slot on the final day.
-4. Ensure the daily load does not exceed the available study time.
-5. Include a "Quick Quiz" session for each topic.
+STRATEGY GUIDELINES:
+1. Spread the topics logically across Days 1 through $days.
+2. Group related conceptual topics together.
+3. Reserve the final day ($days) exclusively for comprehensive review and mock practice.
+4. Each day must specify:
+   - "day": Integer (1 to $days)
+   - "topic": Name of primary topic
+   - "goal": Clear measurable learning objective
+   - "suggestedActivity": Specific task (e.g. "Review lecture notes & solve 5 practice problems")
+   - "revisionCheckpoint": Fast self-test question or checkpoint
 
-OUTPUT FORMAT (JSON ONLY):
-{
-  "plan": [
-    {
-      "day": 1,
-      "date": "YYYY-MM-DD",
-      "sessions": [
-        {
-          "topic": "Topic Name",
-          "duration": 45,
-          "activity": "learn",
-          "priority": "high"
-        },
-        {
-          "topic": "Topic Name",
-          "duration": 15,
-          "activity": "quiz",
-          "priority": "high"
-        }
-      ]
-    }
-  ]
-}
+OUTPUT SCHEMA:
+Return ONLY a valid JSON array of day items without markdown fences:
+[
+  {
+    "day": 1,
+    "topic": "Process Scheduling",
+    "goal": "Understand FCFS, Round Robin, and SJF scheduling algorithms",
+    "suggestedActivity": "Read Unit 3 slides and calculate turnaround time for 3 example workloads",
+    "revisionCheckpoint": "Can you compute average waiting time for preemptive SJF?",
+    "isCompleted": false
+  }
+]
 """;
   }
 }

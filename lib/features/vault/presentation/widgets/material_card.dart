@@ -17,6 +17,9 @@ class MaterialCard extends StatelessWidget {
   final VoidCallback? onArchive;
   final VoidCallback? onRestore;
   final VoidCallback? onDelete;
+  final VoidCallback? onShareStudent;
+  final VoidCallback? onShareGroup;
+  final VoidCallback? onCreatePack;
 
   const MaterialCard({
     super.key,
@@ -33,6 +36,9 @@ class MaterialCard extends StatelessWidget {
     this.onArchive,
     this.onRestore,
     this.onDelete,
+    this.onShareStudent,
+    this.onShareGroup,
+    this.onCreatePack,
   });
 
   @override
@@ -98,6 +104,36 @@ class MaterialCard extends StatelessWidget {
                     style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
                   ),
                 ],
+                const SizedBox(width: AppSpacing.xs),
+                // Subtle Privacy Indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        material.source?.startsWith('Shared') == true
+                            ? Icons.group_outlined
+                            : Icons.lock_outline_rounded,
+                        size: 10,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const Spacer(),
 
                 // Bulk Selection Checkbox
@@ -129,6 +165,15 @@ class MaterialCard extends StatelessWidget {
                     shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
                     onSelected: (val) {
                       switch (val) {
+                        case 'share_student':
+                          onShareStudent?.call();
+                          break;
+                        case 'share_group':
+                          onShareGroup?.call();
+                          break;
+                        case 'create_pack':
+                          onCreatePack?.call();
+                          break;
                         case 'open':
                           onTap?.call();
                           break;
@@ -153,6 +198,37 @@ class MaterialCard extends StatelessWidget {
                       }
                     },
                     itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'share_student',
+                        child: Row(
+                          children: [
+                            Icon(Icons.person_add_alt_1_outlined, size: 18, color: AppColors.primaryLight),
+                            SizedBox(width: 8),
+                            Text('Share with Student'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'share_group',
+                        child: Row(
+                          children: [
+                            Icon(Icons.groups_outlined, size: 18, color: AppColors.primaryLight),
+                            SizedBox(width: 8),
+                            Text('Share to Group'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'create_pack',
+                        child: Row(
+                          children: [
+                            Icon(Icons.folder_zip_outlined, size: 18, color: Color(0xFF8B5CF6)),
+                            SizedBox(width: 8),
+                            Text('Add to Study Pack'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'open',
                         child: Row(

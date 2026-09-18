@@ -196,9 +196,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             ),
                             child: ListTile(
                               onTap: () {
-                                if (type == 'Note') context.push('/notes/${item['id']}');
-                                if (type == 'PDF') context.push('/files/${item['id']}');
-                                if (type == 'Folder') context.push('/folder/${item['id']}');
+                                if (item.containsKey('original_file_name') || (item.containsKey('type') && item['type'] != null)) {
+                                  context.push('/vault/material/${item['id']}');
+                                } else if (type == 'Note') {
+                                  context.push('/notes/${item['id']}');
+                                } else if (type == 'PDF') {
+                                  context.push('/files/${item['id']}');
+                                } else if (type == 'Folder') {
+                                  context.push('/folder/${item['id']}');
+                                }
                               },
                               leading: CircleAvatar(
                                 backgroundColor: color.withValues(alpha: 0.15),

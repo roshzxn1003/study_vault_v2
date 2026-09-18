@@ -11,6 +11,8 @@ class BulkActionBar extends StatelessWidget {
   final VoidCallback onLabel;
   final VoidCallback onArchive;
   final VoidCallback onDelete;
+  final VoidCallback? onShare;
+  final VoidCallback? onCreatePack;
 
   const BulkActionBar({
     super.key,
@@ -22,6 +24,8 @@ class BulkActionBar extends StatelessWidget {
     required this.onLabel,
     required this.onArchive,
     required this.onDelete,
+    this.onShare,
+    this.onCreatePack,
   });
 
   @override
@@ -67,7 +71,18 @@ class BulkActionBar extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
+          if (onShare != null)
+            IconButton(
+              icon: const Icon(Icons.share_outlined, color: AppColors.primaryLight, size: 20),
+              onPressed: onShare,
+              tooltip: 'Share selected with student',
+            ),
+          if (onCreatePack != null)
+            IconButton(
+              icon: const Icon(Icons.folder_zip_outlined, color: Color(0xFF8B5CF6), size: 20),
+              onPressed: onCreatePack,
+              tooltip: 'Create Study Pack',
+            ),
           IconButton(
             icon: const Icon(Icons.drive_file_move_outlined, color: AppColors.textPrimary, size: 20),
             onPressed: onMove,

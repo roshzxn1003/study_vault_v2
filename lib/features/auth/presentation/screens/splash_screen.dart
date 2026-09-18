@@ -81,20 +81,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // [Study Vault Logo]
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: AppRadius.brXl,
-                  border: AppBorders.allStandard,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.auto_stories_rounded,
-                    size: AppIcons.lg,
-                    color: AppColors.primaryLight,
+              // [Study Vault Official Logo]
+              ClipRRect(
+                borderRadius: AppRadius.brXl,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppRadius.brXl,
+                      border: AppBorders.allStandard,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.auto_stories_rounded,
+                        size: AppIcons.lg,
+                        color: AppColors.primaryLight,
+                      ),
+                    ),
                   ),
                 ),
               ),

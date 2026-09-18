@@ -66,7 +66,7 @@ class ImportNotifier extends StateNotifier<ImportState> {
       debugPrint('Error validating items: $e');
       state = state.copyWith(
         isValidating: false,
-        errorMessage: 'Failed to inspect incoming items: $e',
+        errorMessage: 'Unable to inspect incoming files. Please verify the files and try again.',
       );
     }
   }

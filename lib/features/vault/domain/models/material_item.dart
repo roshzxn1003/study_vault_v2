@@ -110,6 +110,9 @@ class MaterialItem {
   final String? source;
   final String? importStatus;
   final String? contentHash;
+  final String? indexingStatus;
+  final String? indexingError;
+  final DateTime? indexedAt;
   final DateTime? lastOpenedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -140,6 +143,9 @@ class MaterialItem {
     this.source,
     this.importStatus,
     this.contentHash,
+    this.indexingStatus,
+    this.indexingError,
+    this.indexedAt,
     this.lastOpenedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -222,6 +228,9 @@ class MaterialItem {
       'source': source,
       'import_status': importStatus,
       'content_hash': contentHash,
+      'indexing_status': indexingStatus,
+      'indexing_error': indexingError,
+      'indexed_at': indexedAt?.toIso8601String(),
       'last_opened_at': lastOpenedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -257,6 +266,11 @@ class MaterialItem {
       source: map['source'] as String?,
       importStatus: map['import_status'] as String? ?? 'imported',
       contentHash: map['content_hash'] as String?,
+      indexingStatus: map['indexing_status'] as String? ?? 'NOT_INDEXED',
+      indexingError: map['indexing_error'] as String?,
+      indexedAt: map['indexed_at'] != null
+          ? DateTime.tryParse(map['indexed_at'] as String)
+          : null,
       lastOpenedAt: map['last_opened_at'] != null
           ? DateTime.tryParse(map['last_opened_at'] as String)
           : null,
@@ -291,6 +305,9 @@ class MaterialItem {
     String? source,
     String? importStatus,
     String? contentHash,
+    String? indexingStatus,
+    String? indexingError,
+    DateTime? indexedAt,
     DateTime? lastOpenedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -321,6 +338,9 @@ class MaterialItem {
       source: source ?? this.source,
       importStatus: importStatus ?? this.importStatus,
       contentHash: contentHash ?? this.contentHash,
+      indexingStatus: indexingStatus ?? this.indexingStatus,
+      indexingError: indexingError ?? this.indexingError,
+      indexedAt: indexedAt ?? this.indexedAt,
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

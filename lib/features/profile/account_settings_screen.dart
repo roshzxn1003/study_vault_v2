@@ -309,14 +309,29 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.cardBorder),
             ),
-            child: const Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Study Vault v1.0.0 (Production)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
-                SizedBox(height: 4),
-                Text(
-                  "Intelligent academic study companion collaborating with Google Gemini models. Offline-first, private, and syllabus-adaptive.",
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const Icon(Icons.school, size: 40, color: AppColors.primary),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Study Vault v1.0.0 (Release Ready)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                      SizedBox(height: 4),
+                      Text(
+                        "Intelligent academic study companion collaborating with Google Gemini models. Offline-first, private, and syllabus-adaptive.",
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

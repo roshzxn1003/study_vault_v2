@@ -1,30 +1,38 @@
+/// Prompt builder for generating strictly-typed, structured multiple choice quizzes.
 class QuizPromptBuilder {
   static String buildQuizPrompt({
     required String topic,
     required String context,
-    required int count,
-    required String difficulty,
+    int count = 5,
+    String difficulty = 'medium',
+    String? subject,
   }) {
     return """
-You are an expert academic examiner and professor. Generate a high-yield examination quiz.
+You are Study Vault's Chief Examination Assessor.
+Generate exactly $count high-quality multiple choice questions testing deep conceptual comprehension of "$topic".
 
-TOPIC: $topic
-CONTEXT:
-${context.isNotEmpty ? context : "Use general subject syllabus standards for $topic."}
+${subject != null ? "SUBJECT: $subject" : ""}
+DIFFICULTY: $difficulty
 
-REQUIREMENTS:
-- Number of Questions: $count
-- Difficulty: $difficulty
-- Question Types: High-quality multiple-choice questions with 4 distinct options (A, B, C, D).
-- Grounding: Focus on conceptual depth, edge cases, definitions, and problem-solving.
+REFERENCE VAULT MATERIAL:
+${context.trim().isNotEmpty ? context : "Use official university curriculum standards for $topic."}
 
-OUTPUT FORMAT (JSON ONLY, no markdown code block backticks):
+STRICT QUIZ RULES:
+1. Every question must have EXACTLY 4 distinct options (A, B, C, D).
+2. "correctIndex" MUST be an integer between 0 and 3 indicating the zero-based index of the single correct option.
+3. Provide a clear, pedagogical "explanation" detailing why the selected option is correct and why other distractors are incorrect.
+4. If referencing specific pages or sections from the context, include them in "sources".
+
+OUTPUT SCHEMA:
+Return ONLY a valid JSON array of objects conforming to this schema without code fences:
 [
   {
-    "question": "Clear and conceptual question text?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "question": "Question text here?",
+    "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
     "correctIndex": 0,
-    "explanation": "Thorough explanation of why the correct option is right and others are incorrect."
+    "explanation": "Detailed explanation of the correct choice.",
+    "difficulty": "$difficulty",
+    "sources": ["Page 12"]
   }
 ]
 """;

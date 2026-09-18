@@ -8,6 +8,8 @@ import 'package:study_vault/features/onboarding/domain/models/onboarding_models.
 import 'package:study_vault/features/vault/domain/models/models.dart';
 import 'package:study_vault/features/vault/presentation/providers/vault_provider.dart';
 import 'package:study_vault/features/vault/presentation/widgets/label_picker_dialog.dart';
+import 'package:study_vault/core/providers/ai_providers.dart';
+import 'package:study_vault/features/import/presentation/widgets/smart_organization_dialog.dart';
 
 typedef OrganizeResult = ({
   String workspaceId,
@@ -174,6 +176,85 @@ class _OrganizeSheetState extends ConsumerState<OrganizeSheet> {
     }
   }
 
+  bool _isSuggestingAi = false;
+
+  Future<void> _runSmartAiSuggest() async {
+    setState(() => _isSuggestingAi = true);
+    try {
+      final orchestrator = ref.read(aiOrchestratorProvider);
+      final suggestion = await orchestrator.suggestOrganization(
+        widget.title,
+        rawFileName: widget.title,
+        existingSubjects: _availableSubjects.map((s) => s.name).toList(),
+        existingFolders: _availableFolders.map((f) => f.name).toList(),
+        existingLabels: _availableLabels.map((l) => l.name).toList(),
+      );
+
+      if (!mounted) return;
+
+      final decision = await SmartOrganizationDialog.show(
+        context: context,
+        suggestion: suggestion,
+        originalFileName: widget.title,
+        availableSubjects: _availableSubjects.map((s) => s.name).toList(),
+        availableFolders: _availableFolders.map((f) => f.name).toList(),
+      );
+
+      if (decision != null && decision.accepted && mounted) {
+        // Apply suggested subject
+        final matchedSubject = _availableSubjects.cast<AcademicSubjectEntity?>().firstWhere(
+          (s) => s?.name.toLowerCase() == decision.subject.toLowerCase(),
+          orElse: () => _selectedSubject ?? (_availableSubjects.isNotEmpty ? _availableSubjects.first : null),
+        );
+        if (matchedSubject != null) {
+          await _onSubjectChanged(matchedSubject);
+        }
+
+        // Apply suggested folder
+        if (decision.folder != null && decision.folder!.isNotEmpty) {
+          final matchedFolder = _availableFolders.cast<VaultFolder?>().firstWhere(
+            (f) => f?.name.toLowerCase() == decision.folder!.toLowerCase(),
+            orElse: () => _selectedFolder,
+          );
+          if (matchedFolder != null) {
+            setState(() => _selectedFolder = matchedFolder);
+          }
+        }
+
+        // Apply suggested labels
+        if (decision.labels.isNotEmpty) {
+          final vaultRepo = ref.read(vaultRepositoryProvider);
+          final authUser = ref.read(authRepositoryProvider).getCurrentUser();
+          final userId = authUser?.id ?? 'guest';
+          for (final lbl in decision.labels) {
+            final existing = _availableLabels.cast<VaultLabel?>().firstWhere(
+              (l) => l?.name.toLowerCase() == lbl.toLowerCase(),
+              orElse: () => null,
+            );
+            if (existing != null) {
+              _selectedLabelIds.add(existing.id);
+            } else {
+              final created = await vaultRepo.createLabel(userId: userId, name: lbl);
+              _selectedLabelIds.add(created.id);
+            }
+          }
+          final refreshed = await vaultRepo.getLabels(userId: userId);
+          setState(() => _availableLabels = refreshed);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI Suggestion error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSuggestingAi = false);
+      }
+    }
+  }
+
   void _submit() {
     if (_selectedWorkspace == null || _selectedPeriod == null || _selectedSubject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -243,9 +324,35 @@ class _OrganizeSheetState extends ConsumerState<OrganizeSheet> {
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Assign academic location, semester, and tags for long-term organization.',
-                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Assign academic location, semester, and tags for long-term organization.',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      backgroundColor: AppColors.primarySubtle,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: _isSuggestingAi
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_awesome, size: 14, color: AppColors.primaryLight),
+                    label: const Text(
+                      'AI Suggest',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                    ),
+                    onPressed: _isSuggestingAi ? null : _runSmartAiSuggest,
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.lg),
 

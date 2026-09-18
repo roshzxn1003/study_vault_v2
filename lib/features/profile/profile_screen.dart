@@ -4,6 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/providers/profile_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../sharing/presentation/widgets/qr_discovery_modal.dart';
+import '../sharing/presentation/screens/privacy_sharing_settings_screen.dart';
+import '../sharing/presentation/providers/sharing_providers.dart';
+import '../../core/database/local_db_service.dart';
+import '../auth/presentation/providers/auth_provider.dart';
+import '../onboarding/presentation/providers/onboarding_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -91,6 +97,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                      const SizedBox(height: 2),
+                      Consumer(
+                        builder: (ctx, ref, _) {
+                          final studentProfile = ref.watch(currentStudentProfileProvider).value;
+                          final username = studentProfile?.displayUsername ?? '@scholar';
+                          return Text(
+                            username,
+                            style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 13),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 4),
                       Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                       const SizedBox(height: 12),
@@ -208,6 +225,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => context.push('/privacy'),
                       ),
+                      const Divider(height: 1, color: AppColors.border),
+                      ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0x1A10B981),
+                          child: Icon(Icons.qr_code_2_rounded, color: AppColors.emerald),
+                        ),
+                        title: const Text("My Study Vault QR", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: const Text("Share your profile card for peer discovery"),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => QrDiscoveryModal.show(context),
+                      ),
+                      const Divider(height: 1, color: AppColors.border),
+                      ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0x1A8B5CF6),
+                          child: Icon(Icons.people_outline_rounded, color: Color(0xFF8B5CF6)),
+                        ),
+                        title: const Text("Privacy & Sharing Settings", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: const Text("Search visibility, group invites & permissions"),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PrivacySharingSettingsScreen()),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -224,7 +265,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: () async {
-                      await Supabase.instance.client.auth.signOut();
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Log Out'),
+                          content: const Text(
+                            'Are you sure you want to log out of Study Vault? Your local changes have been safely saved to your account.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Log Out'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm != true) return;
+
+                      if (user != null) {
+                        await LocalDbService.instance.clearUserData(user.id);
+                      }
+                      await ref.read(authControllerProvider.notifier).signOut();
+                      await ref.read(onboardingProvider.notifier).resetOnboarding();
                       if (context.mounted) {
                         context.go('/login');
                       }

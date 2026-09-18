@@ -199,7 +199,7 @@ class VaultRepository {
     final rows = await db.rawQuery('''
       SELECT l.* FROM labels l
       INNER JOIN material_labels ml ON ml.label_id = l.id
-      WHERE ml.material_id = ?
+      WHERE ml.material_id = ? AND l.deleted_at IS NULL AND ml.deleted_at IS NULL
       ORDER BY l.name COLLATE NOCASE ASC
     ''', [materialId]);
 
@@ -721,7 +721,7 @@ class VaultRepository {
       SELECT ml.material_id, l.*
       FROM labels l
       INNER JOIN material_labels ml ON ml.label_id = l.id
-      WHERE ml.material_id IN ($placeholders)
+      WHERE ml.material_id IN ($placeholders) AND l.deleted_at IS NULL AND ml.deleted_at IS NULL
       ORDER BY l.name COLLATE NOCASE ASC
     ''', materialIds);
 

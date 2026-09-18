@@ -71,4 +71,7 @@ class AppColors {
   static const Color error = destructive;
   static const Color textTertiary = textMuted;
   static const Color divider = border;
+  static const Color rose = destructive;
+  static const Color amber = warning;
+  static const Color cyan = fileImage;
 }

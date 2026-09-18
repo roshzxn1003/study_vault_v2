@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:flutter/services.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_provider.dart';
 import '../../domain/models/models.dart';
 import '../providers/vault_provider.dart';
 import '../widgets/label_picker_dialog.dart';
 import '../widgets/move_dialog.dart';
 import '../widgets/rename_dialog.dart';
+import '../../../sharing/presentation/widgets/share_material_dialog.dart';
+import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
+import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
+import '../widgets/ai_material_side_panel.dart';
 
 /// Screen presenting comprehensive metadata, content preview, and actions for an academic material.
 class MaterialDetailScreen extends ConsumerStatefulWidget {
@@ -47,29 +52,108 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     }
   }
 
-  void _showShareNotice(BuildContext context) {
-    showDialog(
+  void _showShareOptions(BuildContext context) {
+    if (_material == null) return;
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
-        title: Row(
-          children: [
-            const Icon(Icons.share_rounded, color: AppColors.primaryLight, size: 20),
-            const SizedBox(width: AppSpacing.sm),
-            Text('Student Sharing', style: AppTypography.title),
-          ],
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        content: Text(
-          'Student-to-student academic sharing, study group packs, and peer distribution will be fully implemented in Phase 8 & 9.',
-          style: AppTypography.body.copyWith(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Understood', style: AppTypography.button.copyWith(color: AppColors.primaryLight)),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('Share "${_material!.title}"', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: AppSpacing.sm),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x1A3B82F6),
+                  child: Icon(Icons.person_add_alt_1_outlined, color: AppColors.primaryLight),
+                ),
+                title: const Text('Share with Student', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Send directly to another Study Vault user via @username'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ShareMaterialDialog.show(
+                    context: context,
+                    resourceId: _material!.id,
+                    resourceTitle: _material!.title,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x1A10B981),
+                  child: Icon(Icons.groups_outlined, color: Color(0xFF10B981)),
+                ),
+                title: const Text('Share with Group', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Publish to a study group feed for all members to view'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ShareToGroupDialog.show(
+                    context,
+                    preselectedResourceId: _material!.id,
+                    preselectedResourceTitle: _material!.title,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x1A8B5CF6),
+                  child: Icon(Icons.folder_zip_outlined, color: Color(0xFF8B5CF6)),
+                ),
+                title: const Text('Create Study Pack', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Curate this material into a revision collection'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateStudyPackScreen(initialMaterialIds: [_material!.id]),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0x1AF59E0B),
+                  child: Icon(Icons.open_in_new_rounded, color: Color(0xFFF59E0B)),
+                ),
+                title: const Text('Share Externally', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Export or copy text outside Study Vault'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (_material!.content != null && _material!.content!.isNotEmpty) {
+                    Clipboard.setData(ClipboardData(text: _material!.content!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Copied material content to clipboard!')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Sharing "${_material!.title}" externally')),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -253,8 +337,13 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
             tooltip: material.isFavorite ? 'Unfavorite' : 'Favorite',
           ),
           IconButton(
-            icon: const Icon(Icons.share_outlined, color: AppColors.textSecondary),
-            onPressed: () => _showShareNotice(context),
+            icon: const Icon(Icons.psychology_outlined, color: AppColors.primaryLight),
+            onPressed: () => AiMaterialSidePanel.showModal(context, _material!),
+            tooltip: 'AI Study Assistant',
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => _showShareOptions(context),
             tooltip: 'Share material',
           ),
           IconButton(
@@ -327,6 +416,36 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                                 ),
                               ),
                             ],
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceSecondary,
+                                borderRadius: AppRadius.chip,
+                                border: AppBorders.allStandard,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    material.source?.startsWith('Shared') == true
+                                        ? Icons.group_outlined
+                                        : Icons.lock_outline_rounded,
+                                    size: 11,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
+                                    style: AppTypography.caption.copyWith(
+                                      color: AppColors.textMuted,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.sm),
@@ -379,6 +498,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         _buildMetaRow(Icons.visibility_outlined, 'Last Opened', material.relativeOpenedTime),
                         if (material.formattedFileSize.isNotEmpty)
                           _buildMetaRow(Icons.data_usage_rounded, 'File Size', material.formattedFileSize),
+                        _buildMetaRow(Icons.auto_awesome_outlined, 'AI Search', material.indexingStatus ?? 'NOT_INDEXED'),
                       ],
                     ),
                   ),
@@ -519,6 +639,17 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.psychology_outlined, size: 18, color: AppColors.primaryLight),
+                        label: const Text('AI Assistant'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                          foregroundColor: AppColors.primaryLight,
+                          side: const BorderSide(color: AppColors.primaryLight),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: () => AiMaterialSidePanel.showModal(context, material),
+                      ),
                       ElevatedButton.icon(
                         icon: const Icon(Icons.edit_outlined, size: 18),
                         label: const Text('Rename'),

@@ -1,28 +1,59 @@
+/// Socratic AI Tutor Prompt Builder enforcing the 5-step teaching sequence.
 class TutorPromptBuilder {
+  static const List<String> standardSteps = [
+    "Step 1: Intuitive Mental Model",
+    "Step 2: Formal Definition & Invariants",
+    "Step 3: Real-World Analogy & Concrete Example",
+    "Step 4: Common Exam Traps & Tricky Edge Cases",
+    "Step 5: Active Recall & Mastery Question",
+  ];
+
   static String buildTeachingPrompt({
     required String topic,
     required String context,
     required String currentStep,
+    String? studentLevel,
+    String? subject,
   }) {
     return """
-You are an expert, engaging Socratic AI Tutor. Your goal is to teach the topic "$topic" step-by-step with supreme clarity, analogies, and active learning.
+You are Study Vault's Socratic AI Tutor. Your mission is to help the student truly master "$topic" through progressive understanding, not rote memorization.
 
+TEACHING PEDAGOGY:
+1. Mental Model: Ground the concept with an intuitive, visual representation.
+2. Formal Definition: Give the exact academic/engineering definition with invariants.
+3. Analogy & Example: Provide a memorable metaphor followed by a real-world system or code snippet.
+4. Common Exam Traps: Highlight subtle mistakes students make on midterms and finals.
+5. Mastery Check: Ask 1 active-recall question with 4 options to confirm comprehension.
+
+${subject != null ? "SUBJECT: $subject" : ""}
 TOPIC: $topic
-CURRENT LESSON STEP: $currentStep
-VAULT CONTEXT / NOTES:
-${context.isNotEmpty ? context : "No user vault context provided. Use your comprehensive academic knowledge."}
+CURRENT ACTIVE LESSON STEP: $currentStep
+${studentLevel != null ? "STUDENT LEVEL: $studentLevel" : ""}
 
-STEPS GUIDE:
-1. Simple explanation: Start with an intuitive, real-world mental model and simple definition.
-2. Core concepts: Break down the mathematical/technical principles, rules, and invariants.
-3. Analogy & Example: Provide a concrete practical example or code snippet.
-4. Common pitfalls: Highlight typical exam traps, misconceptions, or edge cases.
-5. Mastery Quiz: Ask 1 concise multiple-choice question to test student retention.
+STUDY VAULT REFERENCE CONTEXT:
+${context.trim().isNotEmpty ? context : "No user vault context available. Teach based on core academic standards."}
 
 INSTRUCTIONS:
-- Deliver the content specifically for "$currentStep".
-- Format using rich Markdown: bold terms, clear bullet points, callout blockquotes, and code blocks where relevant.
-- Always conclude with an engaging check question or encouraging reflection prompt.
+- Specifically deliver the requested "$currentStep".
+- Format using rich Markdown: clear headings, bold keywords, blockquotes for key rules, and fenced code blocks for syntax/algorithms.
+- Do NOT dump all 5 steps at once; focus deeply on this step.
+- Conclude with a thought-provoking prompt or question to encourage the student to think before advancing.
+""";
+  }
+
+  static String buildInteractiveStepPrompt({
+    required String topic,
+    required String currentStep,
+    required String userPrompt,
+    String? context,
+  }) {
+    return """
+Topic: $topic
+Current Lesson Step: $currentStep
+Student Response: $userPrompt
+${context != null && context.isNotEmpty ? "Context: $context" : ""}
+
+Evaluate the student's response. If they showed good intuition, validate their reasoning and build upon it. If they had a misconception, gently correct them using a relatable contrast. Then advance the lesson appropriately.
 """;
   }
 }

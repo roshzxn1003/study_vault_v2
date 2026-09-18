@@ -20,19 +20,28 @@ class AuthHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (showLogo) ...[
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppRadius.brLg,
-              border: AppBorders.allStandard,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.auto_stories_rounded,
-                size: 26,
-                color: AppColors.primaryLight,
+          ClipRRect(
+            borderRadius: AppRadius.brLg,
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 52,
+              height: 52,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppRadius.brLg,
+                  border: AppBorders.allStandard,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.auto_stories_rounded,
+                    size: 26,
+                    color: AppColors.primaryLight,
+                  ),
+                ),
               ),
             ),
           ),
