@@ -281,6 +281,10 @@ class VaultNotifier extends StateNotifier<VaultState> {
     final ids = state.selectedMaterialIds.toList();
     if (ids.isEmpty) return;
 
+    state = state.copyWith(
+      materials: state.materials.where((m) => !ids.contains(m.id)).toList(),
+      selectedMaterialIds: {},
+    );
     await _repository.bulkDelete(ids);
     clearSelection();
     await loadData();
@@ -291,7 +295,8 @@ class VaultNotifier extends StateNotifier<VaultState> {
   // ===========================================================================
 
   Future<void> toggleFavorite(String id) async {
-    final material = state.materials.firstWhere((m) => m.id == id);
+    final material = state.materials.where((m) => m.id == id).firstOrNull;
+    if (material == null) return;
     await _repository.toggleFavorite(id, !material.isFavorite);
     await loadData();
   }
@@ -333,6 +338,10 @@ class VaultNotifier extends StateNotifier<VaultState> {
   }
 
   Future<void> deleteMaterial(String id) async {
+    state = state.copyWith(
+      materials: state.materials.where((m) => m.id != id).toList(),
+      selectedMaterialIds: state.selectedMaterialIds.where((it) => it != id).toSet(),
+    );
     await _repository.deleteMaterial(id);
     await loadData();
   }

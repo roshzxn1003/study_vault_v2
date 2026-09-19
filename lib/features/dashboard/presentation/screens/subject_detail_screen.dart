@@ -18,6 +18,7 @@ import 'package:study_vault/features/vault/presentation/widgets/material_card.da
 import 'package:study_vault/features/vault/presentation/widgets/move_dialog.dart';
 import 'package:study_vault/features/vault/presentation/widgets/rename_dialog.dart';
 import 'package:study_vault/features/vault/presentation/widgets/sort_bottom_sheet.dart';
+import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 
 /// Comprehensive Subject Material & Folder view screen.
 /// Implements Section 6 with hierarchical folder drill-down, nested breadcrumbs,
@@ -253,14 +254,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     final notifier = ref.read(subjectVaultProvider(widget.subjectId).notifier);
 
     // Locate subject in state or personal topics
-    final subjectWithCount = dashState.subjects.cast<dynamic>().firstWhere(
+    final subjectWithCount = dashState.subjects.where(
           (s) => s.subject.id == widget.subjectId,
-          orElse: () => null,
-        );
-    final personalTopic = dashState.personalTopics.cast<dynamic>().firstWhere(
+        ).firstOrNull;
+    final personalTopic = dashState.personalTopics.where(
           (t) => t.id == widget.subjectId,
-          orElse: () => null,
-        );
+        ).firstOrNull;
 
     final subjectName = subjectWithCount?.subject.name ??
         personalTopic?.name ??
@@ -307,7 +306,30 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 ),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded, color: AppColors.primaryLight, size: 26),
+            tooltip: 'Add Material',
+            onPressed: () => AddMaterialSheet.show(
+              context,
+              subjectId: widget.subjectId,
+              folderId: subState.currentFolderId,
+              destinationLabel: subjectName,
+            ),
+          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'subject_add_material_fab',
+        onPressed: () => AddMaterialSheet.show(
+          context,
+          subjectId: widget.subjectId,
+          folderId: subState.currentFolderId,
+          destinationLabel: subjectName,
+        ),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Material'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: Stack(
@@ -561,15 +583,22 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                             child: Center(
-                              child: AppEmptyState(
-                                icon: Icons.folder_open_outlined,
-                                title: subState.isRoot
-                                    ? 'No materials in this subject yet.'
-                                    : 'This folder is empty.',
-                                description: subState.isRoot
-                                    ? 'Materials added to this subject will be organized here.'
-                                    : 'No materials inside this folder.',
-                              ),
+                                child: AppEmptyState(
+                                  icon: Icons.folder_open_outlined,
+                                  title: subState.isRoot
+                                      ? 'No materials in this subject yet.'
+                                      : 'This folder is empty.',
+                                  description: subState.isRoot
+                                      ? 'Upload PDFs, notes, slides, or scans to study efficiently.'
+                                      : 'No materials inside this folder.',
+                                  actionText: 'Add Material',
+                                  onAction: () => AddMaterialSheet.show(
+                                    context,
+                                    subjectId: widget.subjectId,
+                                    folderId: subState.currentFolderId,
+                                    destinationLabel: subjectName,
+                                  ),
+                                ),
                             ),
                           )
                         else if (subState.isGridView)

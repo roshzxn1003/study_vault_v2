@@ -188,10 +188,11 @@ class _ShareToGroupDialogState extends ConsumerState<ShareToGroupDialog> {
                     return DropdownMenuItem(value: m.id, child: Text(m.title, overflow: TextOverflow.ellipsis));
                   }).toList(),
                   onChanged: (val) {
-                    final m = vaultState.materials.firstWhere((it) => it.id == val);
+                    if (val == null) return;
+                    final m = vaultState.materials.where((it) => it.id == val).firstOrNull;
                     setState(() {
                       _selectedMaterialId = val;
-                      _selectedMaterialTitle = m.title;
+                      _selectedMaterialTitle = m?.title ?? '';
                     });
                   },
                 ),

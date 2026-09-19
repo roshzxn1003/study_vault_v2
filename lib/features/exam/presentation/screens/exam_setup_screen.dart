@@ -15,11 +15,11 @@ class ExamSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ExamSetupScreenState extends ConsumerState<ExamSetupScreen> {
-  final _nameController = TextEditingController(text: 'DBMS Midterm Exam');
+  final _nameController = TextEditingController();
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 7));
   String _selectedDifficulty = 'Medium';
   String _selectedStudyTime = '1.5 hours';
-  final List<String> _topics = ['ACID Properties', 'Transactions', 'Serializability', 'Concurrency Control', 'Recovery Systems'];
+  final List<String> _topics = [];
   final _topicInputCtrl = TextEditingController();
   
   bool _isLoading = false;

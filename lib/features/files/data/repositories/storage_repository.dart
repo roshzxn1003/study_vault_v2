@@ -21,7 +21,7 @@ class StorageRepository {
       final String remoteStoragePath = '${user.id}/$folderId/${fileId}_$fileName';
 
       try {
-        await _supabase.storage.from('study-files').upload(
+        await _supabase.storage.from('study_materials').upload(
           remoteStoragePath,
           File(filePath),
           fileOptions: const FileOptions(upsert: true),

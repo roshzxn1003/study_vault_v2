@@ -206,17 +206,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(height: 1, color: AppColors.border),
                       ListTile(
                         leading: const CircleAvatar(
-                          backgroundColor: Color(0x1AF59E0B),
-                          child: Icon(Icons.workspace_premium, color: AppColors.amber),
-                        ),
-                        title: const Text("Study Vault Pro", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text("Unlimited AI reasoning & OCR uploads"),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/premium'),
-                      ),
-                      const Divider(height: 1, color: AppColors.border),
-                      ListTile(
-                        leading: const CircleAvatar(
                           backgroundColor: Color(0x1A06B6D4),
                           child: Icon(Icons.shield_outlined, color: AppColors.cyan),
                         ),

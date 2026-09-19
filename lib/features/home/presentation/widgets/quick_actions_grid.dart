@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/services/document_import_service.dart';
+import '../../../../core/design/widgets/add_material_sheet.dart';
 import 'ai_topic_launcher_sheet.dart';
 import 'quick_scratchpad_sheet.dart';
 import 'exam_goal_dialog.dart';
@@ -20,28 +20,10 @@ class QuickActionsGrid extends ConsumerWidget {
         'onTap': () => AiTopicLauncherSheet.show(context),
       },
       {
-        'label': 'Import PDF',
-        'icon': Icons.upload_file_rounded,
+        'label': 'Add Material',
+        'icon': Icons.add_circle_outline_rounded,
         'color': AppColors.cyan,
-        'onTap': () async {
-          final importService = ref.read(documentImportServiceProvider);
-          final fileData = await importService.pickAndImportDocument(context: context);
-          if (fileData != null && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Imported "${fileData['name']}" into Study Vault!'),
-                backgroundColor: AppColors.emerald,
-                behavior: SnackBarBehavior.floating,
-                action: SnackBarAction(
-                  label: 'View PDF',
-                  textColor: Colors.white,
-                  onPressed: () => context.push('/files/${fileData['id']}'),
-                ),
-              ),
-            );
-            context.push('/files/${fileData['id']}');
-          }
-        },
+        'onTap': () => AddMaterialSheet.show(context),
       },
       {
         'label': 'Scan OCR',

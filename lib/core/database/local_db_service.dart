@@ -840,9 +840,12 @@ class LocalDbService {
     await _createPhase11Tables(db);
 
     // Clean up any legacy preseeded items if they exist
-    await db.delete('folders', where: "id IN ('folder_dbms', 'folder_os', 'folder_cn', 'folder_ai')");
-    await db.delete('files', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1')");
-    await db.delete('notes', where: "id IN ('note_acid', 'note_deadlock', 'note_tcp')");
+    try {
+      await db.delete('folders', where: "id IN ('folder_dbms', 'folder_os', 'folder_cn', 'folder_ai')");
+      await db.delete('files', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1')");
+      await db.delete('notes', where: "id IN ('note_acid', 'note_deadlock', 'note_tcp')");
+      await db.delete('materials', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1', 'note_acid', 'note_deadlock', 'note_tcp')");
+    } catch (_) {}
   }
 
   /// Securely purges all user-scoped records from local storage on logout/account switch.

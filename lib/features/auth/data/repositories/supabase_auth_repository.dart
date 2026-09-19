@@ -60,4 +60,12 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }
+
+  @override
+  Future<void> signInWithGoogle({String? redirectTo}) async {
+    await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectTo ?? 'io.supabase.studyvault://login-callback/',
+    );
+  }
 }

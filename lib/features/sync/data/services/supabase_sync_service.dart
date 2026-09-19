@@ -83,6 +83,19 @@ class SupabaseSyncService implements RemoteSyncService {
               .eq('label_id', lblId);
         }
       } else {
+        if (entityType == 'material') {
+          final storagePath = payload['storage_path'] as String?;
+          if (storagePath != null &&
+              storagePath.isNotEmpty &&
+              !storagePath.startsWith('/') &&
+              !storagePath.startsWith('http')) {
+            try {
+              await client.storage.from('study_materials').remove([storagePath]);
+            } catch (e) {
+              debugPrint('Remote storage file deletion skipped/failed: $e');
+            }
+          }
+        }
         await client.from(table).delete().eq('id', entityId);
       }
     } else {

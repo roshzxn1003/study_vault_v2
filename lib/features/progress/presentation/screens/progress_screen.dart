@@ -25,9 +25,17 @@ class ProgressScreen extends ConsumerWidget {
             statsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text("Error: $err")),
-              data: (stats) => Column(
-                children: stats.map((stat) => _buildTopicRow(stat)).toList(),
-              ),
+              data: (stats) => stats.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        "No topic progress recorded yet. Practice flashcards or take quizzes to track topic mastery!",
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    )
+                  : Column(
+                      children: stats.map((stat) => _buildTopicRow(stat)).toList(),
+                    ),
             ),
             const SizedBox(height: 32),
             const Text("Weak Areas", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),

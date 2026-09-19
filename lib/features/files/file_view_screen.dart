@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -7,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/database_providers.dart';
-import '../../core/utils/pdf_generator_helper.dart';
 import '../ai/presentation/providers/chat_provider.dart';
 
 final fileDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, id) async {
@@ -31,7 +29,6 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
   int _currentPageNumber = 1;
   int _totalPageCount = 1;
   bool _isDarkModeInvert = false;
-  Uint8List? _generatedPdfBytes;
   String? _textContent;
 
   @override
@@ -476,30 +473,40 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
       );
     }
 
-    // 4. In-Memory Structured Academic PDF Generator
-    _generatedPdfBytes ??= PdfGeneratorHelper.generateStudyGuidePdf(
-      title: fileName.replaceAll('.pdf', ''),
-      subject: fileName.contains('DBMS')
-          ? 'Database Systems'
-          : (fileName.contains('OS') ? 'Operating Systems' : 'Computer Science'),
-    );
-
-    return SfPdfViewer.memory(
-      _generatedPdfBytes!,
-      controller: _pdfViewerController,
-      canShowScrollHead: true,
-      canShowScrollStatus: true,
-      enableDoubleTapZooming: true,
-      onDocumentLoaded: (details) {
-        setState(() {
-          _totalPageCount = details.document.pages.count;
-        });
-      },
-      onPageChanged: (details) {
-        setState(() {
-          _currentPageNumber = details.newPageNumber;
-        });
-      },
+    // 4. File not found or inaccessible state
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.file_present_outlined, size: 64, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            const Text(
+              'Material file not found or inaccessible',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'The underlying document could not be located locally or remotely.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_back, size: 16),
+              label: const Text('Go Back'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

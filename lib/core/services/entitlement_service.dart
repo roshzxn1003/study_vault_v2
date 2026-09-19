@@ -3,19 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum UserPlan { free, premium }
 
 class EntitlementService {
-  // This should be backed by the 'subscriptions' table in Supabase
+  // All features are 100% free and permanently unlocked for all students.
   UserPlan get currentPlan => UserPlan.free;
 
   bool canUseFeature(String featureId) {
-    if (currentPlan == UserPlan.premium) return true;
-    
-    final freeFeatures = {
-      'basic_ai',
-      'basic_ocr',
-      'basic_notes',
-    };
-    
-    return freeFeatures.contains(featureId);
+    return true;
   }
 }
 

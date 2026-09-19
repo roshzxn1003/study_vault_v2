@@ -12,11 +12,11 @@ class AiUsageService {
   // In a real app, this would call the 'ai_usage' table in Supabase
   
   Future<UsageLimit> checkLimit(String feature) async {
-    // Mocking a free tier limit
+    // All AI features are 100% free and unlimited for students
     return UsageLimit(
       allowed: true,
-      remaining: 26,
-      resetAt: DateTime.now().add(const Duration(days: 12)),
+      remaining: 9999,
+      resetAt: DateTime.now().add(const Duration(days: 30)),
     );
   }
 

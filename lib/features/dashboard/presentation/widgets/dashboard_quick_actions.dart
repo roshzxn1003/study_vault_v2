@@ -19,6 +19,7 @@ class DashboardQuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
           // 1. Add Subject / Topic
@@ -30,7 +31,7 @@ class DashboardQuickActions extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 2. Add Material (Phase 7 Universal Ingestion)
+          // 2. Add Material
           _ActionButton(
             icon: Icons.file_upload_outlined,
             label: 'Add Material',
@@ -38,7 +39,31 @@ class DashboardQuickActions extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 3. Open Inbox
+          // 3. New Folder
+          _ActionButton(
+            icon: Icons.create_new_folder_outlined,
+            label: 'New Folder',
+            onTap: () => context.push('/vault'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+
+          // 4. Search
+          _ActionButton(
+            icon: Icons.search_rounded,
+            label: 'Search',
+            onTap: () => context.push('/search'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+
+          // 5. Shared With Me
+          _ActionButton(
+            icon: Icons.group_outlined,
+            label: 'Shared With Me',
+            onTap: () => context.push('/shared'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+
+          // 6. Open Inbox
           _ActionButton(
             icon: Icons.inbox_outlined,
             label: 'Open Inbox',

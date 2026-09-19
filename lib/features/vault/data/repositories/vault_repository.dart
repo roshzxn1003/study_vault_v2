@@ -1014,6 +1014,7 @@ class VaultRepository {
       entityType: 'material',
       entityId: id,
       operation: OutboxOperationType.delete,
+      payload: mat != null ? {'storage_path': mat.storagePath, 'file_path': mat.filePath} : {},
     );
   }
 

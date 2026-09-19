@@ -45,6 +45,8 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> resetPassword({required String email}) async {}
+  @override
+  Future<void> signInWithGoogle({String? redirectTo}) async {}
 }
 
 /// In-memory Fake implementation of AcademicWorkspaceRepository for deterministic unit testing.

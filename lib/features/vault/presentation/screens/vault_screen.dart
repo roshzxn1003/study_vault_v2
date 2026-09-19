@@ -18,10 +18,10 @@ import '../widgets/move_dialog.dart';
 import '../widgets/rename_dialog.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../widgets/vault_search_bar.dart';
-import '../../../import/presentation/widgets/import_source_dialog.dart';
 import '../../../sharing/presentation/widgets/share_material_dialog.dart';
 import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
 import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
+import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 
 /// Primary central Vault library screen.
 /// Implements complete material, folder, label, search, filter, and bulk operations.
@@ -309,6 +309,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'vault_add_material_fab',
+        onPressed: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Material'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -342,10 +350,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       ),
                       const Spacer(),
 
-                      // Add Material (Phase 7 Ingestion)
+                      // Add Material (Ingestion)
                       IconButton(
                         icon: const Icon(Icons.add_rounded, color: AppColors.primaryLight, size: 24),
-                        onPressed: () => ImportSourceDialog.show(context),
+                        onPressed: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
                         tooltip: 'Add Material',
                       ),
 
@@ -520,11 +528,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     if (state.materials.isEmpty && state.folders.isEmpty) {
       switch (state.activeTab) {
         case VaultTab.all:
-          return const Center(
+          return Center(
             child: AppEmptyState(
               icon: Icons.folder_open_rounded,
               title: 'Your Vault is empty',
               description: 'Materials you add will appear here in your central library.',
+              actionText: 'Add Material',
+              onAction: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
             ),
           );
         case VaultTab.recent:

@@ -51,6 +51,37 @@ class AuthController extends StateNotifier<AuthControllerState> {
     _checkCurrentUser();
   }
 
+  Future<bool> signInWithGoogle() async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _repository.signInWithGoogle();
+      final user = _repository.getCurrentUser();
+      if (user != null) {
+        try {
+          await LocalDbService.instance.clearUserData('guest');
+        } catch (_) {}
+        state = AuthControllerState(
+          status: AuthStatus.authenticated,
+          userId: user.id,
+          successMessage: 'Signed in successfully',
+        );
+      }
+      return true;
+    } on AuthException catch (e) {
+      state = AuthControllerState(
+        status: AuthStatus.error,
+        errorMessage: _mapAuthException(e),
+      );
+      return false;
+    } catch (e) {
+      state = AuthControllerState(
+        status: AuthStatus.error,
+        errorMessage: _mapGenericError(e),
+      );
+      return false;
+    }
+  }
+
   void _checkCurrentUser() {
     try {
       final user = _repository.getCurrentUser();
@@ -72,6 +103,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
     try {
       await _repository.signIn(email: email, password: password);
       final user = _repository.getCurrentUser();
+      try {
+        await LocalDbService.instance.clearUserData('guest');
+      } catch (_) {}
       state = AuthControllerState(
         status: AuthStatus.authenticated,
         userId: user?.id,
@@ -103,6 +137,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
       await _repository.signUp(email: email, password: password, fullName: fullName);
       final user = _repository.getCurrentUser();
       if (user != null) {
+        try {
+          await LocalDbService.instance.clearUserData('guest');
+        } catch (_) {}
         state = AuthControllerState(
           status: AuthStatus.authenticated,
           userId: user.id,
@@ -161,8 +198,12 @@ class AuthController extends StateNotifier<AuthControllerState> {
       final currentUser = _repository.getCurrentUser();
       final userId = currentUser?.id ?? state.userId;
       if (userId != null && userId.isNotEmpty) {
-        await LocalDbService.instance.clearUserData(userId);
+        try {
+          await LocalDbService.instance.clearUserData(userId);
+        } catch (_) {}
       }
+    } catch (_) {}
+    try {
       await _repository.signOut();
     } catch (_) {}
     state = const AuthControllerState(status: AuthStatus.unauthenticated);
@@ -187,6 +228,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
     }
     if (msg.contains('password') && (msg.contains('short') || msg.contains('weak') || msg.contains('least 6'))) {
       return 'Password must be at least 6 characters.';
+    }
+    if (msg.contains('missing oauth secret') || msg.contains('unsupported provider')) {
+      return 'Google Sign-In is not fully configured in your Supabase project. Please configure your Google Client ID & Secret in Supabase Authentication Providers.';
     }
     if (msg.contains('invalid email')) {
       return 'Please enter a valid email address.';

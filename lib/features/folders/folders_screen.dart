@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'presentation/providers/folders_provider.dart';
-import 'package:study_vault/core/services/document_import_service.dart';
+import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/database_providers.dart';
 
@@ -93,27 +93,9 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
         title: const Text("Subject Folders"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.upload_file_rounded),
-            tooltip: 'Import PDF / Document',
-            onPressed: () async {
-              final importService = ref.read(documentImportServiceProvider);
-              final fileData = await importService.pickAndImportDocument(context: context);
-              if (fileData != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Imported "${fileData['name']}" into Study Vault!'),
-                    backgroundColor: AppColors.emerald,
-                    behavior: SnackBarBehavior.floating,
-                    action: SnackBarAction(
-                      label: 'View PDF',
-                      textColor: Colors.white,
-                      onPressed: () => context.push('/files/${fileData['id']}'),
-                    ),
-                  ),
-                );
-                context.push('/files/${fileData['id']}');
-              }
-            },
+            icon: const Icon(Icons.add_rounded, size: 26),
+            tooltip: 'Add Study Material',
+            onPressed: () => AddMaterialSheet.show(context),
           ),
           IconButton(
             icon: const Icon(Icons.create_new_folder_outlined),

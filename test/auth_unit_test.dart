@@ -36,6 +36,12 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> resetPassword({required String email}) async {
     if (shouldFail) throw Exception(failMessage);
   }
+
+  @override
+  Future<void> signInWithGoogle({String? redirectTo}) async {
+    if (shouldFail) throw Exception(failMessage);
+    _currentUser = AuthUser(id: 'google-user-id', email: 'google@vault.edu', fullName: 'Google User');
+  }
 }
 
 void main() {
@@ -110,6 +116,21 @@ void main() {
       final success = await authController.resetPassword(email: 'test@university.edu');
       expect(success, true);
       expect(authController.state.successMessage, isNotNull);
+    });
+
+    test('Sign in with Google succeeds and updates state to authenticated', () async {
+      final success = await authController.signInWithGoogle();
+      expect(success, true);
+      expect(authController.state.isAuthenticated, true);
+      expect(authController.state.userId, 'google-user-id');
+    });
+
+    test('Sign in with Google failure updates state to error', () async {
+      fakeRepo.shouldFail = true;
+      fakeRepo.failMessage = 'Google Sign-In failed';
+      final success = await authController.signInWithGoogle();
+      expect(success, false);
+      expect(authController.state.hasError, true);
     });
   });
 

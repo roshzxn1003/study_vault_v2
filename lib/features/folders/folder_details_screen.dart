@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:study_vault/core/services/document_import_service.dart';
+import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 import '../../core/providers/database_providers.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -33,79 +33,7 @@ class _FolderDetailsScreenState extends ConsumerState<FolderDetailsScreen> {
   int _selectedFilter = 0; // 0 = All, 1 = Notes, 2 = Files
 
   void _showAddOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0x1A6366F1),
-                  child: Icon(Icons.edit_note, color: AppColors.primary),
-                ),
-                title: const Text('Write New Note', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Create formatted markdown note in this folder'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/notes/create?folderId=${widget.id}');
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0x1A10B981),
-                  child: Icon(Icons.document_scanner, color: AppColors.emerald),
-                ),
-                title: const Text('Scan Study Material', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('OCR text extraction from photo'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/scan');
-                },
-              ),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0x1A06B6D4),
-                  child: Icon(Icons.upload_file, color: AppColors.cyan),
-                ),
-                title: const Text('Upload PDF / Document', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Index slides, textbooks, or syllabus files'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final importService = ref.read(documentImportServiceProvider);
-                  final fileData = await importService.pickAndImportDocument(
-                    folderId: widget.id,
-                    context: context,
-                  );
-                  if (fileData != null) {
-                    ref.invalidate(folderContentProvider(widget.id));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Imported '${fileData['name']}' to this folder!"),
-                          backgroundColor: AppColors.emerald,
-                          behavior: SnackBarBehavior.floating,
-                          action: SnackBarAction(
-                            label: 'View PDF',
-                            textColor: Colors.white,
-                            onPressed: () => context.push('/files/${fileData['id']}'),
-                          ),
-                        ),
-                      );
-                      context.push('/files/${fileData['id']}');
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    AddMaterialSheet.show(context, folderId: widget.id);
   }
 
   @override

@@ -101,10 +101,13 @@ class AcademicWorkspaceNotifier extends StateNotifier<AcademicWorkspaceState> {
   /// Switches active workspace (e.g. College -> Personal Learning).
   Future<void> selectWorkspace(String workspaceId) async {
     final allWorkspaces = await _repository.getWorkspaces(_currentUserId);
-    final ws = allWorkspaces.firstWhere(
-      (w) => w.id == workspaceId,
-      orElse: () => allWorkspaces.isNotEmpty ? allWorkspaces.first : state.workspaces.first,
-    );
+    final ws = allWorkspaces.where((w) => w.id == workspaceId).firstOrNull ??
+        allWorkspaces.firstOrNull ??
+        state.activeWorkspace;
+    if (ws == null) {
+      state = state.copyWith(isLoading: false);
+      return;
+    }
     state = state.copyWith(workspaces: allWorkspaces, activeWorkspace: ws, selectedPeriod: null, isLoading: true);
     await _loadWorkspaceData(ws, allWorkspaces);
   }

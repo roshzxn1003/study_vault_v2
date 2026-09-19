@@ -51,6 +51,9 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> resetPassword({required String email}) async {}
+
+  @override
+  Future<void> signInWithGoogle({String? redirectTo}) async {}
 }
 
 class FakeAcademicWorkspaceRepository implements AcademicWorkspaceRepository {

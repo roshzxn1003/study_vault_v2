@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:study_vault/core/database/local_db_service.dart';
+
 class TopicStat {
   final String topic;
   final int attempts;
@@ -14,16 +16,51 @@ class TopicStat {
 final topicProgressProvider = FutureProvider<List<TopicStat>>((ref) async {
   final supabase = Supabase.instance.client;
   final user = supabase.auth.currentUser;
-  if (user == null) return [];
 
-  // In real implementation, this queries the 'topic_progress' table
-  // Mocking data to demonstrate the UI functionality
-  return [
-    TopicStat(topic: "ACID Properties", attempts: 12, correct: 11, incorrect: 1),
-    TopicStat(topic: "Transactions", attempts: 8, correct: 7, incorrect: 1),
-    TopicStat(topic: "Serializability", attempts: 10, correct: 4, incorrect: 6),
-    TopicStat(topic: "Concurrency Control", attempts: 5, correct: 2, incorrect: 3),
-  ];
+  // 1. Check remote Supabase table if authenticated
+  if (user != null) {
+    try {
+      final res = await supabase
+          .from('topic_progress')
+          .select()
+          .eq('user_id', user.id);
+      if (res.isNotEmpty) {
+        return res.map((r) => TopicStat(
+          topic: r['topic'] as String? ?? 'General',
+          attempts: (r['attempts'] as num?)?.toInt() ?? 0,
+          correct: (r['correct'] as num?)?.toInt() ?? 0,
+          incorrect: (r['incorrect'] as num?)?.toInt() ?? 0,
+        )).toList();
+      }
+    } catch (_) {}
+  }
+
+  // 2. Query local SQLite flashcards/study data
+  try {
+    final db = await LocalDbService.instance.database;
+    final rows = await db.rawQuery('''
+      SELECT topic, 
+             COUNT(*) as total_cards, 
+             SUM(CASE WHEN mastery_level >= 3 THEN 1 ELSE 0 END) as mastered 
+      FROM flashcards 
+      WHERE topic IS NOT NULL AND topic != ''
+      GROUP BY topic
+    ''');
+    if (rows.isNotEmpty) {
+      return rows.map((r) {
+        final total = (r['total_cards'] as num?)?.toInt() ?? 0;
+        final correct = (r['mastered'] as num?)?.toInt() ?? 0;
+        return TopicStat(
+          topic: r['topic'] as String? ?? 'General',
+          attempts: total,
+          correct: correct,
+          incorrect: total - correct,
+        );
+      }).toList();
+    }
+  } catch (_) {}
+
+  return [];
 });
 
 final studyStatsProvider = Provider((ref) {

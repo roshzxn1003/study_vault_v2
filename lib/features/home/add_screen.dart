@@ -54,7 +54,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
       } else if (_selectedIndex == 2) {
         final importService = ref.read(documentImportServiceProvider);
         final fileData = await importService.pickAndImportDocument(
-          folderId: _selectedFolderId ?? 'folder_dbms',
+          folderId: _selectedFolderId,
           context: context,
         );
         if (fileData != null && mounted) {
@@ -184,7 +184,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                       controller: _titleController,
                       decoration: const InputDecoration(
                         labelText: "Note Title",
-                        hintText: "e.g., ACID Properties & Serializability",
+                        hintText: "e.g., Key Concepts & Formulas",
                         prefixIcon: Icon(Icons.title, color: AppColors.primary),
                       ),
                     ),

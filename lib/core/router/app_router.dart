@@ -10,6 +10,8 @@ import '../../features/dashboard/presentation/screens/subject_detail_screen.dart
 import '../../features/dashboard/presentation/screens/inbox_screen.dart';
 import '../../features/dashboard/presentation/screens/shared_screen.dart';
 import '../../core/design/widgets/app_scaffold.dart';
+import '../../core/design/widgets/add_material_sheet.dart';
+import '../../core/theme/app_colors.dart';
 import '../../features/home/add_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/ai/ai_screen.dart';
@@ -43,7 +45,6 @@ import '../../features/scan/presentation/screens/scan_screen.dart';
 import '../../features/scan/presentation/screens/ocr_review_screen.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
 import '../../features/privacy/presentation/screens/privacy_center_screen.dart';
-import '../../features/premium/presentation/screens/premium_screen.dart';
 import '../../features/sync/presentation/screens/storage_sync_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -112,7 +113,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
           GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
           GoRoute(path: '/privacy', builder: (context, state) => const PrivacyCenterScreen()),
-          GoRoute(path: '/premium', builder: (context, state) => const PremiumScreen()),
           GoRoute(path: '/ai', builder: (context, state) => const AIScreen()),
           GoRoute(path: '/ai/settings', builder: (context, state) => const AiSettingsScreen()),
         ],
@@ -171,7 +171,7 @@ class MainNavigationShell extends StatelessWidget {
     if (location.startsWith('/inbox')) return 2;
     if (location.startsWith('/vault') || location.startsWith('/folders')) return 3;
     if (location.startsWith('/shared')) return 4;
-    if (location.startsWith('/profile') || location.startsWith('/privacy') || location.startsWith('/premium')) return 5;
+    if (location.startsWith('/profile') || location.startsWith('/privacy')) return 5;
     return 0;
   }
 
@@ -201,11 +201,22 @@ class MainNavigationShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
+    final showShellFab = selectedIndex != 3 && selectedIndex != 5;
 
     return AppScaffold(
       body: child,
       navigationIndex: selectedIndex,
       onNavigationChanged: (index) => _onNavigationChanged(context, index),
+      floatingActionButton: showShellFab
+          ? FloatingActionButton.extended(
+              heroTag: 'shell_add_material_fab',
+              onPressed: () => AddMaterialSheet.show(context),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Material', style: TextStyle(fontWeight: FontWeight.w600)),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            )
+          : null,
     );
   }
 }

@@ -28,10 +28,21 @@ class FileRepository {
       debugPrint('Remote files fetch skipped/failed, using local cache: $e');
     }
 
+    final currentUserId = _supabase.auth.currentUser?.id ?? 'guest';
     if (folderId != null) {
-      return await db.query('files', where: 'folder_id = ?', whereArgs: [folderId], orderBy: 'created_at DESC');
+      return await db.query(
+        'files',
+        where: 'user_id = ? AND folder_id = ?',
+        whereArgs: [currentUserId, folderId],
+        orderBy: 'created_at DESC',
+      );
     }
-    return await db.query('files', orderBy: 'created_at DESC');
+    return await db.query(
+      'files',
+      where: 'user_id = ?',
+      whereArgs: [currentUserId],
+      orderBy: 'created_at DESC',
+    );
   }
 
   Future<Map<String, dynamic>?> getFileById(String id) async {
@@ -99,7 +110,7 @@ class FileRepository {
     final user = _supabase.auth.currentUser;
     if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
       try {
-        await _supabase.storage.from('study-files').remove([storagePath]);
+        await _supabase.storage.from('study_materials').remove([storagePath]);
         await _supabase.from('files').delete().eq('id', id);
       } catch (e) {
         debugPrint('Remote file delete failed: $e');
@@ -109,7 +120,7 @@ class FileRepository {
 
   String getAuthenticatedUrl(String storagePath) {
     try {
-      return _supabase.storage.from('study-files').getPublicUrl(storagePath);
+      return _supabase.storage.from('study_materials').getPublicUrl(storagePath);
     } catch (_) {
       return storagePath;
     }

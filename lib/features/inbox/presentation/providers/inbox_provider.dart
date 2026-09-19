@@ -138,6 +138,10 @@ class InboxNotifier extends StateNotifier<InboxState> {
   /// Deletes a single item permanently from the inbox.
   Future<void> deleteItem(String materialId) async {
     try {
+      state = state.copyWith(
+        items: state.items.where((i) => i.id != materialId).toList(),
+        selectedIds: state.selectedIds.where((id) => id != materialId).toSet(),
+      );
       await _repository.deleteMaterial(materialId);
       await loadInbox();
       await _ref.read(vaultProvider.notifier).loadData();
@@ -149,13 +153,15 @@ class InboxNotifier extends StateNotifier<InboxState> {
 
   /// Bulk deletes selected inbox materials.
   Future<void> bulkDelete() async {
-    if (state.selectedIds.isEmpty) return;
+    final ids = state.selectedIds.toList();
+    if (ids.isEmpty) return;
     try {
-      await _repository.bulkDelete(state.selectedIds.toList());
       state = state.copyWith(
+        items: state.items.where((i) => !ids.contains(i.id)).toList(),
         selectedIds: const {},
         isBulkMode: false,
       );
+      await _repository.bulkDelete(ids);
       await loadInbox();
       await _ref.read(vaultProvider.notifier).loadData();
     } catch (e) {

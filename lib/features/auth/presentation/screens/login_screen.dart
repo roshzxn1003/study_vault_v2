@@ -59,6 +59,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    ref.read(authControllerProvider.notifier).clearError();
+    final success =
+        await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    if (success && mounted) {
+      final onboardingState = ref.read(onboardingProvider);
+      if (onboardingState.isLoaded && !onboardingState.hasCompletedOnboarding) {
+        context.go('/onboarding');
+      } else {
+        context.go('/home');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -169,27 +183,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // Divider
               const AuthDivider(),
 
-              // Continue with Google (documented as cloud phase roadmap item)
+              // Continue with Google
               AuthButton(
                 isSecondary: true,
                 text: 'Continue with Google',
-                isLoading: false,
+                isLoading: authState.isLoading,
                 icon: const Icon(
                   Icons.g_mobiledata_rounded,
                   size: 24,
                   color: AppColors.textPrimary,
                 ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Google Sign-In will be available with future cloud service setup.',
-                      ),
-                      backgroundColor: AppColors.surfaceElevated,
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                },
+                onPressed: authState.isLoading ? null : _handleGoogleSignIn,
               ),
 
               AppSpacing.v24,

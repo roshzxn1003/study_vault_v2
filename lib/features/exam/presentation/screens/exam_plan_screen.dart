@@ -11,26 +11,67 @@ class ExamPlanScreen extends ConsumerStatefulWidget {
 }
 
 class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
-  final List<Map<String, dynamic>> _days = [
-    {"day": 1, "topic": "ACID Properties", "duration": "45m", "priority": "High", "completed": true, "subtopics": "Atomicity, Consistency, Isolation, Durability"},
-    {"day": 2, "topic": "Transactions", "duration": "45m", "priority": "High", "completed": true, "subtopics": "Transaction states, Commit & Rollback"},
-    {"day": 3, "topic": "Serializability", "duration": "60m", "priority": "High", "completed": false, "subtopics": "Conflict vs View Serializability, Precedence Graph"},
-    {"day": 4, "topic": "Concurrency Control", "duration": "45m", "priority": "Medium", "completed": false, "subtopics": "Two-Phase Locking (2PL), Timestamp Ordering"},
-    {"day": 5, "topic": "Recovery Systems", "duration": "60m", "priority": "Medium", "completed": false, "subtopics": "Log-Based Recovery, Checkpointing, WAL"},
-    {"day": 6, "topic": "Mock Test & Quizzes", "duration": "90m", "priority": "High", "completed": false, "subtopics": "Timed 20-question practice test with explanations"},
-    {"day": 7, "topic": "Final Revision & Flashcards", "duration": "60m", "priority": "High", "completed": false, "subtopics": "High-priority formulas and key definitions"},
-  ];
+  final List<Map<String, dynamic>> _days = [];
 
   void _toggleDay(int index) {
-    setState(() {
-      _days[index]['completed'] = !(_days[index]['completed'] as bool);
-    });
+    if (index >= 0 && index < _days.length) {
+      setState(() {
+        _days[index]['completed'] = !(_days[index]['completed'] as bool);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_days.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("AI Study Plan")),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.event_note_rounded, size: 48, color: AppColors.primaryLight),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'No Study Plan Yet',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Configure your upcoming exam to generate a customized, daily milestone study plan.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => context.push('/exam/setup'),
+                  icon: const Icon(Icons.auto_awesome, size: 20),
+                  label: const Text('Create Study Plan', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final completedCount = _days.where((d) => d['completed'] == true).length;
-    final progress = completedCount / _days.length;
+    final progress = _days.isNotEmpty ? completedCount / _days.length : 0.0;
 
     return Scaffold(
       appBar: AppBar(

@@ -273,11 +273,15 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     );
 
     if (confirmed == true && mounted) {
+      final targetId = _material?.id ?? widget.materialId;
+      setState(() => _isLoading = true);
       final repo = ref.read(vaultRepositoryProvider);
-      await repo.deleteMaterial(_material!.id);
+      await repo.deleteMaterial(targetId);
       if (mounted) {
         ref.read(vaultProvider.notifier).loadData();
-        context.pop();
+        if (context.canPop()) {
+          context.pop();
+        }
       }
     }
   }

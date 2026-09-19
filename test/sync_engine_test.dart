@@ -40,6 +40,9 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> resetPassword({required String email}) async {}
+
+  @override
+  Future<void> signInWithGoogle({String? redirectTo}) async {}
 }
 
 /// Test implementation of RemoteSyncService to verify push, pull, and file operations.

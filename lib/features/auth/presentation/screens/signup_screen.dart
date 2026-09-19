@@ -8,6 +8,7 @@ import 'package:study_vault/features/auth/presentation/widgets/auth_header.dart'
 import 'package:study_vault/features/auth/presentation/widgets/auth_text_field.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_button.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_error_banner.dart';
+import 'package:study_vault/features/auth/presentation/widgets/auth_divider.dart';
 
 /// Clean, academic sign-up screen with inline validation and responsive layout.
 class SignupScreen extends ConsumerStatefulWidget {
@@ -67,6 +68,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _registeredEmail = email;
         });
       }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    ref.read(authControllerProvider.notifier).clearError();
+    final success =
+        await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    if (success && mounted) {
+      context.go('/onboarding');
     }
   }
 
@@ -243,6 +253,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 text: 'Create account',
                 isLoading: authState.isLoading,
                 onPressed: _handleSignUp,
+              ),
+
+              // Divider
+              const AuthDivider(),
+
+              // Continue with Google
+              AuthButton(
+                isSecondary: true,
+                text: 'Continue with Google',
+                isLoading: authState.isLoading,
+                icon: const Icon(
+                  Icons.g_mobiledata_rounded,
+                  size: 24,
+                  color: AppColors.textPrimary,
+                ),
+                onPressed: authState.isLoading ? null : _handleGoogleSignIn,
               ),
 
               AppSpacing.v24,

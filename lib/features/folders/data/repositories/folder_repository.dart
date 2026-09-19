@@ -13,9 +13,10 @@ class FolderRepository {
   Future<List<Map<String, dynamic>>> getFolders() async {
     final db = await _localDb.database;
 
+    final user = _supabase.auth.currentUser;
+
     // Try to refresh from remote if online and user is logged in
     try {
-      final user = _supabase.auth.currentUser;
       if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
         final remoteFolders = await _supabase
             .from('folders')
@@ -31,7 +32,13 @@ class FolderRepository {
       debugPrint('Remote folder fetch skipped/failed, using local cache: $e');
     }
 
-    final local = await db.query('folders', orderBy: 'created_at DESC');
+    final currentUserId = user?.id ?? 'guest';
+    final local = await db.query(
+      'folders',
+      where: 'user_id = ?',
+      whereArgs: [currentUserId],
+      orderBy: 'created_at DESC',
+    );
     return local;
   }
 

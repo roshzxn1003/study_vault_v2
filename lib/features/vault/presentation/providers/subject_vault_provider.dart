@@ -227,7 +227,8 @@ class SubjectVaultNotifier extends StateNotifier<SubjectVaultState> {
   }
 
   Future<void> toggleFavorite(String materialId) async {
-    final material = state.materials.firstWhere((m) => m.id == materialId);
+    final material = state.materials.where((m) => m.id == materialId).firstOrNull;
+    if (material == null) return;
     await _repository.toggleFavorite(materialId, !material.isFavorite);
     await loadData();
   }
@@ -252,6 +253,10 @@ class SubjectVaultNotifier extends StateNotifier<SubjectVaultState> {
   }
 
   Future<void> deleteMaterial(String materialId) async {
+    state = state.copyWith(
+      materials: state.materials.where((m) => m.id != materialId).toList(),
+      selectedMaterialIds: state.selectedMaterialIds.where((it) => it != materialId).toSet(),
+    );
     await _repository.deleteMaterial(materialId);
     await loadData();
   }
@@ -283,6 +288,10 @@ class SubjectVaultNotifier extends StateNotifier<SubjectVaultState> {
   Future<void> bulkDelete() async {
     final ids = state.selectedMaterialIds.toList();
     if (ids.isEmpty) return;
+    state = state.copyWith(
+      materials: state.materials.where((m) => !ids.contains(m.id)).toList(),
+      selectedMaterialIds: {},
+    );
     await _repository.bulkDelete(ids);
     clearSelection();
     await loadData();
