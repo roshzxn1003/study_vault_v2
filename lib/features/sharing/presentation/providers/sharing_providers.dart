@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:study_vault/core/services/connectivity_service.dart';
 import 'package:study_vault/features/auth/presentation/providers/auth_provider.dart';
@@ -439,7 +440,9 @@ class SharingPrivacySettingsNotifier extends StateNotifier<SharingPrivacySetting
     try {
       final settings = await _repo.getPrivacySettings(_userId);
       state = settings;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SharingPrivacySettingsNotifier: Failed to load privacy settings: $e');
+    }
   }
 
   Future<void> updateSettings({bool? isSearchable, String? allowGroupInvites}) async {

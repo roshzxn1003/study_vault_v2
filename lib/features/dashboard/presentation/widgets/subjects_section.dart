@@ -62,7 +62,7 @@ class SubjectsSection extends StatelessWidget {
         if (isEmpty)
           AppEmptyState(
             icon: isPersonalLearning ? Icons.lightbulb_outline : Icons.auto_stories_outlined,
-            title: isPersonalLearning ? 'No topics yet' : 'No subjects added yet',
+            title: isPersonalLearning ? 'No topics yet' : 'No subjects yet',
             description: isPersonalLearning
                 ? 'Add topics and skills you are learning to organize your notes.'
                 : 'You haven\'t added any subjects for this term yet.',

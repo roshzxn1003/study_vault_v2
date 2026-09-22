@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/services/connectivity_service.dart';
@@ -69,7 +70,9 @@ class SharingRepository {
           await _localSource.cacheProfile(remote);
           return remote;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getStudentProfile remote error: $e');
+      }
     }
     return cached;
   }
@@ -86,7 +89,9 @@ class SharingRepository {
           await _localSource.cacheProfile(remote);
           return remote;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getStudentByUsername remote error: $e');
+      }
     }
     return cached;
   }
@@ -105,7 +110,9 @@ class SharingRepository {
           await _localSource.cacheProfiles(remote);
           return remote;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository searchStudents remote error: $e');
+      }
     }
 
     // Fallback to local cache
@@ -153,7 +160,9 @@ class SharingRepository {
           isSearchable: isSearchable,
           allowGroupInvites: allowGroupInvites,
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository updatePublicProfile remote error: $e');
+      }
     }
   }
 
@@ -259,7 +268,9 @@ class SharingRepository {
         createdAt: DateTime.now(),
       );
       await _remoteSource.sendNotification(notif);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SharingRepository shareMaterial sendNotification note: $e');
+    }
 
     return savedShare;
   }
@@ -308,7 +319,9 @@ class SharingRepository {
         final remote = await _remoteSource.getSharedWithMe(userId);
         await _localSource.saveShares(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getSharedWithMe remote note: $e');
+      }
     }
     return await _localSource.getSharedWithMe(userId);
   }
@@ -319,7 +332,9 @@ class SharingRepository {
         final remote = await _remoteSource.getSharedByMe(userId);
         await _localSource.saveShares(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getSharedByMe remote note: $e');
+      }
     }
     return await _localSource.getSharedByMe(userId);
   }
@@ -469,7 +484,9 @@ class SharingRepository {
         final remote = await _remoteSource.getGroups(userId);
         await _localSource.saveGroups(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getGroups remote error: $e');
+      }
     }
     return await _localSource.getGroupsForUser(userId);
   }
@@ -480,7 +497,9 @@ class SharingRepository {
         final remote = await _remoteSource.getGroupMembers(groupId);
         await _localSource.saveGroupMembers(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository getGroupMembers remote error: $e');
+      }
     }
     return await _localSource.getGroupMembers(groupId);
   }
@@ -511,7 +530,9 @@ class SharingRepository {
         createdAt: DateTime.now(),
       );
       await _remoteSource.sendNotification(notif);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SharingRepository inviteMember notification note: $e');
+    }
   }
 
   Future<void> respondToInvitation({
@@ -584,7 +605,9 @@ class SharingRepository {
         final remote = await _remoteSource.getGroupResources(groupId);
         await _localSource.saveGroupResources(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to get remote group resources: $e');
+      }
     }
     return await _localSource.getGroupResources(groupId);
   }
@@ -635,7 +658,9 @@ class SharingRepository {
     if (await _isOnline()) {
       try {
         await _remoteSource.createStudyPack(pack);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to create remote study pack: $e');
+      }
     }
 
     return pack;
@@ -647,7 +672,9 @@ class SharingRepository {
         final remote = await _remoteSource.getStudyPacks(userId);
         await _localSource.saveStudyPacks(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to get remote study packs: $e');
+      }
     }
     return await _localSource.getStudyPacksForUser(userId);
   }
@@ -668,7 +695,7 @@ class SharingRepository {
     String? folderId,
   }) async {
     for (final item in pack.items) {
-      final dummyShare = ShareItem(
+      final shareItem = ShareItem(
         id: _uuid.v4(),
         ownerId: pack.ownerId,
         ownerUsername: pack.ownerUsername,
@@ -680,14 +707,16 @@ class SharingRepository {
 
       try {
         await saveCopyToVault(
-          share: dummyShare,
+          share: shareItem,
           currentUserId: currentUserId,
           workspaceId: workspaceId,
           academicPeriodId: academicPeriodId,
           subjectId: subjectId,
           folderId: folderId,
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to save study pack item to vault: $e');
+      }
     }
   }
 
@@ -701,7 +730,9 @@ class SharingRepository {
         final remote = await _remoteSource.getNotifications(userId);
         await _localSource.saveNotifications(remote);
         return remote;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to get remote notifications: $e');
+      }
     }
     return await _localSource.getNotificationsForUser(userId);
   }
@@ -711,7 +742,9 @@ class SharingRepository {
     if (await _isOnline()) {
       try {
         await _remoteSource.markNotificationAsRead(id);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to mark remote notification read: $e');
+      }
     }
   }
 
@@ -720,7 +753,9 @@ class SharingRepository {
     if (await _isOnline()) {
       try {
         await _remoteSource.markAllNotificationsAsRead(userId);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SharingRepository: Failed to mark all remote notifications read: $e');
+      }
     }
   }
 

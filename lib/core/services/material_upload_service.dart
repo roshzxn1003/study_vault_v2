@@ -192,7 +192,9 @@ class MaterialUploadService {
               'sync_status': _currentUserId != 'guest' ? 'pending' : 'synced',
             },
           );
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[MaterialUploadService] Legacy files table insert note: $e');
+        }
 
         uploadedMaterials.add(material);
       } catch (e) {
@@ -290,7 +292,9 @@ class MaterialUploadService {
         _invalidateProviders(subjectId);
         try {
           _ref.read(syncProvider.notifier).syncNow();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[MaterialUploadService] Gallery background sync note: $e');
+        }
 
         if (context != null && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -307,6 +311,68 @@ class MaterialUploadService {
     } catch (e) {
       debugPrint('[MaterialUploadService] Gallery pick error: $e');
       return [];
+    }
+  }
+
+  /// Adds a web link or URL reference as a study material.
+  Future<MaterialItem?> addLinkMaterial({
+    BuildContext? context,
+    required String title,
+    required String url,
+    String? subjectId,
+    String? folderId,
+    String? workspaceId,
+    String? academicPeriodId,
+  }) async {
+    final cleanUrl = url.trim();
+    if (cleanUrl.isEmpty) return null;
+    final cleanTitle = title.trim().isNotEmpty ? title.trim() : cleanUrl;
+    final vaultRepo = _ref.read(vaultRepositoryProvider);
+
+    try {
+      final material = await vaultRepo.createMaterial(
+        userId: _currentUserId,
+        workspaceId: workspaceId,
+        academicPeriodId: academicPeriodId,
+        subjectId: subjectId,
+        folderId: folderId,
+        title: cleanTitle,
+        type: VaultMaterialType.link,
+        remoteUrl: cleanUrl,
+        source: 'Link',
+        isInbox: folderId == null && subjectId == null,
+      );
+
+      _invalidateProviders(subjectId);
+      try {
+        _ref.read(syncProvider.notifier).syncNow();
+      } catch (e) {
+        debugPrint('[MaterialUploadService] Link background sync note: $e');
+      }
+
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added link "$cleanTitle" to Study Vault!'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      return material;
+    } catch (e) {
+      debugPrint('[MaterialUploadService] addLinkMaterial error: $e');
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not add link: $e'),
+            backgroundColor: AppColors.rose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return null;
     }
   }
 

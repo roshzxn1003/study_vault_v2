@@ -52,7 +52,9 @@ class AiConfig {
       if (savedKey != null && savedKey.trim().isNotEmpty) {
         return savedKey.trim();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiConfig: Failed to read API key from SharedPreferences: $e');
+    }
     return envApiKey.trim();
   }
 
@@ -67,7 +69,8 @@ class AiConfig {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_prefSelectedModel) ?? primaryModel;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AiConfig: Error getting selected model: $e');
       return primaryModel;
     }
   }
@@ -83,7 +86,8 @@ class AiConfig {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_prefAiEnabled) ?? true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AiConfig: Error checking if AI enabled: $e');
       return true;
     }
   }
@@ -99,7 +103,8 @@ class AiConfig {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_prefVaultContext) ?? true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AiConfig: Error checking if vault context enabled: $e');
       return true;
     }
   }
@@ -115,7 +120,8 @@ class AiConfig {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_prefResponseStyle) ?? 'socratic';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AiConfig: Error getting response style: $e');
       return 'socratic';
     }
   }
@@ -131,7 +137,8 @@ class AiConfig {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_prefAiConsent) ?? false;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AiConfig: Error checking user consent: $e');
       return false;
     }
   }

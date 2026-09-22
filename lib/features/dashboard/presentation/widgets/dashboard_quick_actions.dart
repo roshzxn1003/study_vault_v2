@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
-import 'package:study_vault/features/import/presentation/widgets/import_source_dialog.dart';
+import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
+import 'package:study_vault/features/vault/presentation/widgets/create_folder_dialog.dart';
+import 'package:study_vault/features/vault/presentation/providers/vault_provider.dart';
 
 /// Clean row of quick academic actions adhering to Section 15 constraints.
-class DashboardQuickActions extends StatelessWidget {
+class DashboardQuickActions extends ConsumerWidget {
   final bool isPersonalLearning;
   final VoidCallback onAddSubject;
 
@@ -14,9 +17,8 @@ class DashboardQuickActions extends StatelessWidget {
     required this.onAddSubject,
   });
 
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
@@ -35,7 +37,7 @@ class DashboardQuickActions extends StatelessWidget {
           _ActionButton(
             icon: Icons.file_upload_outlined,
             label: 'Add Material',
-            onTap: () => ImportSourceDialog.show(context),
+            onTap: () => AddMaterialSheet.show(context),
           ),
           const SizedBox(width: AppSpacing.sm),
 
@@ -43,7 +45,20 @@ class DashboardQuickActions extends StatelessWidget {
           _ActionButton(
             icon: Icons.create_new_folder_outlined,
             label: 'New Folder',
-            onTap: () => context.push('/vault'),
+            onTap: () async {
+              final name = await CreateFolderDialog.show(context: context);
+              if (name != null && name.trim().isNotEmpty) {
+                await ref.read(vaultProvider.notifier).createFolder(name.trim());
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Folder "${name.trim()}" created in Vault'),
+                      backgroundColor: AppColors.emerald,
+                    ),
+                  );
+                }
+              }
+            },
           ),
           const SizedBox(width: AppSpacing.sm),
 

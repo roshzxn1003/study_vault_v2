@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'presentation/providers/search_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../academic/presentation/providers/academic_workspace_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -30,6 +31,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchAsync = ref.watch(searchProvider(_query));
+    final realSubjects = ref.watch(academicWorkspaceProvider).subjects;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,21 +108,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Quick Search Suggestions", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _suggestChip('ACID Properties'),
-                            _suggestChip('Deadlock'),
-                            _suggestChip('TCP vs UDP'),
-                            _suggestChip('Operating Systems'),
-                            _suggestChip('DBMS'),
-                            _suggestChip('Computer Networks'),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
+                        if (realSubjects.isNotEmpty) ...[
+                          const Text(
+                            "Filter by Subject",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: realSubjects
+                                .take(8)
+                                .map((s) => _suggestChip(s.name))
+                                .toList(),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
                         Center(
                           child: Column(
                             children: [
@@ -149,7 +156,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   )
                 : searchAsync.when(
                     loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (err, stack) => Center(child: Text("Error: $err")),
+                    error: (err, stack) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Unable to complete search",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Check your connection and try again.",
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => ref.invalidate(searchProvider(_query)),
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text("Retry"),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     data: (results) {
                       final filtered = results.where((item) {
                         final String type = item.containsKey('content') ? 'Notes' : (item.containsKey('storage_path') ? 'Files' : 'Folders');

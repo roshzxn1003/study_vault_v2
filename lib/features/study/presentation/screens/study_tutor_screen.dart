@@ -70,7 +70,9 @@ class _StudyTutorScreenState extends ConsumerState<StudyTutorScreen> {
       if (searchResults.isNotEmpty) {
         context = searchResults.map((r) => "${r.fileName}: ${r.content}").join("\n\n");
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('StudyTutorScreen: Failed to retrieve search context: $e');
+    }
 
     final prompt = TutorPromptBuilder.buildTeachingPrompt(
       topic: widget.topic,

@@ -28,25 +28,6 @@ class _CollegeSubjectsScreenState extends ConsumerState<CollegeSubjectsScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-populate with typical academic subjects if list is initially completely empty
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentSubjects = ref.read(onboardingProvider).collegeData?.subjects ?? [];
-      if (currentSubjects.isEmpty) {
-        final notifier = ref.read(onboardingProvider.notifier);
-        notifier.addSubject(
-          purpose: OnboardingPurpose.college,
-          subjectName: 'Operating Systems',
-        );
-        notifier.addSubject(
-          purpose: OnboardingPurpose.college,
-          subjectName: 'Database Management',
-        );
-        notifier.addSubject(
-          purpose: OnboardingPurpose.college,
-          subjectName: 'Computer Networks',
-        );
-      }
-    });
   }
 
   @override

@@ -48,7 +48,9 @@ class DocumentRepository {
           'updated_at': now,
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Document processing cloud status update note: $e');
+    }
   }
 
   /// Stores document chunks safely in local SQLite (replacing existing chunks)
@@ -105,7 +107,9 @@ class DocumentRepository {
       if (user != null) {
         await _supabase.from('document_chunks').delete().eq('file_id', materialId);
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Cloud document_chunks delete note: $e');
+    }
   }
 
   /// Gets current indexing status from local SQLite.
@@ -121,7 +125,9 @@ class DocumentRepository {
       if (rows.isNotEmpty) {
         return rows.first['indexing_status'] as String?;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('getProcessingStatus localDb error: $e');
+    }
     return 'NOT_INDEXED';
   }
 

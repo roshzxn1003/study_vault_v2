@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
@@ -68,7 +69,9 @@ final searchProvider = FutureProvider.family<List<Map<String, dynamic>>, String>
           .ilike('name', '%$q%');
       return [...remoteMaterials, ...remoteFolders];
     }
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('SearchProvider: Failed to query remote search results: $e');
+  }
 
   return results;
 });

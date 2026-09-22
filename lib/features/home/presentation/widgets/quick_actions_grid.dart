@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/design/widgets/add_material_sheet.dart';
+import '../../../vault/presentation/widgets/create_folder_dialog.dart';
+import '../../../vault/presentation/providers/vault_provider.dart';
 import 'ai_topic_launcher_sheet.dart';
-import 'quick_scratchpad_sheet.dart';
-import 'exam_goal_dialog.dart';
 
 class QuickActionsGrid extends ConsumerWidget {
   const QuickActionsGrid({super.key});
@@ -14,40 +14,53 @@ class QuickActionsGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = [
       {
-        'label': 'AI Study Hub',
-        'icon': Icons.auto_awesome_rounded,
-        'color': AppColors.primary,
-        'onTap': () => AiTopicLauncherSheet.show(context),
-      },
-      {
         'label': 'Add Material',
         'icon': Icons.add_circle_outline_rounded,
-        'color': AppColors.cyan,
+        'color': AppColors.primary,
         'onTap': () => AddMaterialSheet.show(context),
       },
       {
-        'label': 'Scan OCR',
-        'icon': Icons.document_scanner_rounded,
+        'label': 'New Folder',
+        'icon': Icons.create_new_folder_rounded,
+        'color': AppColors.cyan,
+        'onTap': () async {
+          final name = await CreateFolderDialog.show(context: context);
+          if (name != null && name.trim().isNotEmpty) {
+            await ref.read(vaultProvider.notifier).createFolder(name.trim());
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Folder "${name.trim()}" created in Vault'),
+                  backgroundColor: AppColors.emerald,
+                ),
+              );
+            }
+          }
+        },
+      },
+      {
+        'label': 'Search',
+        'icon': Icons.search_rounded,
+        'color': AppColors.amber,
+        'onTap': () => context.push('/search'),
+      },
+      {
+        'label': 'Shared With Me',
+        'icon': Icons.folder_shared_rounded,
         'color': AppColors.emerald,
-        'onTap': () => context.push('/scan'),
+        'onTap': () => context.push('/shared'),
+      },
+      {
+        'label': 'AI Study Hub',
+        'icon': Icons.auto_awesome_rounded,
+        'color': AppColors.primaryLight,
+        'onTap': () => AiTopicLauncherSheet.show(context),
       },
       {
         'label': 'Write Note',
         'icon': Icons.edit_note_rounded,
-        'color': AppColors.primaryLight,
-        'onTap': () => context.push('/notes/create'),
-      },
-      {
-        'label': 'Scratchpad',
-        'icon': Icons.sticky_note_2_rounded,
-        'color': AppColors.amber,
-        'onTap': () => QuickScratchpadSheet.show(context),
-      },
-      {
-        'label': 'Exam Goal',
-        'icon': Icons.flag_rounded,
         'color': AppColors.rose,
-        'onTap': () => ExamGoalDialog.show(context),
+        'onTap': () => context.push('/notes/create'),
       },
     ];
 

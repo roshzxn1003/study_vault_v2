@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/database_providers.dart';
+import '../../core/services/file_action_service.dart';
 import '../ai/presentation/providers/chat_provider.dart';
 
 final fileDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, id) async {
@@ -13,6 +14,13 @@ final fileDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>
   return await repo.getFileById(id);
 });
 
+/// Production-ready document and PDF viewer supporting:
+/// - Stored local PDF and signed network PDF rendering
+/// - Error handling with "PDF unavailable", "Try Again", and "Go Back"
+/// - Search in PDF with navigation
+/// - Android system "Open with", "Share", and "Download"
+/// - Page navigation, jump-to-page, fit-to-width, pinch-zoom, and dark mode reading
+/// - Image and Markdown/Text viewing
 class FileViewScreen extends ConsumerStatefulWidget {
   final String id;
   const FileViewScreen({super.key, required this.id});
@@ -30,6 +38,8 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
   int _totalPageCount = 1;
   bool _isDarkModeInvert = false;
   String? _textContent;
+  String? _pdfLoadError;
+  int _retryKey = 0;
 
   @override
   void initState() {
@@ -45,6 +55,32 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
     super.dispose();
   }
 
+  void _zoomIn() {
+    try {
+      _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel + 0.25).clamp(1.0, 3.0);
+    } catch (_) {}
+  }
+
+  void _zoomOut() {
+    try {
+      _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel - 0.25).clamp(1.0, 3.0);
+    } catch (_) {}
+  }
+
+  void _fitToWidth() {
+    try {
+      _pdfViewerController.zoomLevel = 1.0;
+    } catch (_) {}
+  }
+
+  void _retryLoading() {
+    setState(() {
+      _pdfLoadError = null;
+      _retryKey++;
+    });
+    ref.invalidate(fileDetailsProvider(widget.id));
+  }
+
   void _confirmDelete(BuildContext context, Map<String, dynamic> file) {
     showDialog(
       context: context,
@@ -56,13 +92,31 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
-              await ref.read(fileRepositoryProvider).deleteFile(widget.id, file['storage_path'] ?? '');
-              ref.invalidate(fileRepositoryProvider);
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-                context.pop();
+              Navigator.pop(ctx);
+              try {
+                await ref.read(fileRepositoryProvider).deleteFile(widget.id, file['storage_path'] ?? '');
+                if (context.mounted) {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                  ref.invalidate(fileRepositoryProvider);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Something went wrong: $e'),
+                      action: SnackBarAction(
+                        label: 'Retry',
+                        onPressed: () => _confirmDelete(context, file),
+                      ),
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
@@ -103,6 +157,31 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _handleOpenWith(String filePath, String title, String? mimeType) {
+    FileActionService.instance.openWith(
+      context: context,
+      filePath: filePath,
+      title: title,
+      mimeType: mimeType,
+    );
+  }
+
+  void _handleShare(String filePath, String title) {
+    FileActionService.instance.shareSystemFile(
+      context: context,
+      filePath: filePath,
+      title: title,
+    );
+  }
+
+  void _handleDownload(String filePath, String fileName) {
+    FileActionService.instance.downloadFile(
+      context: context,
+      sourceFilePath: filePath,
+      fileName: fileName,
     );
   }
 
@@ -222,6 +301,17 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
     return Scaffold(
       backgroundColor: _isDarkModeInvert ? const Color(0xFF0F172A) : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         title: fileAsync.when(
           data: (file) => Text(
             file?['name'] ?? 'Document Viewer',
@@ -232,7 +322,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
           error: (e, _) => const Text("Document Viewer"),
         ),
         actions: [
-          // Find in document
+          // Search in document
           IconButton(
             icon: Icon(_isSearchOpen ? Icons.search_off : Icons.search),
             tooltip: 'Search Document',
@@ -258,15 +348,118 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
             tooltip: 'Invert Reading Contrast',
             onPressed: () => setState(() => _isDarkModeInvert = !_isDarkModeInvert),
           ),
-          // Delete
+          // More options (Open with, Share, Download, Delete)
           fileAsync.when(
-            data: (file) => file != null
-                ? IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                    tooltip: 'Delete File',
-                    onPressed: () => _confirmDelete(context, file),
-                  )
-                : const SizedBox.shrink(),
+            data: (file) {
+              if (file == null) return const SizedBox.shrink();
+              final path = file['storage_path'] ?? '';
+              final name = file['name'] ?? 'document.pdf';
+              final mime = file['mime_type'] as String?;
+
+              return PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded),
+                tooltip: 'More actions',
+                onSelected: (val) {
+                  switch (val) {
+                    case 'zoom_in':
+                      _zoomIn();
+                      break;
+                    case 'zoom_out':
+                      _zoomOut();
+                      break;
+                    case 'fit_to_width':
+                      _fitToWidth();
+                      break;
+                    case 'open_with':
+                      _handleOpenWith(path, name, mime);
+                      break;
+                    case 'share':
+                      _handleShare(path, name);
+                      break;
+                    case 'download':
+                      _handleDownload(path, name);
+                      break;
+                    case 'delete':
+                      _confirmDelete(context, file);
+                      break;
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'zoom_in',
+                    child: Row(
+                      children: [
+                        Icon(Icons.zoom_in_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Zoom In'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'zoom_out',
+                    child: Row(
+                      children: [
+                        Icon(Icons.zoom_out_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Zoom Out'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'fit_to_width',
+                    child: Row(
+                      children: [
+                        Icon(Icons.fit_screen_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Fit to Width'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'open_with',
+                    child: Row(
+                      children: [
+                        Icon(Icons.open_in_new_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Open with...'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: [
+                        Icon(Icons.share_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Share File'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'download',
+                    child: Row(
+                      children: [
+                        Icon(Icons.download_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text('Download / Export'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
             loading: () => const SizedBox.shrink(),
             error: (e, _) => const SizedBox.shrink(),
           ),
@@ -283,11 +476,26 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
             ],
           ),
         ),
-        error: (err, stack) => Center(child: Text("Error: $err")),
+        error: (err, stack) => _buildFailureState(
+          title: 'PDF unavailable',
+          message: 'Error loading document: $err',
+        ),
         data: (file) {
-          final fileName = file?['name'] ?? 'Study Document.pdf';
-          final storagePath = file?['storage_path'] ?? '';
-          final fileType = file?['file_type'] ?? 'PDF';
+          if (file == null) {
+            return _buildFailureState(
+              title: 'PDF unavailable',
+              message: 'The requested document record could not be found.',
+            );
+          }
+
+          final fileName = file['name'] ?? 'Study Document.pdf';
+
+          if (_pdfLoadError != null) {
+            return _buildFailureState(
+              title: 'PDF unavailable',
+              message: _pdfLoadError!,
+            );
+          }
 
           return Column(
             children: [
@@ -340,14 +548,14 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                   ),
                 ),
 
-              // Document Body (PDF Viewer / Text Reader)
+              // Document Body (PDF Viewer / Image / Text Reader)
               Expanded(
-                child: _buildDocumentContent(fileName, storagePath, fileType),
+                child: _buildDocumentContent(file),
               ),
 
-              // Bottom Reader & AI Controls
+              // Bottom Reader & Navigation Controls
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceElevated,
                   border: const Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -360,24 +568,74 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Page Status Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.menu_book_rounded, size: 14, color: AppColors.primaryLight),
-                            const SizedBox(width: 6),
-                            Text(
-                              "Page $_currentPageNumber of $_totalPageCount",
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      // Page Status & Navigation Chip
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                            tooltip: 'Previous Page',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            onPressed: _currentPageNumber > 1
+                                ? () => _pdfViewerController.previousPage()
+                                : null,
+                          ),
+                          InkWell(
+                            onTap: _showJumpToPageDialog,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.cardBorder),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.menu_book_rounded, size: 13, color: AppColors.primaryLight),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "$_currentPageNumber/$_totalPageCount",
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                            tooltip: 'Next Page',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            onPressed: _currentPageNumber < _totalPageCount
+                                ? () => _pdfViewerController.nextPage()
+                                : null,
+                          ),
+                          const SizedBox(width: 2),
+                          IconButton(
+                            icon: const Icon(Icons.zoom_out_rounded, size: 18),
+                            tooltip: 'Zoom Out',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            onPressed: _zoomOut,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.fit_screen_rounded, size: 18),
+                            tooltip: 'Fit to Width',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            onPressed: _fitToWidth,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.zoom_in_rounded, size: 18),
+                            tooltip: 'Zoom In',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            onPressed: _zoomIn,
+                          ),
+                        ],
                       ),
 
                       // AI Study Action Button
@@ -385,14 +643,14 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => _showAiStudyDrawer(context, fileName),
-                        icon: const Icon(Icons.auto_awesome, size: 18),
+                        icon: const Icon(Icons.auto_awesome, size: 16),
                         label: const Text(
-                          "AI Study Tools",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          "AI Tools",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ],
@@ -406,16 +664,147 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
     );
   }
 
-  Widget _buildDocumentContent(String fileName, String storagePath, String fileType) {
-    // 1. Text/Markdown reader
+  Widget _buildDocumentContent(Map<String, dynamic> file) {
+    final fileName = file['name'] ?? 'Study Document.pdf';
+    final storagePath = (file['storage_path'] ?? '') as String;
+    final remoteUrl = (file['remote_url'] ?? '') as String;
+    final fileType = (file['file_type'] ?? 'PDF').toString().toUpperCase();
+
+    // 0. Link Material Viewer
+    if (fileType == 'LINK' || (remoteUrl.isNotEmpty && (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://')) && !storagePath.endsWith('.pdf'))) {
+      final targetUrl = remoteUrl.isNotEmpty ? remoteUrl : storagePath;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
+              color: AppColors.surfaceElevated,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: AppColors.cardBorder),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.link_rounded, size: 40, color: Color(0xFF8B5CF6)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      fileName,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      targetUrl,
+                      style: const TextStyle(fontSize: 13, color: AppColors.primaryLight),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            FileActionService.instance.openWith(
+                              context: context,
+                              filePath: targetUrl,
+                              title: fileName,
+                            );
+                          },
+                          icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+                          label: const Text('Open Link'),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            FileActionService.instance.shareSystemFile(
+                              context: context,
+                              filePath: targetUrl,
+                              title: fileName,
+                            );
+                          },
+                          icon: const Icon(Icons.share_rounded, size: 18),
+                          label: const Text('Share'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 1. Image Viewer (JPG, PNG, WEBP, etc.)
+    if (['JPG', 'JPEG', 'PNG', 'WEBP', 'IMAGE'].contains(fileType)) {
+      if (storagePath.isNotEmpty && File(storagePath).existsSync()) {
+        return InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Center(
+            child: Image.file(
+              File(storagePath),
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => _buildFailureState(
+                title: 'Image unavailable',
+                message: 'Could not render image file.',
+              ),
+            ),
+          ),
+        );
+      } else if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+        return InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Center(
+            child: Image.network(
+              storagePath,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => _buildFailureState(
+                title: 'Image unavailable',
+                message: 'Could not load network image.',
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 2. Text/Markdown reader
     if (fileType == 'TXT' || fileType == 'MD') {
       if (_textContent == null && storagePath.isNotEmpty && File(storagePath).existsSync()) {
         try {
           _textContent = File(storagePath).readAsStringSync();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('FileViewScreen: Failed to read text file at $storagePath: $e');
+        }
       }
 
-      final textToDisplay = _textContent ?? "# $fileName\n\nStudy Vault indexed document content.";
+      final textToDisplay = _textContent ?? (file['content'] as String?) ?? "# $fileName\n\nStudy Vault indexed document content.";
 
       return SingleChildScrollView(
         padding: const EdgeInsets.all(22),
@@ -431,78 +820,186 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
       );
     }
 
-    // 2. Real PDF from local file system
+    // 3. Real PDF from local file system
     if (storagePath.isNotEmpty && File(storagePath).existsSync()) {
-      return SfPdfViewer.file(
-        File(storagePath),
-        controller: _pdfViewerController,
-        canShowScrollHead: true,
-        canShowScrollStatus: true,
-        enableDoubleTapZooming: true,
-        onDocumentLoaded: (details) {
-          setState(() {
-            _totalPageCount = details.document.pages.count;
-          });
-        },
-        onPageChanged: (details) {
-          setState(() {
-            _currentPageNumber = details.newPageNumber;
-          });
-        },
-      );
+      return _buildPdfViewerWidget(isNetwork: false, source: storagePath);
     }
 
-    // 3. Real PDF from Network URL
+    // 4. Real PDF from direct Network URL
     if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+      return _buildPdfViewerWidget(isNetwork: true, source: storagePath);
+    }
+
+    if (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://')) {
+      return _buildPdfViewerWidget(isNetwork: true, source: remoteUrl);
+    }
+
+    // 5. PDF in Supabase remote storage
+    if (storagePath.isNotEmpty && !storagePath.startsWith('/')) {
+      return FutureBuilder<String>(
+        future: ref.read(fileRepositoryProvider).getAuthenticatedUrl(storagePath),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Retrieving secure document...", style: TextStyle(color: AppColors.textSecondary)),
+                ],
+              ),
+            );
+          }
+          final signedUrl = snapshot.data;
+          if (signedUrl != null && (signedUrl.startsWith('http://') || signedUrl.startsWith('https://'))) {
+            return _buildPdfViewerWidget(isNetwork: true, source: signedUrl);
+          }
+          return _buildFailureState(
+            title: 'PDF unavailable',
+            message: 'Could not retrieve document from cloud storage.',
+          );
+        },
+      );
+    }
+
+    // 6. File not found or inaccessible state
+    return _buildFailureState(
+      title: 'PDF unavailable',
+      message: 'The material file is missing or inaccessible on your device storage.',
+    );
+  }
+
+  Widget _buildPdfViewerWidget({required bool isNetwork, required String source}) {
+    if (isNetwork) {
       return SfPdfViewer.network(
-        storagePath,
+        source,
+        key: ValueKey('net_pdf_${source}_$_retryKey'),
         controller: _pdfViewerController,
         canShowScrollHead: true,
         canShowScrollStatus: true,
         enableDoubleTapZooming: true,
         onDocumentLoaded: (details) {
-          setState(() {
-            _totalPageCount = details.document.pages.count;
-          });
+          if (mounted) {
+            setState(() {
+              _totalPageCount = details.document.pages.count;
+              _pdfLoadError = null;
+            });
+          }
+        },
+        onDocumentLoadFailed: (details) {
+          if (mounted) {
+            setState(() {
+              _pdfLoadError = 'Network error downloading PDF. Please check your internet connection.';
+            });
+          }
         },
         onPageChanged: (details) {
-          setState(() {
-            _currentPageNumber = details.newPageNumber;
-          });
+          if (mounted) {
+            setState(() {
+              _currentPageNumber = details.newPageNumber;
+            });
+          }
+        },
+      );
+    } else {
+      return SfPdfViewer.file(
+        File(source),
+        key: ValueKey('local_pdf_${source}_$_retryKey'),
+        controller: _pdfViewerController,
+        canShowScrollHead: true,
+        canShowScrollStatus: true,
+        enableDoubleTapZooming: true,
+        onDocumentLoaded: (details) {
+          if (mounted) {
+            setState(() {
+              _totalPageCount = details.document.pages.count;
+              _pdfLoadError = null;
+            });
+          }
+        },
+        onDocumentLoadFailed: (details) {
+          if (mounted) {
+            setState(() {
+              _pdfLoadError = details.description.isNotEmpty
+                  ? details.description
+                  : 'Failed to load PDF file. The file may be corrupt or encrypted.';
+            });
+          }
+        },
+        onPageChanged: (details) {
+          if (mounted) {
+            setState(() {
+              _currentPageNumber = details.newPageNumber;
+            });
+          }
         },
       );
     }
+  }
 
-    // 4. File not found or inaccessible state
+  Widget _buildFailureState({
+    required String title,
+    required String message,
+  }) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(28.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.file_present_outlined, size: 64, color: AppColors.textSecondary),
-            const SizedBox(height: 16),
-            const Text(
-              'Material file not found or inaccessible',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'The underlying document could not be located locally or remotely.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.picture_as_pdf_outlined, size: 54, color: AppColors.error),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back, size: 16),
-              label: const Text('Go Back'),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/home');
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                  label: const Text('Go Back'),
+                ),
+                const SizedBox(width: 14),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _retryLoading,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Try Again'),
+                ),
+              ],
             ),
           ],
         ),

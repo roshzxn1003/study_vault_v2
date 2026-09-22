@@ -31,7 +31,9 @@ class VaultLabel {
         } else if (hex.length == 8) {
           return Color(int.parse(hex, radix: 16));
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('VaultLabel hex parse note: $e');
+      }
     }
     return const Color(0xFF6366F1); // Indigo default
   }

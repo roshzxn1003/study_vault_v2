@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/ai/embedding_service.dart';
 import 'package:study_vault/core/ai/hybrid_retriever.dart';
@@ -76,7 +77,9 @@ class SemanticSearchService {
       if (authUser != null) {
         userId = authUser.id;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SemanticSearchService: Error fetching current user, defaulting to guest: $e');
+    }
 
     final chunks = await _hybridRetriever.retrieve(RetrievalQuery(
       queryText: query,

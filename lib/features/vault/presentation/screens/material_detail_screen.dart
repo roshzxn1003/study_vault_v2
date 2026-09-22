@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_provider.dart';
 import '../../domain/models/models.dart';
 import '../providers/vault_provider.dart';
+import '../providers/subject_vault_provider.dart';
 import '../widgets/label_picker_dialog.dart';
 import '../widgets/move_dialog.dart';
 import '../widgets/rename_dialog.dart';
@@ -13,6 +14,7 @@ import '../../../sharing/presentation/widgets/share_material_dialog.dart';
 import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
 import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
 import '../widgets/ai_material_side_panel.dart';
+import 'package:study_vault/core/services/file_action_service.dart';
 
 /// Screen presenting comprehensive metadata, content preview, and actions for an academic material.
 class MaterialDetailScreen extends ConsumerStatefulWidget {
@@ -275,15 +277,92 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     if (confirmed == true && mounted) {
       final targetId = _material?.id ?? widget.materialId;
       setState(() => _isLoading = true);
-      final repo = ref.read(vaultRepositoryProvider);
-      await repo.deleteMaterial(targetId);
-      if (mounted) {
-        ref.read(vaultProvider.notifier).loadData();
-        if (context.canPop()) {
-          context.pop();
+      try {
+        final repo = ref.read(vaultRepositoryProvider);
+        await repo.deleteMaterial(targetId);
+        if (mounted) {
+          // Notify ALL relevant providers so every screen refreshes
+          ref.read(vaultProvider.notifier).loadData();
+          ref.invalidate(subjectVaultProvider(widget.materialId));
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Something went wrong: $e'),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: _handleDelete,
+              ),
+            ),
+          );
         }
       }
     }
+  }
+
+  void _handleOpenViewer() {
+    if (_material == null) return;
+    if (_material!.type == VaultMaterialType.note) {
+      context.push('/notes/${_material!.id}');
+    } else {
+      context.push('/files/${_material!.id}');
+    }
+  }
+
+  void _handleOpenWith() {
+    if (_material == null) return;
+    final path = _material!.filePath ?? _material!.storagePath ?? _material!.remoteUrl ?? '';
+    if (path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No file path available to open.')),
+      );
+      return;
+    }
+    FileActionService.instance.openWith(
+      context: context,
+      filePath: path,
+      mimeType: _material!.mimeType,
+      title: _material!.title,
+    );
+  }
+
+  void _handleSystemShare() {
+    if (_material == null) return;
+    final path = _material!.filePath ?? _material!.storagePath ?? _material!.remoteUrl ?? '';
+    if (path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No file path available to share.')),
+      );
+      return;
+    }
+    FileActionService.instance.shareSystemFile(
+      context: context,
+      filePath: path,
+      title: _material!.title,
+    );
+  }
+
+  void _handleDownload() {
+    if (_material == null) return;
+    final path = _material!.filePath ?? _material!.storagePath ?? _material!.remoteUrl ?? '';
+    if (path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File path is not available.')),
+      );
+      return;
+    }
+    FileActionService.instance.downloadFile(
+      context: context,
+      sourceFilePath: path,
+      fileName: _material!.originalFileName ?? '${_material!.title}.${_material!.type.fileExtension}',
+    );
   }
 
   @override
@@ -488,21 +567,28 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Academic Organization',
+                          'File & Academic Details',
                           style: AppTypography.caption.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
+                        _buildMetaRow(Icons.description_outlined, 'File Name', material.originalFileName ?? material.title),
+                        _buildMetaRow(Icons.category_outlined, 'Type', material.type.label),
+                        if (material.formattedFileSize.isNotEmpty)
+                          _buildMetaRow(Icons.data_usage_rounded, 'File Size', material.formattedFileSize),
+                        _buildMetaRow(Icons.place_outlined, 'Location', material.locationSubtitle),
                         _buildMetaRow(Icons.book_outlined, 'Subject', material.subjectName ?? 'Vault Root'),
                         if (material.folderName != null)
                           _buildMetaRow(Icons.folder_outlined, 'Folder', material.folderName!),
-                        _buildMetaRow(Icons.update_rounded, 'Updated', material.relativeUpdatedTime),
-                        _buildMetaRow(Icons.visibility_outlined, 'Last Opened', material.relativeOpenedTime),
-                        if (material.formattedFileSize.isNotEmpty)
-                          _buildMetaRow(Icons.data_usage_rounded, 'File Size', material.formattedFileSize),
-                        _buildMetaRow(Icons.auto_awesome_outlined, 'AI Search', material.indexingStatus ?? 'NOT_INDEXED'),
+                        _buildMetaRow(Icons.calendar_today_outlined, 'Created', material.createdAt.toLocal().toString().split('.')[0]),
+                        _buildMetaRow(Icons.update_rounded, 'Modified', material.updatedAt.toLocal().toString().split('.')[0]),
+                        _buildMetaRow(
+                          material.source?.startsWith('Shared') == true ? Icons.group_outlined : Icons.lock_outline_rounded,
+                          'Privacy',
+                          material.source?.startsWith('Shared') == true ? 'Shared Resource' : 'Private (My Vault)',
+                        ),
                       ],
                     ),
                   ),
@@ -620,7 +706,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Content',
+                            'Content Preview',
                             style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.textSecondary,
@@ -640,9 +726,58 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
 
                   // Primary Action Buttons
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                    spacing: 10,
+                    runSpacing: 10,
                     children: [
+                      // Open Viewer
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: const Text('Open Document'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: _handleOpenViewer,
+                      ),
+                      // Open with...
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: const Text('Open with...'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.surfaceSecondary,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: _handleOpenWith,
+                      ),
+                      // System Share
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.share_rounded, size: 18),
+                        label: const Text('Share File'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.surfaceSecondary,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: _handleSystemShare,
+                      ),
+                      // Download
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.download_rounded, size: 18),
+                        label: const Text('Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.surfaceSecondary,
+                          foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: _handleDownload,
+                      ),
+                      // AI Assistant
                       ElevatedButton.icon(
                         icon: const Icon(Icons.psychology_outlined, size: 18, color: AppColors.primaryLight),
                         label: const Text('AI Assistant'),
@@ -650,30 +785,36 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                           backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                           foregroundColor: AppColors.primaryLight,
                           side: const BorderSide(color: AppColors.primaryLight),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                         ),
                         onPressed: () => AiMaterialSidePanel.showModal(context, material),
                       ),
+                      // Rename
                       ElevatedButton.icon(
                         icon: const Icon(Icons.edit_outlined, size: 18),
                         label: const Text('Rename'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.surfaceSecondary,
                           foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                         ),
                         onPressed: _handleRename,
                       ),
+                      // Move
                       ElevatedButton.icon(
                         icon: const Icon(Icons.drive_file_move_outlined, size: 18),
                         label: const Text('Move'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.surfaceSecondary,
                           foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                         ),
                         onPressed: _handleMove,
                       ),
+                      // Archive / Restore
                       ElevatedButton.icon(
                         icon: Icon(
                           material.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
@@ -683,9 +824,23 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.surfaceSecondary,
                           foregroundColor: AppColors.textPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                         ),
                         onPressed: _handleArchiveToggle,
+                      ),
+                      // Delete
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                        label: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error.withValues(alpha: 0.12),
+                          foregroundColor: AppColors.error,
+                          side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        ),
+                        onPressed: _handleDelete,
                       ),
                     ],
                   ),

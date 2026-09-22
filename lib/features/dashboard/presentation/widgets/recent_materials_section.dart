@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/features/dashboard/domain/models/dashboard_models.dart';
 
@@ -70,53 +71,57 @@ class RecentMaterialsSection extends StatelessWidget {
               ),
               itemBuilder: (context, index) {
                 final item = materials[index];
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceSecondary,
-                        borderRadius: AppRadius.chip,
+                return InkWell(
+                  onTap: () => context.push('/vault/material/${item.id}'),
+                  borderRadius: AppRadius.card,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceSecondary,
+                          borderRadius: AppRadius.chip,
+                        ),
+                        child: Icon(
+                          item.type.toUpperCase() == 'NOTE'
+                              ? Icons.edit_note_rounded
+                              : Icons.picture_as_pdf_outlined,
+                          size: 16,
+                          color: AppColors.primaryLight,
+                        ),
                       ),
-                      child: Icon(
-                        item.type.toUpperCase() == 'NOTE'
-                            ? Icons.edit_note_rounded
-                            : Icons.picture_as_pdf_outlined,
-                        size: 16,
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: AppColors.textPrimary,
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: AppTypography.body.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.formattedSubtitle,
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.textMuted,
-                              fontSize: 11,
+                            const SizedBox(height: 2),
+                            Text(
+                              item.formattedSubtitle,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),

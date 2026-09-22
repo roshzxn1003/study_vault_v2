@@ -12,8 +12,8 @@ final folderDetailsNameProvider = FutureProvider.family<String, String>((ref, fo
 });
 
 final folderContentProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, folderId) async {
-  final fileRepo = ref.read(fileRepositoryProvider);
-  final noteRepo = ref.read(noteRepositoryProvider);
+  final fileRepo = ref.watch(fileRepositoryProvider);
+  final noteRepo = ref.watch(noteRepositoryProvider);
   
   return {
     'files': await fileRepo.getFiles(folderId: folderId),

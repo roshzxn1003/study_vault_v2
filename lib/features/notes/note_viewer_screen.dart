@@ -45,11 +45,29 @@ class _NoteViewerScreenState extends ConsumerState<NoteViewerScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () async {
-              await ref.read(noteRepositoryProvider).deleteNote(widget.id);
-              ref.invalidate(allNotesProvider);
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-                context.pop();
+              Navigator.pop(ctx);
+              try {
+                await ref.read(noteRepositoryProvider).deleteNote(widget.id);
+                if (context.mounted) {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                  ref.invalidate(allNotesProvider);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Something went wrong: $e'),
+                      action: SnackBarAction(
+                        label: 'Retry',
+                        onPressed: () => _confirmDelete(context, title),
+                      ),
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.white)),

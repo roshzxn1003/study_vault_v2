@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/models.dart';
 
@@ -15,7 +16,9 @@ class SupabaseSharingDataSource {
         _client = Supabase.instance.client;
         return _client;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SupabaseSharingDataSource: Supabase not initialized or error: $e');
+    }
     return null;
   }
 

@@ -174,7 +174,9 @@ class AiOrchestrator {
         context = ContextBuilder.buildContextFromChunks(chunks);
         sources.addAll(chunks.map((c) => '${c.materialTitle} (p. ${c.pageNumber})'));
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: Failed to retrieve context for quiz ($topic): $e');
+    }
 
     final prompt = PromptEngine.buildQuizPrompt(
       topic: topic,
@@ -221,7 +223,9 @@ class AiOrchestrator {
       if (chunks.isNotEmpty) {
         context = ContextBuilder.buildContextFromChunks(chunks);
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: Failed to retrieve context for flashcards ($topic): $e');
+    }
 
     final prompt = PromptEngine.buildFlashcardsPrompt(
       topic: topic,
@@ -365,7 +369,9 @@ class AiOrchestrator {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) return user.id;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: Error resolving current user ID: $e');
+    }
     return 'guest';
   }
 
@@ -392,7 +398,9 @@ class AiOrchestrator {
         }
         if (list.isNotEmpty) return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: JSON parsing failed for quiz: $e');
+    }
 
     return [
       QuizQuestion(
@@ -426,7 +434,9 @@ class AiOrchestrator {
         }
         if (list.isNotEmpty) return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: JSON parsing failed for flashcards: $e');
+    }
 
     return [
       FlashcardItem(
@@ -451,7 +461,9 @@ class AiOrchestrator {
         }
         if (list.isNotEmpty) return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiOrchestrator: JSON parsing failed for study plan: $e');
+    }
 
     final list = <StudyPlanItem>[];
     for (int i = 1; i <= totalDays; i++) {

@@ -186,8 +186,8 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: AppEmptyState(
             icon: Icons.inbox_rounded,
-            title: 'Shared with me',
-            description: 'No materials have been shared with you yet. Connect with classmates or scan student QR codes to exchange notes.',
+            title: 'Nothing has been shared with you yet.',
+            description: 'Connect with classmates or scan student QR codes to exchange notes.',
             actionText: 'Search Students',
             onAction: () => StudentSearchSheet.show(context),
           ),

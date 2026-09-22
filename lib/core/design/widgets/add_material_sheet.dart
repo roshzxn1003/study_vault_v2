@@ -36,6 +36,7 @@ class AddMaterialSheet extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => AddMaterialSheet(
         subjectId: subjectId,
         folderId: folderId,
@@ -49,34 +50,39 @@ class AddMaterialSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uploadService = ref.read(materialUploadServiceProvider);
+    final maxHeight = MediaQuery.of(context).size.height * 0.85;
 
     return Container(
+      constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.only(
-        top: AppSpacing.md,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            top: AppSpacing.md,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
           ),
-          const SizedBox(height: AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
 
           // Header
           Row(
@@ -187,36 +193,86 @@ class AddMaterialSheet extends ConsumerWidget {
               );
             },
           ),
-
-          const SizedBox(height: AppSpacing.md),
-          const Divider(height: 1, color: AppColors.borderSubtle),
           const SizedBox(height: AppSpacing.sm),
 
-          // Storage Permission shortcut if needed
-          Center(
-            child: TextButton.icon(
-              icon: const Icon(Icons.security_rounded, size: 16, color: AppColors.textMuted),
-              label: Text(
-                'Verify Storage & File Permissions',
-                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+          // Action 5: Add Web Link / Online Resource
+          _buildActionTile(
+            context: context,
+            icon: Icons.link_rounded,
+            iconColor: const Color(0xFF8B5CF6),
+            iconBg: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+            title: 'Add Web Link',
+            subtitle: 'Online study guides, articles, references, or YouTube lectures',
+            badge: 'URL',
+            onTap: () {
+              Navigator.of(context).pop();
+              _showAddLinkDialog(context, uploadService);
+            },
+          ),
+        ],
+      ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddLinkDialog(BuildContext context, MaterialUploadService uploadService) {
+    final urlCtrl = TextEditingController();
+    final titleCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
+        title: Text('Add Web Link', style: AppTypography.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: urlCtrl,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'URL (https://...)',
+                hintText: 'https://example.com/study-notes',
               ),
-              onPressed: () async {
-                final granted = await PermissionUtils.requestFileStoragePermission(context: context);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        granted
-                            ? 'All file management permissions are active!'
-                            : 'Permissions are restricted in Android settings.',
-                      ),
-                      backgroundColor: granted ? AppColors.emerald : AppColors.amber,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
             ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Title (Optional)',
+                hintText: 'e.g. Unit 2 Reference Article',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlCtrl.text.trim();
+              if (url.isEmpty) return;
+              Navigator.pop(ctx);
+              await uploadService.addLinkMaterial(
+                context: context,
+                url: url,
+                title: titleCtrl.text.trim().isNotEmpty ? titleCtrl.text.trim() : url,
+                subjectId: subjectId,
+                folderId: folderId,
+                workspaceId: workspaceId,
+                academicPeriodId: academicPeriodId,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Link'),
           ),
         ],
       ),

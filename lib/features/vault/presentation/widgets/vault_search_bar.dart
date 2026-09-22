@@ -8,8 +8,9 @@ class VaultSearchBar extends StatefulWidget {
   final String hintText;
   final int activeFilterCount;
   final ValueChanged<String> onSearchChanged;
-  final VoidCallback onOpenFilters;
-  final VoidCallback onOpenSort;
+  final VoidCallback? onOpenFilters;
+  final VoidCallback? onOpenSort;
+  final bool showActionButtons;
 
   const VaultSearchBar({
     super.key,
@@ -17,8 +18,9 @@ class VaultSearchBar extends StatefulWidget {
     this.hintText = 'Search materials, subjects, folders...',
     this.activeFilterCount = 0,
     required this.onSearchChanged,
-    required this.onOpenFilters,
-    required this.onOpenSort,
+    this.onOpenFilters,
+    this.onOpenSort,
+    this.showActionButtons = false,
   });
 
   @override
@@ -65,47 +67,51 @@ class _VaultSearchBarState extends State<VaultSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final searchInput = Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.button,
+        border: AppBorders.allStandard,
+      ),
+      child: TextField(
+        controller: _controller,
+        onChanged: _onChanged,
+        style: AppTypography.body.copyWith(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+        ),
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          hintStyle: AppTypography.body.copyWith(
+            color: AppColors.textMuted,
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: AppColors.textMuted,
+          ),
+          suffixIcon: _controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
+                  onPressed: _clear,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      ),
+    );
+
+    if (!widget.showActionButtons || widget.onOpenFilters == null || widget.onOpenSort == null) {
+      return searchInput;
+    }
+
     return Row(
       children: [
         // Search Input
-        Expanded(
-          child: Container(
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppRadius.button,
-              border: AppBorders.allStandard,
-            ),
-            child: TextField(
-              controller: _controller,
-              onChanged: _onChanged,
-              style: AppTypography.body.copyWith(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-              decoration: InputDecoration(
-                hintText: widget.hintText,
-                hintStyle: AppTypography.body.copyWith(
-                  color: AppColors.textMuted,
-                  fontSize: 14,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  size: 20,
-                  color: AppColors.textMuted,
-                ),
-                suffixIcon: _controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
-                        onPressed: _clear,
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ),
+        Expanded(child: searchInput),
 
         const SizedBox(width: AppSpacing.sm),
 

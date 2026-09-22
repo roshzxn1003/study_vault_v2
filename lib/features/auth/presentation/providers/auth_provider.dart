@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/features/auth/data/repositories/supabase_auth_repository.dart';
@@ -59,7 +60,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
       if (user != null) {
         try {
           await LocalDbService.instance.clearUserData('guest');
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Auth clear guest data on Google signin note: $e');
+        }
         state = AuthControllerState(
           status: AuthStatus.authenticated,
           userId: user.id,
@@ -105,7 +108,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
       final user = _repository.getCurrentUser();
       try {
         await LocalDbService.instance.clearUserData('guest');
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Auth clear guest data on signIn note: $e');
+      }
       state = AuthControllerState(
         status: AuthStatus.authenticated,
         userId: user?.id,
@@ -139,7 +144,9 @@ class AuthController extends StateNotifier<AuthControllerState> {
       if (user != null) {
         try {
           await LocalDbService.instance.clearUserData('guest');
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Auth clear guest data on signUp note: $e');
+        }
         state = AuthControllerState(
           status: AuthStatus.authenticated,
           userId: user.id,
@@ -200,12 +207,18 @@ class AuthController extends StateNotifier<AuthControllerState> {
       if (userId != null && userId.isNotEmpty) {
         try {
           await LocalDbService.instance.clearUserData(userId);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Auth clear user data on signOut note: $e');
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Auth signOut user lookup note: $e');
+    }
     try {
       await _repository.signOut();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Auth repo signOut note: $e');
+    }
     state = const AuthControllerState(status: AuthStatus.unauthenticated);
   }
 

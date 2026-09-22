@@ -73,9 +73,26 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () async {
-              await ref.read(folderRepositoryProvider).deleteFolder(id);
-              ref.invalidate(foldersProvider);
-              if (ctx.mounted) Navigator.pop(ctx);
+              try {
+                await ref.read(folderRepositoryProvider).deleteFolder(id);
+                ref.invalidate(foldersProvider);
+                if (ctx.mounted) Navigator.pop(ctx);
+              } catch (e) {
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Something went wrong: $e'),
+                      action: SnackBarAction(
+                        label: 'Retry',
+                        onPressed: () => _confirmDeleteFolder(id, name),
+                      ),
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),

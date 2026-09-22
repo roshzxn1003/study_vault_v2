@@ -100,7 +100,9 @@ class HybridRetriever implements Retriever {
                 matchType: 'semantic',
               );
             }
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('HybridRetriever: Error computing cosine similarity for chunk $chunkId: $e');
+          }
         }
 
         // Keyword Term Frequency Scoring
@@ -240,7 +242,9 @@ class HybridRetriever implements Retriever {
         for (final r in shareRows) {
           materials[r['resource_id'] as String] = (r['title'] as String?) ?? 'Shared Material';
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('HybridRetriever: Error querying shared materials for user ${query.userId}: $e');
+      }
     }
 
     return materials;

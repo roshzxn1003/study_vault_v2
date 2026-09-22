@@ -68,10 +68,13 @@ class AppBottomNavigation extends StatelessWidget {
     if (MediaQuery.of(context).viewInsets.bottom > 0) {
       return const SizedBox.shrink();
     }
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 360;
+
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        padding: EdgeInsets.fromLTRB(isNarrow ? 8 : 16, 0, isNarrow ? 8 : 16, 8),
         child: Container(
           height: 62,
           decoration: BoxDecoration(
@@ -104,23 +107,29 @@ class AppBottomNavigation extends StatelessWidget {
                         children: [
                           Icon(
                             isSelected ? item.activeIcon : item.icon,
-                            size: 22,
+                            size: isNarrow ? 20 : 22,
                             color: isSelected
                                 ? AppColors.primaryLight
                                 : AppColors.textMuted,
                           ),
                           const SizedBox(height: 3),
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption.copyWith(
-                              fontSize: 11,
-                              fontWeight:
-                                  isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected
-                                  ? AppColors.primaryLight
-                                  : AppColors.textMuted,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: isNarrow ? 10 : 11,
+                                  fontWeight:
+                                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColors.primaryLight
+                                      : AppColors.textMuted,
+                                ),
+                              ),
                             ),
                           ),
                         ],

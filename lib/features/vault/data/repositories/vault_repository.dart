@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
@@ -300,7 +301,9 @@ class VaultRepository {
         final cnt = (r['cnt'] as num?)?.toInt() ?? 0;
         if (fId != null) matCountMap[fId] = cnt;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('VaultRepository: Error counting folder contents: $e');
+    }
 
     final subCountMap = <String, int>{};
     try {
@@ -315,7 +318,9 @@ class VaultRepository {
         final cnt = (r['cnt'] as num?)?.toInt() ?? 0;
         if (pId != null) subCountMap[pId] = cnt;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('VaultRepository: Error counting folder contents: $e');
+    }
 
     return rows.map((r) {
       final id = r['id'] as String;
@@ -1086,24 +1091,53 @@ class VaultRepository {
     );
   }
 
-  /// Bulk deletes selected materials with their label associations.
+  /// Bulk deletes selected materials with their label associations and enqueues outbox operations.
   Future<void> bulkDelete(List<String> ids) async {
     if (ids.isEmpty) return;
     final db = await _localDb.database;
+    final now = DateTime.now().toIso8601String();
     final placeholders = List.filled(ids.length, '?').join(',');
 
+    final rows = await db.query(
+      'materials',
+      columns: ['id', 'user_id', 'storage_path', 'file_path'],
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+
     await db.transaction((txn) async {
-      await txn.delete(
-        'material_labels',
-        where: 'material_id IN ($placeholders)',
-        whereArgs: ids,
-      );
-      await txn.delete(
+      await txn.update(
         'materials',
+        {'deleted_at': now, 'sync_status': 'pending'},
         where: 'id IN ($placeholders)',
         whereArgs: ids,
       );
+      await txn.update(
+        'material_labels',
+        {'deleted_at': now},
+        where: 'material_id IN ($placeholders)',
+        whereArgs: ids,
+      );
     });
+
+    for (final row in rows) {
+      final id = row['id'] as String;
+      final userId = row['user_id'] as String? ?? 'default_user';
+      final storagePath = row['storage_path'] as String?;
+      final filePath = row['file_path'] as String?;
+
+      final payload = <String, dynamic>{};
+      if (storagePath != null) payload['storage_path'] = storagePath;
+      if (filePath != null) payload['file_path'] = filePath;
+
+      await _outboxRepo.enqueue(
+        userId: userId,
+        entityType: 'material',
+        entityId: id,
+        operation: OutboxOperationType.delete,
+        payload: payload,
+      );
+    }
   }
 
   // ===========================================================================

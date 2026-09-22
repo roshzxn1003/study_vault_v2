@@ -263,7 +263,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                                       icon: const Icon(Icons.save_alt_rounded, color: AppColors.primaryLight),
                                       tooltip: 'Save Copy to My Vault',
                                       onPressed: () {
-                                        final dummyShare = ShareItem(
+                                        final shareItem = ShareItem(
                                           id: res.id,
                                           ownerId: res.sharedBy,
                                           ownerUsername: res.sharedByUsername,
@@ -272,7 +272,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
                                           permissions: res.permissions,
                                           createdAt: res.createdAt,
                                         );
-                                        SaveToVaultDialog.show(context, share: dummyShare);
+                                        SaveToVaultDialog.show(context, share: shareItem);
                                       },
                                     )
                                   : null,

@@ -10,6 +10,8 @@ import '../sharing/presentation/providers/sharing_providers.dart';
 import '../../core/database/local_db_service.dart';
 import '../auth/presentation/providers/auth_provider.dart';
 import '../onboarding/presentation/providers/onboarding_provider.dart';
+import '../academic/presentation/providers/academic_workspace_provider.dart';
+import '../vault/presentation/providers/vault_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -154,36 +156,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Quick Stats Grid
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.local_fire_department,
-                        color: AppColors.amber,
-                        title: '3 Days',
-                        subtitle: 'Study Streak',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.emoji_events,
-                        color: AppColors.emerald,
-                        title: 'Level 4',
-                        subtitle: '620 XP',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.timer,
-                        color: AppColors.cyan,
-                        title: '4.5 hrs',
-                        subtitle: 'This Week',
-                      ),
-                    ),
-                  ],
+                // Real Vault Stats Grid
+                Consumer(
+                  builder: (context, ref, _) {
+                    final academicState = ref.watch(academicWorkspaceProvider);
+                    final vaultState = ref.watch(vaultProvider);
+                    final subjectCount = academicState.subjects.length;
+                    final materialCount = vaultState.materials.length;
+                    final folderCount = vaultState.folders.length;
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.menu_book_rounded,
+                            color: AppColors.primary,
+                            title: '$subjectCount',
+                            subtitle: subjectCount == 1 ? 'Subject' : 'Subjects',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.description_outlined,
+                            color: AppColors.emerald,
+                            title: '$materialCount',
+                            subtitle: materialCount == 1 ? 'Material' : 'Materials',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.folder_outlined,
+                            color: AppColors.cyan,
+                            title: '$folderCount',
+                            subtitle: folderCount == 1 ? 'Folder' : 'Folders',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
 

@@ -476,13 +476,16 @@ class SyncEngine {
           ? (pageSizeRes.first.values.first as num?)?.toInt() ?? 4096
           : 4096;
       localDb = pageCount * pageSize;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SyncEngine localDb size calc error: $e');
+    }
 
     try {
       Directory baseDir;
       try {
         baseDir = await getApplicationDocumentsDirectory();
-      } catch (_) {
+      } catch (e) {
+        debugPrint('SyncEngine baseDir fallback: $e');
         baseDir = Directory(p.join(Directory.systemTemp.path, 'study_vault_test_docs'));
       }
       final materialsDir = Directory(p.join(baseDir.path, 'study_materials'));
@@ -493,7 +496,9 @@ class SyncEngine {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SyncEngine localFiles size calc error: $e');
+    }
 
     try {
       final db = await _localDb.database;
@@ -502,7 +507,9 @@ class SyncEngine {
         [userId],
       );
       cloudBytes = (res.first['total_size'] as num?)?.toInt() ?? 0;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SyncEngine cloudBytes size calc error: $e');
+    }
 
     return StorageUsage(
       localDbBytes: localDb,

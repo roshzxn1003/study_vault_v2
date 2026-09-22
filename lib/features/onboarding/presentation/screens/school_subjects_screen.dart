@@ -28,17 +28,6 @@ class _SchoolSubjectsScreenState extends ConsumerState<SchoolSubjectsScreen> {
   @override
   void initState() {
     super.initState();
-    // Default starter subjects for schools if empty
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = ref.read(onboardingProvider).schoolData?.subjects ?? [];
-      if (current.isEmpty) {
-        final notifier = ref.read(onboardingProvider.notifier);
-        notifier.addSubject(purpose: OnboardingPurpose.school, subjectName: 'Mathematics');
-        notifier.addSubject(purpose: OnboardingPurpose.school, subjectName: 'Physics');
-        notifier.addSubject(purpose: OnboardingPurpose.school, subjectName: 'Chemistry');
-        notifier.addSubject(purpose: OnboardingPurpose.school, subjectName: 'Computer Science');
-      }
-    });
   }
 
   @override

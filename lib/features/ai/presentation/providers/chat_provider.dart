@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/ai/llm_service.dart';
@@ -338,7 +339,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
         'sources': sources?.map((s) => s.toMap()).toString(),
         'created_at': DateTime.now().toIso8601String(),
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ChatNotifier: Failed to cache assistant message: $e');
+    }
   }
 
   void clearChat() {

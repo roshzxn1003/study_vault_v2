@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import '../../domain/models/models.dart';
+import 'material_action_sheet.dart';
 
 /// Clean academic material card for both list and grid view contexts.
 class MaterialCard extends StatelessWidget {
@@ -158,151 +159,25 @@ class MaterialCard extends StatelessWidget {
                     tooltip: material.isFavorite ? 'Remove from favorites' : 'Add to favorites',
                   ),
 
-                  // Context Menu
-                  PopupMenuButton<String>(
+                  // Context Menu replaced with responsive Action Sheet
+                  IconButton(
                     icon: const Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textMuted),
-                    color: AppColors.surface,
-                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
-                    onSelected: (val) {
-                      switch (val) {
-                        case 'share_student':
-                          onShareStudent?.call();
-                          break;
-                        case 'share_group':
-                          onShareGroup?.call();
-                          break;
-                        case 'create_pack':
-                          onCreatePack?.call();
-                          break;
-                        case 'open':
-                          onTap?.call();
-                          break;
-                        case 'rename':
-                          onRename?.call();
-                          break;
-                        case 'move':
-                          onMove?.call();
-                          break;
-                        case 'labels':
-                          onEditLabels?.call();
-                          break;
-                        case 'archive':
-                          onArchive?.call();
-                          break;
-                        case 'restore':
-                          onRestore?.call();
-                          break;
-                        case 'delete':
-                          onDelete?.call();
-                          break;
-                      }
+                    tooltip: 'Material actions',
+                    visualDensity: VisualDensity.compact,
+                    splashRadius: 18,
+                    onPressed: () {
+                      MaterialActionSheet.show(
+                        context: context,
+                        material: material,
+                        onRename: onRename,
+                        onMove: onMove,
+                        onEditLabels: onEditLabels,
+                        onToggleFavorite: onToggleFavorite,
+                        onArchive: onArchive,
+                        onRestore: onRestore,
+                        onDelete: onDelete,
+                      );
                     },
-                    itemBuilder: (ctx) => [
-                      const PopupMenuItem(
-                        value: 'share_student',
-                        child: Row(
-                          children: [
-                            Icon(Icons.person_add_alt_1_outlined, size: 18, color: AppColors.primaryLight),
-                            SizedBox(width: 8),
-                            Text('Share with Student'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'share_group',
-                        child: Row(
-                          children: [
-                            Icon(Icons.groups_outlined, size: 18, color: AppColors.primaryLight),
-                            SizedBox(width: 8),
-                            Text('Share to Group'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'create_pack',
-                        child: Row(
-                          children: [
-                            Icon(Icons.folder_zip_outlined, size: 18, color: Color(0xFF8B5CF6)),
-                            SizedBox(width: 8),
-                            Text('Add to Study Pack'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(
-                        value: 'open',
-                        child: Row(
-                          children: [
-                            Icon(Icons.visibility_outlined, size: 18, color: AppColors.textPrimary),
-                            SizedBox(width: 8),
-                            Text('Open / Details'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'rename',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
-                            SizedBox(width: 8),
-                            Text('Rename'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'move',
-                        child: Row(
-                          children: [
-                            Icon(Icons.drive_file_move_outlined, size: 18, color: AppColors.textPrimary),
-                            SizedBox(width: 8),
-                            Text('Move to...'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'labels',
-                        child: Row(
-                          children: [
-                            Icon(Icons.label_outline_rounded, size: 18, color: AppColors.textPrimary),
-                            SizedBox(width: 8),
-                            Text('Labels'),
-                          ],
-                        ),
-                      ),
-                      if (material.isArchived)
-                        const PopupMenuItem(
-                          value: 'restore',
-                          child: Row(
-                            children: [
-                              Icon(Icons.unarchive_outlined, size: 18, color: AppColors.textPrimary),
-                              SizedBox(width: 8),
-                              Text('Restore from Archive'),
-                            ],
-                          ),
-                        )
-                      else
-                        const PopupMenuItem(
-                          value: 'archive',
-                          child: Row(
-                            children: [
-                              Icon(Icons.archive_outlined, size: 18, color: AppColors.textPrimary),
-                              SizedBox(width: 8),
-                              Text('Archive'),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuDivider(),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                            const SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: AppColors.error)),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ],
@@ -310,22 +185,22 @@ class MaterialCard extends StatelessWidget {
 
             const SizedBox(height: AppSpacing.sm),
 
-            // Material Title
+            // Material Title (bold, wrapped safely)
             Text(
               material.title,
               style: AppTypography.subtitle.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
 
-            // Location Subtitle (Subject & Folder)
+            // Secondary metadata line: Type · Size · Location
             Text(
-              material.locationSubtitle,
+              '${material.type.label}${material.formattedFileSize.isNotEmpty ? ' · ${material.formattedFileSize}' : ''}${material.locationSubtitle.isNotEmpty ? ' · ${material.locationSubtitle}' : ''}',
               style: AppTypography.caption.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 12,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -32,7 +33,9 @@ final topicProgressProvider = FutureProvider<List<TopicStat>>((ref) async {
           incorrect: (r['incorrect'] as num?)?.toInt() ?? 0,
         )).toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Remote topic_progress query note: $e');
+    }
   }
 
   // 2. Query local SQLite flashcards/study data
@@ -58,7 +61,9 @@ final topicProgressProvider = FutureProvider<List<TopicStat>>((ref) async {
         );
       }).toList();
     }
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('Local flashcards topic query note: $e');
+  }
 
   return [];
 });

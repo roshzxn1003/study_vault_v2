@@ -42,6 +42,15 @@ class LocalDbService {
     );
   }
 
+  /// Safely executes an idempotent schema command, logging unexpected errors rather than silently swallowing them.
+  Future<void> _safeExecute(Database db, String sql) async {
+    try {
+      await db.execute(sql);
+    } catch (e) {
+      debugPrint('LocalDB schema update note: $e (query: $sql)');
+    }
+  }
+
   Future<void> _onCreate(Database db, int version) async {
     // Folders
     await db.execute('''
@@ -198,12 +207,8 @@ class LocalDbService {
           next_retry_at TEXT
         )
       ''');
-      try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_outbox_user_status ON outbox_operations(user_id, status)');
-      } catch (_) {}
-      try {
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_outbox_retry ON outbox_operations(status, next_retry_at)');
-      } catch (_) {}
+      await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_outbox_user_status ON outbox_operations(user_id, status)');
+      await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_outbox_retry ON outbox_operations(status, next_retry_at)');
 
       await db.execute('''
         CREATE TABLE IF NOT EXISTS sync_metadata (
@@ -225,12 +230,8 @@ class LocalDbService {
         'personal_topics',
       ];
       for (final tbl in tables) {
-        try {
-          await db.execute('ALTER TABLE $tbl ADD COLUMN deleted_at TEXT');
-        } catch (_) {}
-        try {
-          await db.execute('ALTER TABLE $tbl ADD COLUMN remote_updated_at TEXT');
-        } catch (_) {}
+        await _safeExecute(db, 'ALTER TABLE $tbl ADD COLUMN deleted_at TEXT');
+        await _safeExecute(db, 'ALTER TABLE $tbl ADD COLUMN remote_updated_at TEXT');
       }
     }
 
@@ -260,9 +261,7 @@ class LocalDbService {
         updated_at TEXT
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_student_profiles_username ON student_profiles(username)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_student_profiles_username ON student_profiles(username)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS shares (
@@ -284,11 +283,9 @@ class LocalDbService {
         sync_status TEXT DEFAULT 'synced'
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_owner ON shares(owner_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_recipient ON shares(recipient_id)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_shares_resource ON shares(resource_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_shares_owner ON shares(owner_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_shares_recipient ON shares(recipient_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_shares_resource ON shares(resource_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS study_groups (
@@ -302,9 +299,7 @@ class LocalDbService {
         updated_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_groups_owner ON study_groups(owner_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_study_groups_owner ON study_groups(owner_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS group_members (
@@ -320,9 +315,7 @@ class LocalDbService {
         UNIQUE(group_id, user_id)
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_group_members_group_user ON group_members(group_id, user_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_group_members_group_user ON group_members(group_id, user_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS group_resources (
@@ -339,9 +332,7 @@ class LocalDbService {
         UNIQUE(group_id, resource_id)
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_group_resources_group ON group_resources(group_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_group_resources_group ON group_resources(group_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS study_packs (
@@ -355,9 +346,7 @@ class LocalDbService {
         updated_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_packs_owner ON study_packs(owner_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_study_packs_owner ON study_packs(owner_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS study_pack_items (
@@ -370,9 +359,7 @@ class LocalDbService {
         UNIQUE(study_pack_id, material_id)
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_study_pack_items_pack ON study_pack_items(study_pack_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_study_pack_items_pack ON study_pack_items(study_pack_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS share_notifications (
@@ -387,9 +374,7 @@ class LocalDbService {
         created_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_share_notifications_user_read ON share_notifications(user_id, is_read)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_share_notifications_user_read ON share_notifications(user_id, is_read)');
   }
 
   Future<void> _createPhase11Tables(Database db) async {
@@ -413,15 +398,9 @@ class LocalDbService {
         updated_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_material ON document_chunks(user_id, material_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_ws ON document_chunks(user_id, workspace_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_subj ON document_chunks(user_id, subject_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_material ON document_chunks(user_id, material_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_ws ON document_chunks(user_id, workspace_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_doc_chunks_user_subj ON document_chunks(user_id, subject_id)');
 
     // Phase 11 AI Conversation Sessions
     await db.execute('''
@@ -437,9 +416,7 @@ class LocalDbService {
         updated_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_ai_conversations_user ON ai_conversations(user_id)');
 
     // Phase 11 AI Messages
     await db.execute('''
@@ -453,20 +430,12 @@ class LocalDbService {
         created_at TEXT NOT NULL
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)');
 
     // Material indexing status columns
-    try {
-      await db.execute("ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN indexing_error TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN indexed_at TEXT');
-    } catch (_) {}
+    await _safeExecute(db, "ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN indexing_error TEXT');
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN indexed_at TEXT');
 
     // AI Study Artifacts: Study Plans & Quizzes
     await db.execute('''
@@ -548,9 +517,7 @@ class LocalDbService {
         updated_at TEXT
       )
     ''');
-    try {
-      await db.execute('ALTER TABLE workspaces ADD COLUMN purpose TEXT');
-    } catch (_) {}
+    await _safeExecute(db, 'ALTER TABLE workspaces ADD COLUMN purpose TEXT');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS academic_structures (
@@ -608,44 +575,20 @@ class LocalDbService {
         updated_at TEXT
       )
     ''');
-    try {
-      await db.execute('ALTER TABLE academic_subjects ADD COLUMN academic_period_id TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE academic_subjects ADD COLUMN code TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE academic_subjects ADD COLUMN description TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE academic_subjects ADD COLUMN is_archived INTEGER DEFAULT 0');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE academic_subjects ADD COLUMN updated_at TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE files ADD COLUMN subject_id TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE notes ADD COLUMN subject_id TEXT');
-    } catch (_) {}
+    await _safeExecute(db, 'ALTER TABLE academic_subjects ADD COLUMN academic_period_id TEXT');
+    await _safeExecute(db, 'ALTER TABLE academic_subjects ADD COLUMN code TEXT');
+    await _safeExecute(db, 'ALTER TABLE academic_subjects ADD COLUMN description TEXT');
+    await _safeExecute(db, 'ALTER TABLE academic_subjects ADD COLUMN is_archived INTEGER DEFAULT 0');
+    await _safeExecute(db, 'ALTER TABLE academic_subjects ADD COLUMN updated_at TEXT');
+    await _safeExecute(db, 'ALTER TABLE files ADD COLUMN subject_id TEXT');
+    await _safeExecute(db, 'ALTER TABLE notes ADD COLUMN subject_id TEXT');
 
     // Phase 6: Folders enhancements
-    try {
-      await db.execute('ALTER TABLE folders ADD COLUMN workspace_id TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE folders ADD COLUMN academic_period_id TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE folders ADD COLUMN subject_id TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE folders ADD COLUMN order_index INTEGER DEFAULT 0');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE folders ADD COLUMN is_archived INTEGER DEFAULT 0');
-    } catch (_) {}
+    await _safeExecute(db, 'ALTER TABLE folders ADD COLUMN workspace_id TEXT');
+    await _safeExecute(db, 'ALTER TABLE folders ADD COLUMN academic_period_id TEXT');
+    await _safeExecute(db, 'ALTER TABLE folders ADD COLUMN subject_id TEXT');
+    await _safeExecute(db, 'ALTER TABLE folders ADD COLUMN order_index INTEGER DEFAULT 0');
+    await _safeExecute(db, 'ALTER TABLE folders ADD COLUMN is_archived INTEGER DEFAULT 0');
 
     // Phase 6: Materials library
     await db.execute('''
@@ -705,54 +648,22 @@ class LocalDbService {
     ''');
 
     // Phase 7: Universal Import & Inbox support
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN is_inbox INTEGER DEFAULT 0');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN source TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN import_status TEXT DEFAULT "imported"');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN content_hash TEXT');
-    } catch (_) {}
-    try {
-      await db.execute("ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN indexing_error TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('ALTER TABLE materials ADD COLUMN indexed_at TEXT');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_inbox ON materials(user_id, is_inbox)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_hash ON materials(content_hash)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_ws ON materials(user_id, workspace_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_subj ON materials(user_id, subject_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_folder ON materials(user_id, folder_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_materials_user_period ON materials(user_id, academic_period_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_folders_user_parent ON folders(user_id, parent_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_subjects_user_period ON academic_subjects(user_id, academic_period_id)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_periods_user_year ON academic_periods(user_id, academic_year_id)');
-    } catch (_) {}
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN is_inbox INTEGER DEFAULT 0');
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN source TEXT');
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN import_status TEXT DEFAULT "imported"');
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN content_hash TEXT');
+    await _safeExecute(db, "ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN indexing_error TEXT');
+    await _safeExecute(db, 'ALTER TABLE materials ADD COLUMN indexed_at TEXT');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_user_inbox ON materials(user_id, is_inbox)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_hash ON materials(content_hash)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_user_ws ON materials(user_id, workspace_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_user_subj ON materials(user_id, subject_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_user_folder ON materials(user_id, folder_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_materials_user_period ON materials(user_id, academic_period_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_folders_user_parent ON folders(user_id, parent_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_subjects_user_period ON academic_subjects(user_id, academic_period_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_periods_user_year ON academic_periods(user_id, academic_year_id)');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS personal_topics (
@@ -768,20 +679,18 @@ class LocalDbService {
     ''');
 
     // Safe migration from legacy files and notes into materials if not already present
-    try {
-      await db.execute('''
-        INSERT OR IGNORE INTO materials (
-          id, user_id, subject_id, folder_id, title, original_file_name, type, storage_path, mime_type, file_size, created_at, updated_at, sync_status
-        )
-        SELECT id, user_id, subject_id, folder_id, name, name, 'PDF', storage_path, mime_type, file_size, created_at, updated_at, sync_status FROM files;
-      ''');
-      await db.execute('''
-        INSERT OR IGNORE INTO materials (
-          id, user_id, subject_id, folder_id, title, original_file_name, type, content, created_at, updated_at, sync_status
-        )
-        SELECT id, user_id, subject_id, folder_id, title, title, 'NOTE', content, created_at, updated_at, sync_status FROM notes;
-      ''');
-    } catch (_) {}
+    await _safeExecute(db, '''
+      INSERT OR IGNORE INTO materials (
+        id, user_id, subject_id, folder_id, title, original_file_name, type, storage_path, mime_type, file_size, created_at, updated_at, sync_status
+      )
+      SELECT id, user_id, subject_id, folder_id, name, name, 'PDF', storage_path, mime_type, file_size, created_at, updated_at, sync_status FROM files;
+    ''');
+    await _safeExecute(db, '''
+      INSERT OR IGNORE INTO materials (
+        id, user_id, subject_id, folder_id, title, original_file_name, type, content, created_at, updated_at, sync_status
+      )
+      SELECT id, user_id, subject_id, folder_id, title, title, 'NOTE', content, created_at, updated_at, sync_status FROM notes;
+    ''');
 
     // Phase 8: Outbox pattern for reliable offline-first sync
     await db.execute('''
@@ -800,12 +709,8 @@ class LocalDbService {
         next_retry_at TEXT
       )
     ''');
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_outbox_user_status ON outbox_operations(user_id, status)');
-    } catch (_) {}
-    try {
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_outbox_retry ON outbox_operations(status, next_retry_at)');
-    } catch (_) {}
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_outbox_user_status ON outbox_operations(user_id, status)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_outbox_retry ON outbox_operations(status, next_retry_at)');
 
     // Phase 8: Sync Metadata
     await db.execute('''
@@ -828,12 +733,8 @@ class LocalDbService {
       'personal_topics',
     ];
     for (final tbl in synchronizableTables) {
-      try {
-        await db.execute('ALTER TABLE $tbl ADD COLUMN deleted_at TEXT');
-      } catch (_) {}
-      try {
-        await db.execute('ALTER TABLE $tbl ADD COLUMN remote_updated_at TEXT');
-      } catch (_) {}
+      await _safeExecute(db, 'ALTER TABLE $tbl ADD COLUMN deleted_at TEXT');
+      await _safeExecute(db, 'ALTER TABLE $tbl ADD COLUMN remote_updated_at TEXT');
     }
 
     // Ensure Phase 11 AI & RAG tables exist
@@ -845,7 +746,9 @@ class LocalDbService {
       await db.delete('files', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1')");
       await db.delete('notes', where: "id IN ('note_acid', 'note_deadlock', 'note_tcp')");
       await db.delete('materials', where: "id IN ('file_dbms_1', 'file_dbms_2', 'file_os_1', 'file_cn_1', 'note_acid', 'note_deadlock', 'note_tcp')");
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Legacy cleanup note: $e');
+    }
   }
 
   /// Securely purges all user-scoped records from local storage on logout/account switch.

@@ -445,7 +445,9 @@ Return ONLY a valid JSON array matching this exact format with NO markdown fence
       final cleaned = res.answer.replaceAll('```json', '').replaceAll('```', '').trim();
       final parsed = _parseQuizJson(cleaned);
       if (parsed.isNotEmpty) return parsed;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('LlmServiceImpl: Error generating or parsing quiz: $e');
+    }
 
     return _fallbackQuiz(topic);
   }
@@ -484,7 +486,9 @@ A: [Precise Answer / Definitive Explanation]
         }
       }
       if (cards.isNotEmpty) return cards;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('LlmServiceImpl: Error generating flashcards: $e');
+    }
 
     return _fallbackFlashcards(topic);
   }
@@ -555,7 +559,9 @@ Return ONLY a valid JSON array formatted like:
       final cleaned = res.answer.replaceAll('```json', '').replaceAll('```', '').trim();
       final parsed = _parseMilestonesJson(cleaned);
       if (parsed.isNotEmpty) return parsed;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('LlmServiceImpl: Error generating study plan milestones: $e');
+    }
 
     return _fallbackExamPlan(subject, topics, days);
   }
@@ -591,7 +597,9 @@ ${context.isNotEmpty ? "#### Grounded Context from Vault:\n$context\n\n" : ""}
         }
         if (list.isNotEmpty) return list;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('LlmServiceImpl: JSON parse failed for quiz: $e');
+    }
 
     // Regex fallback if LLM gave loose JSON
     try {
@@ -619,7 +627,8 @@ ${context.isNotEmpty ? "#### Grounded Context from Vault:\n$context\n\n" : ""}
         }
       }
       return results;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LlmServiceImpl: Regex fallback failed for quiz: $e');
       return [];
     }
   }
@@ -630,7 +639,9 @@ ${context.isNotEmpty ? "#### Grounded Context from Vault:\n$context\n\n" : ""}
       if (decoded is List) {
         return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('LlmServiceImpl: JSON parse failed for milestones: $e');
+    }
 
     try {
       final List<Map<String, dynamic>> list = [];
@@ -648,7 +659,8 @@ ${context.isNotEmpty ? "#### Grounded Context from Vault:\n$context\n\n" : ""}
         }
       }
       return list;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LlmServiceImpl: Regex fallback failed for milestones: $e');
       return [];
     }
   }

@@ -14,18 +14,10 @@ class PermissionUtils {
     }
 
     try {
-      // 1. Check if MANAGE_EXTERNAL_STORAGE is already granted (Android 11+)
-      if (await Permission.manageExternalStorage.isGranted) {
-        return true;
-      }
-
-      // 2. Try requesting manageExternalStorage for complete filesystem access
-      final manageStatus = await Permission.manageExternalStorage.request();
-      if (manageStatus.isGranted) {
-        return true;
-      }
-
-      // 3. Fallback: Request standard storage and media permissions
+      // On Android 13+ (API 33+), use granular media permissions.
+      // On Android 10-12, use scoped storage (READ_EXTERNAL_STORAGE with maxSdkVersion).
+      // The file_picker plugin uses SAF (Storage Access Framework) and does NOT
+      // require MANAGE_EXTERNAL_STORAGE for most operations.
       final statuses = await [
         Permission.storage,
         Permission.photos,
@@ -41,9 +33,8 @@ class PermissionUtils {
         return true;
       }
 
-      // 4. If permissions are permanently denied, guide the user via dialog if context is available
-      final isPermanentlyDenied = statuses[Permission.storage]?.isPermanentlyDenied == true ||
-          manageStatus.isPermanentlyDenied;
+      // If permissions are permanently denied, guide the user via dialog if context is available
+      final isPermanentlyDenied = statuses[Permission.storage]?.isPermanentlyDenied == true;
 
       if (isPermanentlyDenied && context != null && context.mounted) {
         await showPermissionRationaleDialog(

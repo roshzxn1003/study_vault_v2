@@ -50,10 +50,54 @@ class FileRepository {
     final results = await db.query('files', where: 'id = ?', whereArgs: [id]);
     if (results.isNotEmpty) return results.first;
 
+    // Phase 6 unified materials table lookup
+    try {
+      final matResults = await db.query('materials', where: 'id = ?', whereArgs: [id]);
+      if (matResults.isNotEmpty) {
+        final m = matResults.first;
+        return {
+          'id': m['id'],
+          'name': m['title'] ?? m['original_file_name'] ?? 'Material',
+          'file_type': m['type'] ?? 'PDF',
+          'storage_path': (m['file_path'] != null && (m['file_path'] as String).isNotEmpty)
+              ? m['file_path']
+              : (m['storage_path'] ?? m['remote_url'] ?? ''),
+          'folder_id': m['folder_id'],
+          'file_size': m['file_size'] ?? 0,
+          'mime_type': m['mime_type'],
+          'created_at': m['created_at'],
+          'updated_at': m['updated_at'],
+          'remote_url': m['remote_url'],
+          'content': m['content'],
+        };
+      }
+    } catch (e) {
+      debugPrint('FileRepository: Local materials query error: $e');
+    }
+
     try {
       final user = _supabase.auth.currentUser;
       if (user != null) {
-        return await _supabase.from('files').select().eq('id', id).single();
+        try {
+          return await _supabase.from('files').select().eq('id', id).single();
+        } catch (_) {}
+
+        final remoteMat = await _supabase.from('materials').select().eq('id', id).single();
+        return {
+          'id': remoteMat['id'],
+          'name': remoteMat['title'] ?? remoteMat['original_file_name'] ?? 'Material',
+          'file_type': remoteMat['type'] ?? 'PDF',
+          'storage_path': (remoteMat['file_path'] != null && (remoteMat['file_path'] as String).isNotEmpty)
+              ? remoteMat['file_path']
+              : (remoteMat['storage_path'] ?? remoteMat['remote_url'] ?? ''),
+          'folder_id': remoteMat['folder_id'],
+          'file_size': remoteMat['file_size'] ?? 0,
+          'mime_type': remoteMat['mime_type'],
+          'created_at': remoteMat['created_at'],
+          'updated_at': remoteMat['updated_at'],
+          'remote_url': remoteMat['remote_url'],
+          'content': remoteMat['content'],
+        };
       }
     } catch (e) {
       debugPrint('Error getting file by id: $e');
@@ -106,22 +150,31 @@ class FileRepository {
   Future<void> deleteFile(String id, String storagePath) async {
     final db = await _localDb.database;
     await db.delete('files', where: 'id = ?', whereArgs: [id]);
+    await db.delete('materials', where: 'id = ?', whereArgs: [id]);
 
     final user = _supabase.auth.currentUser;
     if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
       try {
-        await _supabase.storage.from('study_materials').remove([storagePath]);
+        if (storagePath.isNotEmpty && !storagePath.startsWith('/')) {
+          await _supabase.storage.from('study_materials').remove([storagePath]);
+        }
         await _supabase.from('files').delete().eq('id', id);
+        await _supabase.from('materials').delete().eq('id', id);
       } catch (e) {
         debugPrint('Remote file delete failed: $e');
       }
     }
   }
 
-  String getAuthenticatedUrl(String storagePath) {
+  Future<String> getAuthenticatedUrl(String storagePath) async {
+    if (storagePath.isEmpty) return '';
+    if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+      return storagePath;
+    }
     try {
-      return _supabase.storage.from('study_materials').getPublicUrl(storagePath);
-    } catch (_) {
+      return await _supabase.storage.from('study_materials').createSignedUrl(storagePath, 3600);
+    } catch (e) {
+      debugPrint('FileRepository: Failed to create signed URL for $storagePath: $e');
       return storagePath;
     }
   }

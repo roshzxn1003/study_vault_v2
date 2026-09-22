@@ -322,13 +322,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           children: [
             Column(
               children: [
-                // Top Header: Title & Actions
+                // 1. Top Header: Title & Ingestion Action
                 Padding(
                   padding: const EdgeInsets.only(
                     left: AppSpacing.md,
                     right: AppSpacing.md,
                     top: AppSpacing.md,
-                    bottom: AppSpacing.sm,
+                    bottom: AppSpacing.xs,
                   ),
                   child: Row(
                     children: [
@@ -350,59 +350,28 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       ),
                       const Spacer(),
 
-                      // Add Material (Ingestion)
+                      // Add Material quick button
                       IconButton(
                         icon: const Icon(Icons.add_rounded, color: AppColors.primaryLight, size: 24),
                         onPressed: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
                         tooltip: 'Add Material',
                       ),
-
-                      // Grid / List Toggle
-                      IconButton(
-                        icon: Icon(
-                          state.isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
-                          color: AppColors.textSecondary,
-                          size: 22,
-                        ),
-                        onPressed: notifier.toggleViewMode,
-                        tooltip: state.isGridView ? 'Switch to list view' : 'Switch to grid view',
-                      ),
-
-                      // Bulk Select Mode Toggle
-                      TextButton.icon(
-                        icon: Icon(
-                          state.isBulkSelectionMode ? Icons.check_circle_rounded : Icons.checklist_rounded,
-                          size: 18,
-                          color: state.isBulkSelectionMode ? AppColors.primaryLight : AppColors.textSecondary,
-                        ),
-                        label: Text(
-                          state.isBulkSelectionMode ? 'Cancel' : 'Select',
-                          style: AppTypography.caption.copyWith(
-                            color: state.isBulkSelectionMode ? AppColors.primaryLight : AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: notifier.toggleBulkMode,
-                      ),
                     ],
                   ),
                 ),
 
-                // Search Bar + Filter & Sort triggers
+                // 2. Search Bar (Full Width)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
                   child: VaultSearchBar(
                     initialQuery: state.searchQuery,
-                    activeFilterCount: state.filter.activeFilterCount,
                     onSearchChanged: notifier.setSearchQuery,
-                    onOpenFilters: () => _handleOpenFilters(context, state),
-                    onOpenSort: () => _handleOpenSort(context, state),
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
 
-                // Top-Level Tabs: All, Recent, Favorites, Folders, Archive
+                // 3. Top-Level Tabs: All, Recent, Favorites, Folders, Archive
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -430,7 +399,128 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
+
+                // 4. Secondary Action Row: Filter, Sort, View Mode, Select
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
+                  child: Row(
+                    children: [
+                      // Filter action button
+                      InkWell(
+                        onTap: () => _handleOpenFilters(context, state),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: state.filter.activeFilterCount > 0
+                                ? AppColors.primary.withValues(alpha: 0.15)
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: state.filter.activeFilterCount > 0
+                                  ? AppColors.primaryLight
+                                  : AppColors.cardBorder,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.filter_list_rounded,
+                                size: 16,
+                                color: state.filter.activeFilterCount > 0
+                                    ? AppColors.primaryLight
+                                    : AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                state.filter.activeFilterCount > 0
+                                    ? 'Filter (${state.filter.activeFilterCount})'
+                                    : 'Filter',
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: state.filter.activeFilterCount > 0
+                                      ? AppColors.primaryLight
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Sort action button
+                      InkWell(
+                        onTap: () => _handleOpenSort(context, state),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.swap_vert_rounded,
+                                size: 16,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                state.sortOption.label,
+                                style: AppTypography.caption.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Grid / List Toggle
+                      IconButton(
+                        icon: Icon(
+                          state.isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: notifier.toggleViewMode,
+                        tooltip: state.isGridView ? 'Switch to list view' : 'Switch to grid view',
+                      ),
+
+                      // Bulk Select Mode Toggle
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                        icon: Icon(
+                          state.isBulkSelectionMode ? Icons.check_circle_rounded : Icons.checklist_rounded,
+                          size: 16,
+                          color: state.isBulkSelectionMode ? AppColors.primaryLight : AppColors.textSecondary,
+                        ),
+                        label: Text(
+                          state.isBulkSelectionMode ? 'Cancel' : 'Select',
+                          style: AppTypography.caption.copyWith(
+                            color: state.isBulkSelectionMode ? AppColors.primaryLight : AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: notifier.toggleBulkMode,
+                      ),
+                    ],
+                  ),
+                ),
+
                 const Divider(height: 1, color: AppColors.borderSubtle),
 
                 // Folders Sub-Bar (When on Folders Tab)
@@ -531,7 +621,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           return Center(
             child: AppEmptyState(
               icon: Icons.folder_open_rounded,
-              title: 'Your Vault is empty',
+              title: 'No materials yet',
               description: 'Materials you add will appear here in your central library.',
               actionText: 'Add Material',
               onAction: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),

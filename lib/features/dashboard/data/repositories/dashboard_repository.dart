@@ -39,7 +39,9 @@ class DashboardRepository {
           }
           return result;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Dashboard materials count query note: $e');
+      }
 
       // Count matching files
       try {
@@ -105,7 +107,9 @@ class DashboardRepository {
           final name = s['name'] as String?;
           if (id != null && name != null) subjectMap[id] = name;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Dashboard subjects query note: $e');
+      }
 
       // Query recent materials (Phase 6 & 7)
       try {

@@ -39,6 +39,21 @@ enum VaultMaterialType {
     required this.color,
   });
 
+  String get fileExtension {
+    switch (this) {
+      case VaultMaterialType.pdf:
+        return 'pdf';
+      case VaultMaterialType.image:
+        return 'jpg';
+      case VaultMaterialType.note:
+        return 'txt';
+      case VaultMaterialType.document:
+        return 'pdf';
+      case VaultMaterialType.link:
+        return 'html';
+    }
+  }
+
   static VaultMaterialType fromString(String? value) {
     if (value == null) return VaultMaterialType.document;
     final normalized = value.trim().toUpperCase();
