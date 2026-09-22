@@ -318,18 +318,21 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'subject_add_material_fab',
-        onPressed: () => AddMaterialSheet.show(
-          context,
-          subjectId: widget.subjectId,
-          folderId: subState.currentFolderId,
-          destinationLabel: subjectName,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: FloatingActionButton.extended(
+          heroTag: 'subject_add_material_fab',
+          onPressed: () => AddMaterialSheet.show(
+            context,
+            subjectId: widget.subjectId,
+            folderId: subState.currentFolderId,
+            destinationLabel: subjectName,
+          ),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Add Material'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
         ),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Material'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: Stack(
@@ -399,6 +402,61 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   ),
                                 ),
                               ],
+                              const SizedBox(height: AppSpacing.sm),
+                              // AI Tutor & Study Quick Actions
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primaryLight,
+                                        side: const BorderSide(color: AppColors.primaryLight),
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                                      ),
+                                      icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                                      label: Text('Ask AI about $subjectName', maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      onPressed: () {
+                                        context.push('/ai?subject=${Uri.encodeComponent(subjectName)}');
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    ActionChip(
+                                      avatar: const Icon(Icons.style_rounded, size: 14, color: AppColors.emerald),
+                                      label: const Text('Flashcards'),
+                                      onPressed: () => context.push('/study/flashcards/$subjectName'),
+                                      backgroundColor: AppColors.surfaceSecondary,
+                                      side: const BorderSide(color: AppColors.borderSubtle),
+                                      labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    ActionChip(
+                                      avatar: const Icon(Icons.quiz_rounded, size: 14, color: AppColors.amber),
+                                      label: const Text('Practice Quiz'),
+                                      onPressed: () => context.push('/study/quiz/$subjectName'),
+                                      backgroundColor: AppColors.surfaceSecondary,
+                                      side: const BorderSide(color: AppColors.borderSubtle),
+                                      labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    ActionChip(
+                                      avatar: const Icon(Icons.psychology_rounded, size: 14, color: AppColors.cyan),
+                                      label: const Text('Socratic Tutor'),
+                                      onPressed: () => context.push('/study/learn/$subjectName'),
+                                      backgroundColor: AppColors.surfaceSecondary,
+                                      side: const BorderSide(color: AppColors.borderSubtle),
+                                      labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),

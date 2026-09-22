@@ -14,6 +14,23 @@ import 'package:study_vault/features/sharing/presentation/screens/create_study_p
 import 'package:study_vault/features/sharing/presentation/screens/study_pack_detail_screen.dart';
 import 'package:study_vault/features/sharing/presentation/screens/privacy_sharing_settings_screen.dart';
 
+/// Custom FAB location ensuring buttons in sub-tabs float comfortably above the bottom navigation bar.
+class FloatingAboveNavLocation extends FloatingActionButtonLocation {
+  final double bottomClearance;
+  const FloatingAboveNavLocation({this.bottomClearance = 100.0});
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final double fabX = scaffoldGeometry.scaffoldSize.width -
+        scaffoldGeometry.floatingActionButtonSize.width -
+        20.0;
+    final double fabY = scaffoldGeometry.scaffoldSize.height -
+        scaffoldGeometry.floatingActionButtonSize.height -
+        bottomClearance;
+    return Offset(fabX, fabY);
+  }
+}
+
 /// Phase 9: Student Sharing, Study Groups, Study Packs, and Collaboration Suite.
 class SharedScreen extends ConsumerStatefulWidget {
   const SharedScreen({super.key});
@@ -24,11 +41,12 @@ class SharedScreen extends ConsumerStatefulWidget {
 
 class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _groupsSubTab = 0; // 0: Study Groups, 1: Study Packs
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -73,6 +91,24 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
     }
   }
 
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollCtrl) => _buildNotificationsSheetContent(scrollCtrl),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final unreadNotifs = ref.watch(shareNotificationsProvider).unreadCount;
@@ -93,7 +129,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
           },
         ),
         title: Text(
-          'Student Sharing & Groups',
+          'Shared & Collaboration',
           style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
         ),
         actions: [
@@ -107,6 +143,35 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
             tooltip: 'My Study Vault QR',
             onPressed: () => QrDiscoveryModal.show(context),
           ),
+          // Notification Bell
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                tooltip: 'Sharing Notifications',
+                onPressed: () => _showNotificationsSheet(context),
+              ),
+              if (unreadNotifs > 0)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      unreadNotifs > 9 ? '9+' : '$unreadNotifs',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.shield_outlined, color: AppColors.textPrimary),
             tooltip: 'Privacy & Sharing Settings',
@@ -119,39 +184,14 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
           indicatorColor: AppColors.primaryLight,
           labelColor: AppColors.primaryLight,
           unselectedLabelColor: AppColors.textMuted,
           labelStyle: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600, fontSize: 13),
-          tabs: [
-            const Tab(text: 'Shared with me'),
-            const Tab(text: 'Shared by me'),
-            const Tab(text: 'Study Groups'),
-            const Tab(text: 'Study Packs'),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Notifications'),
-                  if (unreadNotifs > 0) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$unreadNotifs',
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          tabs: const [
+            Tab(text: 'Shared With Me'),
+            Tab(text: 'Shared By Me'),
+            Tab(text: 'Groups'),
           ],
         ),
       ),
@@ -161,9 +201,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
           children: [
             _buildSharedWithMeTab(),
             _buildSharedByMeTab(),
-            _buildGroupsTab(),
-            _buildStudyPacksTab(),
-            _buildNotificationsTab(),
+            _buildUnifiedGroupsTab(),
           ],
         ),
       ),
@@ -198,7 +236,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
     return RefreshIndicator(
       onRefresh: () => ref.read(sharedWithMeProvider.notifier).loadItems(),
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
         itemCount: state.items.length,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
         itemBuilder: (ctx, index) {
@@ -294,7 +332,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           ),
                           icon: const Icon(Icons.save_alt_rounded, size: 16),
-                          label: const Text('Save Copy'),
+                          label: const Text('Save to Library'),
                           onPressed: () => SaveToVaultDialog.show(context, share: item),
                         ),
                       ],
@@ -342,7 +380,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
     return RefreshIndicator(
       onRefresh: () => ref.read(sharedByMeProvider.notifier).loadItems(),
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
         itemCount: state.items.length,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
         itemBuilder: (ctx, index) {
@@ -420,13 +458,122 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
   }
 
   // ===========================================================================
-  // TAB 3: STUDY GROUPS
+  // TAB 3: UNIFIED GROUPS & PACKS
+  // ===========================================================================
+  Widget _buildUnifiedGroupsTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _groupsSubTab = 0),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _groupsSubTab == 0 ? AppColors.surface : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: _groupsSubTab == 0
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.groups_rounded,
+                            size: 16,
+                            color: _groupsSubTab == 0 ? AppColors.primaryLight : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Study Groups',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: _groupsSubTab == 0 ? FontWeight.bold : FontWeight.normal,
+                              color: _groupsSubTab == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _groupsSubTab = 1),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _groupsSubTab == 1 ? AppColors.surface : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: _groupsSubTab == 1
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.folder_zip_outlined,
+                            size: 16,
+                            color: _groupsSubTab == 1 ? AppColors.primaryLight : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Study Packs',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: _groupsSubTab == 1 ? FontWeight.bold : FontWeight.normal,
+                              color: _groupsSubTab == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: _groupsSubTab == 0 ? _buildGroupsTab() : _buildStudyPacksTab(),
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // SUB-VIEW: STUDY GROUPS
   // ===========================================================================
   Widget _buildGroupsTab() {
     final groupsState = ref.watch(studyGroupsProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      floatingActionButtonLocation: const FloatingAboveNavLocation(),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryLight,
         foregroundColor: Colors.white,
@@ -452,7 +599,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
               : RefreshIndicator(
                   onRefresh: () => ref.read(studyGroupsProvider.notifier).loadGroups(),
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
                     itemCount: groupsState.groups.length,
                     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (ctx, index) {
@@ -519,6 +666,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      floatingActionButtonLocation: const FloatingAboveNavLocation(),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF8B5CF6),
         foregroundColor: Colors.white,
@@ -552,7 +700,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
               : RefreshIndicator(
                   onRefresh: () => ref.read(studyPacksProvider.notifier).loadPacks(),
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
                     itemCount: packsState.packs.length,
                     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (ctx, index) {
@@ -611,105 +759,77 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
     );
   }
 
-  // ===========================================================================
-  // TAB 5: NOTIFICATIONS
-  // ===========================================================================
-  Widget _buildNotificationsTab() {
+  Widget _buildNotificationsSheetContent(ScrollController scrollCtrl) {
     final notifsState = ref.watch(shareNotificationsProvider);
     final notifsNotifier = ref.read(shareNotificationsProvider.notifier);
-
-    if (notifsState.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryLight));
-    }
-
-    if (notifsState.notifications.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: AppEmptyState(
-            icon: Icons.notifications_none_rounded,
-            title: 'You\'re all caught up',
-            description: 'No new sharing alerts or group invitations at this moment.',
-          ),
-        ),
-      );
-    }
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Recent Collaboration Alerts',
-                style: AppTypography.caption.copyWith(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                'Sharing Notifications',
+                style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold),
               ),
-              TextButton(
-                onPressed: () => notifsNotifier.markAllAsRead(),
-                child: const Text('Mark all as read', style: TextStyle(fontSize: 12)),
-              ),
+              if (notifsState.notifications.isNotEmpty)
+                TextButton(
+                  onPressed: () => notifsNotifier.markAllAsRead(),
+                  child: const Text('Mark all as read', style: TextStyle(fontSize: 12)),
+                ),
             ],
           ),
         ),
+        const AppDivider(),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () => notifsNotifier.loadNotifications(),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              itemCount: notifsState.notifications.length,
-              separatorBuilder: (_, _) => const AppDivider(),
-              itemBuilder: (ctx, index) {
-                final notif = notifsState.notifications[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: notif.type.color.withValues(alpha: 0.15),
-                    child: Icon(notif.type.icon, color: notif.type.color, size: 20),
+          child: notifsState.notifications.isEmpty
+              ? Center(
+                  child: AppEmptyState(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'No notifications',
+                    description: 'You have no pending sharing notifications.',
                   ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notif.title,
-                          style: AppTypography.body.copyWith(
-                            fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
-                          ),
+                )
+              : ListView.separated(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  itemCount: notifsState.notifications.length,
+                  separatorBuilder: (_, _) => const AppDivider(),
+                  itemBuilder: (ctx, index) {
+                    final notif = notifsState.notifications[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: notif.type.color.withValues(alpha: 0.15),
+                        child: Icon(notif.type.icon, color: notif.type.color, size: 20),
+                      ),
+                      title: Text(
+                        notif.title,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
                         ),
                       ),
-                      if (!notif.isRead)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryLight,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(notif.message, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                      const SizedBox(height: 2),
-                      Text(notif.relativeTime, style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11)),
-                    ],
-                  ),
-                  onTap: () {
-                    notifsNotifier.markAsRead(notif.id);
-                    if (notif.type == ShareNotificationType.materialShared) {
-                      _tabController.animateTo(0);
-                    } else if (notif.type == ShareNotificationType.groupInvitation) {
-                      _tabController.animateTo(2);
-                    } else if (notif.type == ShareNotificationType.packShared) {
-                      _tabController.animateTo(3);
-                    }
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(notif.message, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                          const SizedBox(height: 2),
+                          Text(notif.relativeTime, style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11)),
+                        ],
+                      ),
+                      onTap: () {
+                        notifsNotifier.markAsRead(notif.id);
+                        Navigator.pop(ctx);
+                        if (notif.type == ShareNotificationType.materialShared) {
+                          _tabController.animateTo(0);
+                        } else {
+                          _tabController.animateTo(2);
+                        }
+                      },
+                    );
                   },
-                );
-              },
-            ),
-          ),
+                ),
         ),
       ],
     );

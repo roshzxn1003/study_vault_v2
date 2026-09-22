@@ -21,6 +21,8 @@ import '../widgets/vault_search_bar.dart';
 import '../../../sharing/presentation/widgets/share_material_dialog.dart';
 import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
 import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../dashboard/presentation/widgets/subject_card.dart';
 import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 
 /// Primary central Vault library screen.
@@ -309,14 +311,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'vault_add_material_fab',
-        onPressed: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Material'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -614,6 +608,47 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       );
     }
 
+    // Subjects Tab Custom Content View
+    if (state.activeTab == VaultTab.subjects) {
+      final dashboardState = ref.watch(dashboardProvider);
+      final subjects = dashboardState.subjects;
+      if (subjects.isEmpty) {
+        return Center(
+          child: AppEmptyState(
+            icon: Icons.school_outlined,
+            title: 'No subjects created yet',
+            description: 'Add your courses and subjects to organize your study vault.',
+            actionText: 'Manage Subjects',
+            onAction: () => context.push('/academic/profile'),
+          ),
+        );
+      }
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isLarge = constraints.maxWidth >= 600;
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: isLarge ? 3 : 2,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 0.88,
+              ),
+              itemCount: subjects.length,
+              itemBuilder: (context, index) {
+                final item = subjects[index];
+                return SubjectCard(
+                  subjectWithCount: item,
+                  onTap: () => context.push('/subjects/${item.subject.id}'),
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
+
     // Tab-Specific Empty States
     if (state.materials.isEmpty && state.folders.isEmpty) {
       switch (state.activeTab) {
@@ -625,6 +660,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               description: 'Materials you add will appear here in your central library.',
               actionText: 'Add Material',
               onAction: () => AddMaterialSheet.show(context, folderId: state.selectedFolderId),
+            ),
+          );
+        case VaultTab.subjects:
+          return const Center(
+            child: AppEmptyState(
+              icon: Icons.school_outlined,
+              title: 'No subjects created yet',
+              description: 'Add your courses and subjects to organize your study vault.',
             ),
           );
         case VaultTab.recent:
@@ -653,12 +696,20 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               onAction: () => _handleCreateFolder(context),
             ),
           );
-        case VaultTab.archive:
+        case VaultTab.downloads:
           return const Center(
             child: AppEmptyState(
-              icon: Icons.archive_outlined,
-              title: 'Nothing archived',
-              description: 'Archived materials are kept here safely without cluttering your active subjects.',
+              icon: Icons.download_done_rounded,
+              title: 'No downloaded materials',
+              description: 'Materials downloaded for offline study will appear here.',
+            ),
+          );
+        case VaultTab.trash:
+          return const Center(
+            child: AppEmptyState(
+              icon: Icons.delete_outline_rounded,
+              title: 'Trash is empty',
+              description: 'Deleted materials are moved to trash before permanent removal.',
             ),
           );
       }
@@ -841,7 +892,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                     ),
                   ),
               ],
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],
           ),
         ),

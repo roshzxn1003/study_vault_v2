@@ -15,7 +15,8 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   String _query = "";
-  String _filterType = "All"; // All, Notes, Files, Folders
+  String _filterType = "All"; // All, PDFs, Notes, Folders, Favorites
+  String? _filterSubjectId;
 
   @override
   void dispose() {
@@ -23,9 +24,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
-  void _applySuggested(String text) {
+  void _applySuggested(String text, {String? subjectId}) {
     _searchController.text = text;
-    setState(() => _query = text.trim());
+    setState(() {
+      _query = text.trim();
+      if (subjectId != null) {
+        _filterSubjectId = subjectId;
+      }
+    });
   }
 
   @override
@@ -45,7 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: "Search notes, PDFs, topics...",
+              hintText: "Search notes, PDFs, topics, tags...",
               hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
               prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.primary),
               suffixIcon: _query.isNotEmpty
@@ -75,26 +81,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: ['All', 'Notes', 'Files', 'Folders'].map((type) {
-                  final isSel = _filterType == type;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: FilterChip(
-                      selected: isSel,
-                      label: Text(type),
-                      labelStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                        color: isSel ? Colors.white : AppColors.textPrimary,
+                children: [
+                  ...['All', 'PDFs', 'Notes', 'Folders', 'Favorites'].map((type) {
+                    final isSel = _filterType == type;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: FilterChip(
+                        selected: isSel,
+                        label: Text(type),
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                          color: isSel ? Colors.white : AppColors.textPrimary,
+                        ),
+                        backgroundColor: AppColors.surfaceElevated,
+                        selectedColor: AppColors.primary,
+                        side: BorderSide(color: isSel ? AppColors.primary : AppColors.cardBorder),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        onSelected: (_) => setState(() => _filterType = type),
                       ),
-                      backgroundColor: AppColors.surfaceElevated,
-                      selectedColor: AppColors.primary,
-                      side: BorderSide(color: isSel ? AppColors.primary : AppColors.cardBorder),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      onSelected: (_) => setState(() => _filterType = type),
+                    );
+                  }),
+                  if (_filterSubjectId != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Chip(
+                        label: Text(
+                          'Subject Filtered',
+                          style: const TextStyle(fontSize: 11, color: AppColors.primaryLight, fontWeight: FontWeight.bold),
+                        ),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                        deleteIcon: const Icon(Icons.close, size: 14),
+                        onDeleted: () => setState(() => _filterSubjectId = null),
+                      ),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ],
               ),
             ),
           ),
@@ -123,7 +145,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             runSpacing: 8,
                             children: realSubjects
                                 .take(8)
-                                .map((s) => _suggestChip(s.name))
+                                .map((s) => _suggestChip(s.name, subjectId: s.id))
                                 .toList(),
                           ),
                           const SizedBox(height: 32),
@@ -186,8 +208,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                     data: (results) {
                       final filtered = results.where((item) {
-                        final String type = item.containsKey('content') ? 'Notes' : (item.containsKey('storage_path') ? 'Files' : 'Folders');
+                        if (_filterSubjectId != null && item['subject_id'] != _filterSubjectId) {
+                          return false;
+                        }
                         if (_filterType == 'All') return true;
+                        if (_filterType == 'Favorites') {
+                          return item['is_favorite'] == 1 || item['is_favorite'] == true;
+                        }
+                        final String type = item.containsKey('content')
+                            ? 'Notes'
+                            : (item.containsKey('storage_path') || item.containsKey('type') || item.containsKey('file_type') ? 'PDFs' : 'Folders');
                         return _filterType == type;
                       }).toList();
 
@@ -259,13 +289,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _suggestChip(String label) {
+  Widget _suggestChip(String label, {String? subjectId}) {
     return ActionChip(
       backgroundColor: AppColors.surfaceElevated,
       side: const BorderSide(color: AppColors.cardBorder),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       label: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
-      onPressed: () => _applySuggested(label),
+      onPressed: () => _applySuggested(label, subjectId: subjectId),
     );
   }
 }

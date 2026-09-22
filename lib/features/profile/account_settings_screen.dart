@@ -89,7 +89,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Settings & AI Configuration")),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
           // Google Gemini Collaboration Card
           const Text("Google Gemini AI Collaboration", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
@@ -229,6 +229,31 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                   subtitle: const Text("Tactile feedback on card flips and taps", style: TextStyle(fontSize: 12)),
                   value: _hapticFeedback,
                   onChanged: (val) => setState(() => _hapticFeedback = val),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          const Text("Academic & Curriculum", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.school_outlined, color: AppColors.primary),
+                  title: const Text("Academic Settings", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  subtitle: const Text("Degree, institution, and academic cycle", style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                  onTap: () => context.push('/academic/settings'),
+                ),
+                const Divider(height: 1, color: AppColors.border),
+                ListTile(
+                  leading: const Icon(Icons.menu_book_rounded, color: AppColors.emerald),
+                  title: const Text("Subjects & Curriculum", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  subtitle: const Text("View, reorder, add, and manage semester subjects", style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                  onTap: () => context.push('/academic'),
                 ),
               ],
             ),

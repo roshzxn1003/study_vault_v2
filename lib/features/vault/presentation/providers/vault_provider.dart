@@ -73,6 +73,7 @@ class VaultNotifier extends StateNotifier<VaultState> {
 
       switch (state.activeTab) {
         case VaultTab.all:
+        case VaultTab.subjects:
           activeFilter = activeFilter.copyWith(
             isFavoriteOnly: false,
             isArchivedOnly: false,
@@ -97,7 +98,13 @@ class VaultNotifier extends StateNotifier<VaultState> {
             isArchivedOnly: false,
           );
           break;
-        case VaultTab.archive:
+        case VaultTab.downloads:
+          activeFilter = activeFilter.copyWith(
+            isFavoriteOnly: false,
+            isArchivedOnly: false,
+          );
+          break;
+        case VaultTab.trash:
           activeFilter = activeFilter.copyWith(
             isFavoriteOnly: false,
             isArchivedOnly: true,

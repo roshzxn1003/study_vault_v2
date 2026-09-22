@@ -367,11 +367,12 @@ void main() {
       );
 
       expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Subjects'), findsOneWidget);
-      expect(find.text('Inbox'), findsOneWidget);
-      expect(find.text('Vault'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      expect(find.text('Shared'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
 
-      await tester.tap(find.text('Subjects'));
+      await tester.tap(find.text('Library'));
       await tester.pump();
       expect(activeIndex, 1);
     });

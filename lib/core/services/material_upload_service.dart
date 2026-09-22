@@ -44,6 +44,7 @@ class MaterialUploadService {
     String? academicPeriodId,
     List<String> labelIds = const [],
     bool allowMultiple = true,
+    List<String>? customAllowedExtensions,
   }) async {
     // 1. Check and request storage permissions
     final hasPermission = await PermissionUtils.requestFileStoragePermission(context: context);
@@ -62,7 +63,7 @@ class MaterialUploadService {
       result = await FilePicker.platform.pickFiles(
         allowMultiple: allowMultiple,
         type: FileType.custom,
-        allowedExtensions: [
+        allowedExtensions: customAllowedExtensions ?? [
           'pdf',
           'doc',
           'docx',
@@ -367,6 +368,80 @@ class MaterialUploadService {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Could not add link: $e'),
+            backgroundColor: AppColors.rose,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  /// Creates a markdown note, writes it to persistent storage, records in SQLite, and triggers cloud sync.
+  Future<MaterialItem?> createMarkdownNote({
+    BuildContext? context,
+    required String title,
+    required String content,
+    String? subjectId,
+    String? folderId,
+    String? workspaceId,
+    String? academicPeriodId,
+  }) async {
+    try {
+      final cleanTitle = title.trim().isEmpty ? 'Untitled Study Note' : title.trim();
+      final dir = await _storageService.getMaterialsDirectory();
+      final safeName = _storageService.sanitizeFileName(cleanTitle);
+      final fileName = '${safeName}_${DateTime.now().millisecondsSinceEpoch}.md';
+      final file = File(p.join(dir.path, fileName));
+      await file.writeAsString(content);
+
+      final fileSize = await file.length();
+      final contentHash = _storageService.calculateStringHash(content);
+      final vaultRepo = _ref.read(vaultRepositoryProvider);
+
+      final material = await vaultRepo.createMaterial(
+        userId: _currentUserId,
+        workspaceId: workspaceId,
+        academicPeriodId: academicPeriodId,
+        subjectId: subjectId,
+        folderId: folderId,
+        title: cleanTitle,
+        originalFileName: fileName,
+        type: VaultMaterialType.note,
+        filePath: file.path,
+        storagePath: file.path,
+        mimeType: 'text/markdown',
+        fileSize: fileSize,
+        content: content,
+        contentHash: contentHash,
+        isInbox: folderId == null && subjectId == null,
+        source: 'Note',
+      );
+
+      _invalidateProviders(subjectId);
+      try {
+        _ref.read(syncProvider.notifier).syncNow();
+      } catch (e) {
+        debugPrint('[MaterialUploadService] Note sync trigger note: $e');
+      }
+
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved note "$cleanTitle" to Study Vault!'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      return material;
+    } catch (e) {
+      debugPrint('[MaterialUploadService] createMarkdownNote error: $e');
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save note: $e'),
             backgroundColor: AppColors.rose,
             behavior: SnackBarBehavior.floating,
           ),

@@ -1,12 +1,16 @@
 import 'material_item.dart';
 
-/// Vault top-level tab views.
+/// Library top-level tab views.
 enum VaultTab {
   all(label: 'All'),
+  subjects(label: 'Subjects'),
+  folders(label: 'Folders'),
   recent(label: 'Recent'),
   favorites(label: 'Favorites'),
-  folders(label: 'Folders'),
-  archive(label: 'Archive');
+  downloads(label: 'Downloads'),
+  trash(label: 'Trash');
+
+  static const VaultTab archive = VaultTab.trash;
 
   final String label;
   const VaultTab({required this.label});

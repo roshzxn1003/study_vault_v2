@@ -11,7 +11,6 @@ import '../../features/dashboard/presentation/screens/inbox_screen.dart';
 import '../../features/dashboard/presentation/screens/shared_screen.dart';
 import '../../core/design/widgets/app_scaffold.dart';
 import '../../core/design/widgets/add_material_sheet.dart';
-import '../../core/theme/app_colors.dart';
 import '../../features/home/add_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/ai/ai_screen.dart';
@@ -105,17 +104,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainNavigationShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/academic', builder: (context, state) => const AcademicWorkspaceScreen()),
+          GoRoute(path: '/library', builder: (context, state) => const VaultScreen()),
+          GoRoute(path: '/vault', redirect: (_, _) => '/library'),
+          GoRoute(path: '/folders', redirect: (_, _) => '/library'),
           GoRoute(path: '/inbox', builder: (context, state) => const InboxScreen()),
-          GoRoute(path: '/vault', builder: (context, state) => const VaultScreen()),
-          GoRoute(path: '/folders', redirect: (_, _) => '/vault'),
           GoRoute(path: '/shared', builder: (context, state) => const SharedScreen()),
           GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
           GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
           GoRoute(path: '/privacy', builder: (context, state) => const PrivacyCenterScreen()),
-          GoRoute(path: '/ai', builder: (context, state) => const AIScreen()),
+          GoRoute(
+            path: '/ai',
+            builder: (context, state) {
+              final queryParams = state.uri.queryParameters;
+              final extra = state.extra as Map<String, dynamic>?;
+              return AIScreen(
+                initialSubject: queryParams['subject'] ?? extra?['subject'] as String?,
+                initialMaterialId: queryParams['materialId'] ?? extra?['materialId'] as String?,
+                initialMaterialTitle: queryParams['materialTitle'] ?? extra?['materialTitle'] as String?,
+                initialMode: queryParams['mode'] ?? extra?['mode'] as String?,
+              );
+            },
+          ),
           GoRoute(path: '/ai/settings', builder: (context, state) => const AiSettingsScreen()),
         ],
+      ),
+      GoRoute(
+        path: '/academic',
+        builder: (context, state) => const AcademicWorkspaceScreen(),
+      ),
+      GoRoute(
+        path: '/academic/subjects',
+        builder: (context, state) => const AcademicWorkspaceScreen(),
       ),
       GoRoute(
         path: '/subject/:id',
@@ -124,10 +143,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: '/vault/material/:id',
+        path: '/library/material/:id',
         builder: (context, state) => MaterialDetailScreen(
           materialId: state.pathParameters['id']!,
         ),
+      ),
+      GoRoute(
+        path: '/vault/material/:id',
+        redirect: (context, state) => '/material/${state.pathParameters['id']}',
       ),
       GoRoute(
         path: '/material/:id',
@@ -167,11 +190,18 @@ class MainNavigationShell extends StatelessWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/academic')) return 1;
-    if (location.startsWith('/inbox')) return 2;
-    if (location.startsWith('/vault') || location.startsWith('/folders')) return 3;
-    if (location.startsWith('/shared')) return 4;
-    if (location.startsWith('/profile') || location.startsWith('/privacy')) return 5;
+    if (location.startsWith('/library') ||
+        location.startsWith('/vault') ||
+        location.startsWith('/folders') ||
+        location.startsWith('/inbox')) {
+      return 1;
+    }
+    if (location.startsWith('/shared')) return 3;
+    if (location.startsWith('/profile') ||
+        location.startsWith('/privacy') ||
+        location.startsWith('/settings')) {
+      return 4;
+    }
     return 0;
   }
 
@@ -181,18 +211,15 @@ class MainNavigationShell extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/academic');
+        context.go('/library');
         break;
       case 2:
-        context.go('/inbox');
+        AddMaterialSheet.show(context);
         break;
       case 3:
-        context.go('/vault');
-        break;
-      case 4:
         context.go('/shared');
         break;
-      case 5:
+      case 4:
         context.go('/profile');
         break;
     }
@@ -201,22 +228,12 @@ class MainNavigationShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = _calculateSelectedIndex(context);
-    final showShellFab = selectedIndex != 3 && selectedIndex != 5;
 
     return AppScaffold(
       body: child,
       navigationIndex: selectedIndex,
       onNavigationChanged: (index) => _onNavigationChanged(context, index),
-      floatingActionButton: showShellFab
-          ? FloatingActionButton.extended(
-              heroTag: 'shell_add_material_fab',
-              onPressed: () => AddMaterialSheet.show(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Material', style: TextStyle(fontWeight: FontWeight.w600)),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            )
-          : null,
+      onAddTap: () => AddMaterialSheet.show(context),
     );
   }
 }

@@ -25,6 +25,9 @@ class AppIcons {
   static const IconData vault = Icons.folder_copy_outlined;
   static const IconData vaultActive = Icons.folder_copy_rounded;
 
+  static const IconData library_ = Icons.local_library_outlined;
+  static const IconData libraryActive = Icons.local_library_rounded;
+
   static const IconData shared = Icons.group_outlined;
   static const IconData sharedActive = Icons.group_rounded;
 

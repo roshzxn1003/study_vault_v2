@@ -12,6 +12,7 @@ class AppScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final int? navigationIndex;
   final ValueChanged<int>? onNavigationChanged;
+  final VoidCallback? onAddTap;
   final List<AppNavigationItem> navigationItems;
   final Widget? customBottomBar;
   final Color? backgroundColor;
@@ -23,6 +24,7 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.navigationIndex,
     this.onNavigationChanged,
+    this.onAddTap,
     this.navigationItems = AppNavigationItem.defaultItems,
     this.customBottomBar,
     this.backgroundColor,
@@ -33,20 +35,60 @@ class AppScaffold extends StatelessWidget {
     final isMobile = AppBreakpoints.isMobile(context);
     final hasNav = navigationIndex != null && onNavigationChanged != null;
 
-    if (isMobile || !hasNav) {
+    if (!hasNav && isMobile) {
       return Scaffold(
         backgroundColor: backgroundColor ?? AppColors.background,
         appBar: topBar,
         body: body,
         floatingActionButton: floatingActionButton,
-        bottomNavigationBar: customBottomBar ??
-            (hasNav && isMobile
-                ? AppBottomNavigation(
-                    currentIndex: navigationIndex!,
-                    onTap: onNavigationChanged!,
-                    items: navigationItems,
-                  )
-                : null),
+        bottomNavigationBar: customBottomBar,
+      );
+    }
+
+    if (isMobile && hasNav) {
+      final bottomPadding = MediaQuery.of(context).padding.bottom;
+      final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+      final screenWidth = MediaQuery.of(context).size.width;
+      final isNarrow = screenWidth < 360;
+      final horizontalMargin = isNarrow ? 12.0 : 20.0;
+      final floatingBottomMargin = bottomPadding > 0 ? bottomPadding + 6.0 : 16.0;
+      const navBarHeight = 64.0;
+
+      return Scaffold(
+        backgroundColor: backgroundColor ?? AppColors.background,
+        appBar: topBar,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Page Content fills the entire viewport
+            Positioned.fill(
+              child: body,
+            ),
+
+            // 2. Floating Action Button positioned safely above the floating navigation bar
+            if (floatingActionButton != null && !isKeyboardOpen)
+              Positioned(
+                right: 20.0,
+                bottom: navBarHeight + floatingBottomMargin + 14.0,
+                child: floatingActionButton!,
+              ),
+
+            // 3. True Floating Bottom Navigation Bar (floats above page content)
+            if (!isKeyboardOpen)
+              Positioned(
+                left: horizontalMargin,
+                right: horizontalMargin,
+                bottom: floatingBottomMargin,
+                child: customBottomBar ??
+                    AppBottomNavigation(
+                      currentIndex: navigationIndex!,
+                      onTap: onNavigationChanged!,
+                      onAddTap: onAddTap,
+                      items: navigationItems,
+                    ),
+              ),
+          ],
+        ),
       );
     }
 

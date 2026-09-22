@@ -12,6 +12,9 @@ import '../widgets/historical_period_banner.dart';
 import '../widgets/inbox_preview_section.dart';
 import '../widgets/recent_materials_section.dart';
 import '../widgets/subjects_section.dart';
+import '../widgets/continue_learning_card.dart';
+import '../widgets/ai_assistant_card.dart';
+import '../widgets/upcoming_academic_section.dart';
 import '../../../import/presentation/widgets/import_source_dialog.dart';
 
 /// Main Study Vault Dashboard.
@@ -124,9 +127,22 @@ class DashboardScreen extends ConsumerWidget {
                       onAddSubject: () => _handleAddSubject(context, ref, state.isPersonalLearning),
                     ),
 
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 5. Continue Learning (if recent materials available)
+                    if (state.recentMaterials.isNotEmpty) ...[
+                      ContinueLearningCard(
+                        recentMaterial: state.recentMaterials.first,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    // 6. AI Assistant Card
+                    const AIAssistantCard(),
+
                     const SizedBox(height: AppSpacing.xl),
 
-                    // 5. Subjects Section (SUBJECTS FIRST)
+                    // 7. Subjects Section (Compact card/grid)
                     SubjectsSection(
                       subjects: state.subjects,
                       personalTopics: state.personalTopics,
@@ -136,11 +152,17 @@ class DashboardScreen extends ConsumerWidget {
 
                     const SizedBox(height: AppSpacing.xl),
 
-                    // 6. Inbox Preview & Recent Materials
+                    // 8. Recent Materials Section & Inbox
                     if (isTabletOrDesktop)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Expanded(
+                            child: RecentMaterialsSection(
+                              materials: state.recentMaterials,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: InboxPreviewSection(
                               items: state.inboxItems,
@@ -148,25 +170,26 @@ class DashboardScreen extends ConsumerWidget {
                               onAddMaterial: () => ImportSourceDialog.show(context),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: RecentMaterialsSection(
-                              materials: state.recentMaterials,
-                            ),
-                          ),
                         ],
                       )
                     else ...[
-                      InboxPreviewSection(
-                        items: state.inboxItems,
-                        totalCount: state.inboxTotalCount,
-                        onAddMaterial: () => ImportSourceDialog.show(context),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
                       RecentMaterialsSection(
                         materials: state.recentMaterials,
                       ),
+                      if (state.inboxTotalCount > 0) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        InboxPreviewSection(
+                          items: state.inboxItems,
+                          totalCount: state.inboxTotalCount,
+                          onAddMaterial: () => ImportSourceDialog.show(context),
+                        ),
+                      ],
                     ],
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // 9. Upcoming Academic Target
+                    const UpcomingAcademicSection(),
 
                     const SizedBox(height: AppSpacing.xxl),
                   ],

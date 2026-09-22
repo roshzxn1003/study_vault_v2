@@ -29,7 +29,7 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/academic/settings');
             }
           },
         ),
@@ -53,9 +53,11 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
               color: AppColors.primaryLight,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  120,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,10 +118,10 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                     ],
 
                     // 4. Subjects / Topics Header & Action Bar
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isNarrow = constraints.maxWidth < 420;
+                        final titleWidget = Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -135,18 +137,20 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                               ),
                             ),
                           ],
-                        ),
-                        Row(
+                        );
+
+                        final actionsWidget = Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            if (!state.isPersonalLearning) ...[
+                            if (!state.isPersonalLearning)
                               AppSecondaryButton(
                                 text: 'Start Next',
                                 icon: const Icon(Icons.arrow_forward, size: 14),
                                 size: AppButtonSize.sm,
                                 onPressed: () => _handleStartNextSemester(context, ref, state),
                               ),
-                              AppSpacing.h8,
-                            ],
                             AppButton.primary(
                               text: state.isPersonalLearning ? 'Add Topic' : 'Add Subject',
                               icon: const Icon(Icons.add, size: 14),
@@ -160,8 +164,28 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                               },
                             ),
                           ],
-                        ),
-                      ],
+                        );
+
+                        if (isNarrow) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              titleWidget,
+                              const SizedBox(height: 10),
+                              actionsWidget,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(child: titleWidget),
+                            actionsWidget,
+                          ],
+                        );
+                      },
                     ),
 
                     AppSpacing.v16,
@@ -308,7 +332,10 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
           AppSpacing.v12,
 
           // Period Switcher Bar
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               // Period Dropdown Selector
               InkWell(
@@ -337,8 +364,6 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
-              AppSpacing.h12,
 
               // Status Badge (Current vs Previous / Archive)
               Container(
@@ -377,12 +402,13 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                 ),
               ),
 
-              const Spacer(),
-
               // Academic Year
-              Text(
-                yearName,
-                style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text(
+                  yearName,
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                ),
               ),
             ],
           ),
@@ -516,13 +542,17 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
           key: ValueKey('academic_subject_${subject.id}'),
           margin: const EdgeInsets.only(bottom: AppSpacing.xs),
           decoration: BoxDecoration(
-            color: AppColors.surface,
             borderRadius: AppRadius.brMd,
             border: AppBorders.allStandard,
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
-            leading: const AppFileTypeIcon(type: AppFileType.folder, size: 32),
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: AppRadius.brMd,
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
+              onTap: () => context.push('/subject/${subject.id}'),
+              leading: const AppFileTypeIcon(type: AppFileType.folder, size: 32),
             title: Row(
               children: [
                 Expanded(
@@ -584,8 +614,9 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
               ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 
@@ -618,58 +649,63 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
           key: ValueKey('personal_topic_${topic.id}'),
           margin: const EdgeInsets.only(bottom: AppSpacing.xs),
           decoration: BoxDecoration(
-            color: AppColors.surface,
             borderRadius: AppRadius.brMd,
             border: AppBorders.allStandard,
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
-            leading: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSecondary,
-                borderRadius: AppRadius.brSm,
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: AppRadius.brMd,
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 2),
+              onTap: () => context.push('/subject/${topic.id}'),
+              leading: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: AppRadius.brSm,
+                ),
+                child: const Icon(Icons.tag, size: 16, color: AppColors.primaryLight),
               ),
-              child: const Icon(Icons.tag, size: 16, color: AppColors.primaryLight),
-            ),
-            title: Text(
-              topic.name,
-              style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-            ),
-            subtitle: topic.description != null && topic.description!.isNotEmpty
-                ? Text(
-                    topic.description!,
-                    style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textMuted),
-                  tooltip: 'Rename Topic',
-                  onPressed: () {
-                    PersonalTopicEditDialog.show(context: context, existingTopic: topic);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.textMuted),
-                  tooltip: 'Remove Topic',
-                  onPressed: () {
-                    ref.read(academicWorkspaceProvider.notifier).removePersonalTopic(topic.id);
-                  },
-                ),
-                ReorderableDragStartListener(
-                  index: index,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(Icons.drag_indicator, size: 20, color: AppColors.textMuted),
+              title: Text(
+                topic.name,
+                style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: topic.description != null && topic.description!.isNotEmpty
+                  ? Text(
+                      topic.description!,
+                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textMuted),
+                    tooltip: 'Rename Topic',
+                    onPressed: () {
+                      PersonalTopicEditDialog.show(context: context, existingTopic: topic);
+                    },
                   ),
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.textMuted),
+                    tooltip: 'Remove Topic',
+                    onPressed: () {
+                      ref.read(academicWorkspaceProvider.notifier).removePersonalTopic(topic.id);
+                    },
+                  ),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(Icons.drag_indicator, size: 20, color: AppColors.textMuted),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

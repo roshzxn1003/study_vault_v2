@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/features/dashboard/presentation/providers/dashboard_state.dart';
+import 'package:study_vault/features/sync/presentation/providers/sync_provider.dart';
+import 'package:study_vault/features/sharing/presentation/providers/sharing_providers.dart';
+import 'package:study_vault/features/profile/presentation/providers/profile_provider.dart';
 import 'period_selector_sheet.dart';
 
-/// Clean academic header displaying greeting, academic identity, workspace switcher, and period picker.
-class DashboardAcademicHeader extends StatelessWidget {
+/// Clean academic header displaying greeting, academic identity, avatar, notifications, sync status, and period picker.
+class DashboardAcademicHeader extends ConsumerWidget {
   final DashboardState state;
   final ValueChanged<String> onWorkspaceSelected;
   final ValueChanged<String> onPeriodSelected;
@@ -109,41 +113,107 @@ class DashboardAcademicHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasMultipleWorkspaces = state.workspaces.length > 1;
     final hasPeriods = !state.isPersonalLearning && state.history.isNotEmpty;
+
+    final syncState = ref.watch(syncProvider);
+    final unreadCount = ref.watch(shareNotificationsProvider).unreadCount;
+    final profile = ref.watch(profileDataProvider).valueOrNull;
+
+    final fullName = state.userFullName ?? profile?['full_name'] ?? 'Scholar';
+    final initial = fullName.trim().isNotEmpty ? fullName.trim()[0].toUpperCase() : 'S';
+
+    // Cloud sync status details
+    final String syncLabel;
+    final Color syncColor;
+    final IconData syncIcon;
+
+    if (syncState.isSyncing) {
+      syncLabel = 'Syncing...';
+      syncColor = AppColors.primaryLight;
+      syncIcon = Icons.sync_rounded;
+    } else if (syncState.isOffline) {
+      syncLabel = 'Offline';
+      syncColor = AppColors.warning;
+      syncIcon = Icons.cloud_off_rounded;
+    } else {
+      syncLabel = 'Synced';
+      syncColor = AppColors.emerald;
+      syncIcon = Icons.cloud_done_rounded;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Row: Greeting & Workspace Switcher / Academic Link
+        // Top Row: Identity & Status + Notification & Avatar
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Subtle Greeting adhering to Section 13
-                  Text(
-                    state.greeting,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        state.greeting,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Subtle Cloud Sync Status Pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: syncColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: syncColor.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(syncIcon, size: 11, color: syncColor),
+                            const SizedBox(width: 3),
+                            Text(
+                              syncLabel,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: syncColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 2),
-
-                  // Prominent Academic Identity Title
                   Text(
-                    state.academicIdentityTitle,
+                    fullName,
                     style: AppTypography.headline.copyWith(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                       letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    state.academicIdentityTitle,
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.primaryLight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -154,28 +224,89 @@ class DashboardAcademicHeader extends StatelessWidget {
 
             const SizedBox(width: AppSpacing.sm),
 
-            // Link to full Academic Structure Screen
+            // Notification Button
             IconButton(
-              tooltip: 'Academic Workspace Management',
-              onPressed: () => context.push('/academic'),
-              icon: Container(
-                padding: const EdgeInsets.all(8),
+              tooltip: 'Notifications',
+              onPressed: () => context.push('/shared'),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSecondary,
+                      borderRadius: AppRadius.button,
+                      border: AppBorders.allStandard,
+                    ),
+                    child: const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 20,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.rose,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 4),
+
+            // Profile Avatar Button
+            InkWell(
+              onTap: () => context.push('/profile'),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: AppRadius.button,
-                  border: AppBorders.allStandard,
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primaryLight.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.account_tree_outlined,
-                  size: 18,
-                  color: AppColors.primaryLight,
+                child: Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.sm),
 
         // Subtitle & Pill Selectors Row
         Wrap(
@@ -266,7 +397,7 @@ class DashboardAcademicHeader extends StatelessWidget {
                 },
               ),
 
-            // Secondary Context Text (e.g. "2026–27" or "Independent Study")
+            // Secondary Context Text (e.g. "2026–27 • Semester 3")
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(

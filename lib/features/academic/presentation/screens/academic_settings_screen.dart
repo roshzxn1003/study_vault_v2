@@ -83,7 +83,7 @@ class _AcademicSettingsScreenState extends ConsumerState<AcademicSettingsScreen>
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -120,6 +120,50 @@ class _AcademicSettingsScreenState extends ConsumerState<AcademicSettingsScreen>
                         ),
                       ],
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            AppSpacing.v20,
+
+            // Manage Subjects & Curriculum Card
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppRadius.card,
+                border: AppBorders.allStandard,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0x1A10B981),
+                      borderRadius: AppRadius.brMd,
+                    ),
+                    child: const Icon(Icons.menu_book_rounded, color: Color(0xFF10B981), size: 20),
+                  ),
+                  AppSpacing.h12,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Subjects & Curriculum', style: AppTypography.title.copyWith(fontSize: 16)),
+                        Text(
+                          '${state.subjects.length} active subjects configured',
+                          style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppSecondaryButton(
+                    text: 'Manage',
+                    icon: const Icon(Icons.arrow_forward, size: 14),
+                    size: AppButtonSize.sm,
+                    onPressed: () => context.push('/academic'),
                   ),
                 ],
               ),

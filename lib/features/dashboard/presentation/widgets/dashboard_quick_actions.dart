@@ -24,24 +24,16 @@ class DashboardQuickActions extends ConsumerWidget {
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          // 1. Add Subject / Topic
+          // 1. Add Material (Primary)
           _ActionButton(
             icon: Icons.add_rounded,
-            label: isPersonalLearning ? 'Add Topic' : 'Add Subject',
-            onTap: onAddSubject,
+            label: 'Add Material',
+            onTap: () => AddMaterialSheet.show(context),
             isPrimary: true,
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 2. Add Material
-          _ActionButton(
-            icon: Icons.file_upload_outlined,
-            label: 'Add Material',
-            onTap: () => AddMaterialSheet.show(context),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-
-          // 3. New Folder
+          // 2. New Folder
           _ActionButton(
             icon: Icons.create_new_folder_outlined,
             label: 'New Folder',
@@ -52,7 +44,7 @@ class DashboardQuickActions extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Folder "${name.trim()}" created in Vault'),
+                      content: Text('Folder "${name.trim()}" created in Library'),
                       backgroundColor: AppColors.emerald,
                     ),
                   );
@@ -62,27 +54,27 @@ class DashboardQuickActions extends ConsumerWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 4. Search
+          // 3. Scan (Camera OCR)
           _ActionButton(
-            icon: Icons.search_rounded,
-            label: 'Search',
-            onTap: () => context.push('/search'),
+            icon: Icons.document_scanner_outlined,
+            label: 'Scan',
+            onTap: () => context.push('/scan'),
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 5. Shared With Me
+          // 4. Create Note
           _ActionButton(
-            icon: Icons.group_outlined,
-            label: 'Shared With Me',
-            onTap: () => context.push('/shared'),
+            icon: Icons.edit_note_rounded,
+            label: 'Create Note',
+            onTap: () => context.push('/notes/create'),
           ),
           const SizedBox(width: AppSpacing.sm),
 
-          // 6. Open Inbox
+          // 5. Add Subject
           _ActionButton(
-            icon: Icons.inbox_outlined,
-            label: 'Open Inbox',
-            onTap: () => context.push('/inbox'),
+            icon: Icons.auto_stories_outlined,
+            label: isPersonalLearning ? 'Add Topic' : 'Add Subject',
+            onTap: onAddSubject,
           ),
         ],
       ),

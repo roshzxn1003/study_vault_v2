@@ -19,19 +19,29 @@ class DashboardSearchBar extends StatelessWidget {
         onTap: () => context.push('/search'),
         borderRadius: AppRadius.card,
         child: Container(
-          height: 46,
+          height: 50,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.surfaceSecondary,
+            color: AppColors.surfaceElevated,
             borderRadius: AppRadius.card,
-            border: AppBorders.allStandard,
+            border: Border.all(
+              color: AppColors.cardBorder,
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
               const Icon(
                 Icons.search_rounded,
-                color: AppColors.textMuted,
-                size: 20,
+                color: AppColors.primaryLight,
+                size: 22,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -40,6 +50,22 @@ class DashboardSearchBar extends StatelessWidget {
                   style: AppTypography.body.copyWith(
                     color: AppColors.textMuted,
                     fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: const Text(
+                  'Ctrl K',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

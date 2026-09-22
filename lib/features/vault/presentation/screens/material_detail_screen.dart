@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_provider.dart';
@@ -404,11 +406,12 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Material Details',
+          material.title,
           style: AppTypography.subtitle.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
@@ -438,14 +441,23 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title & Type Banner
+                  // ==========================================
+                  // 1. [DOCUMENT PREVIEW] - FIRST MAJOR SECTION
+                  // ==========================================
+                  _buildDocumentPreview(material),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // ==========================================
+                  // 2. [FILE & ACADEMIC DETAILS]
+                  // ==========================================
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -459,8 +471,16 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                       children: [
                         Row(
                           children: [
+                            Text(
+                              'File & Academic Details',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const Spacer(),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: type.color.withValues(alpha: 0.12),
                                 borderRadius: AppRadius.chip,
@@ -468,110 +488,20 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(type.icon, size: 14, color: type.color),
+                                  Icon(type.icon, size: 12, color: type.color),
                                   const SizedBox(width: 4),
                                   Text(
                                     type.label,
                                     style: AppTypography.caption.copyWith(
                                       color: type.color,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (material.isArchived) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.textMuted.withValues(alpha: 0.15),
-                                  borderRadius: AppRadius.chip,
-                                ),
-                                child: Text(
-                                  'Archived',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.textMuted,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceSecondary,
-                                borderRadius: AppRadius.chip,
-                                border: AppBorders.allStandard,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    material.source?.startsWith('Shared') == true
-                                        ? Icons.group_outlined
-                                        : Icons.lock_outline_rounded,
-                                    size: 11,
-                                    color: AppColors.textMuted,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.textMuted,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          material.title,
-                          style: AppTypography.headline.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        if (material.originalFileName != null &&
-                            material.originalFileName != material.title) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Original file: ${material.originalFileName}',
-                            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Academic Context & Location
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: AppRadius.card,
-                      border: AppBorders.allStandard,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'File & Academic Details',
-                          style: AppTypography.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
-                          ),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         _buildMetaRow(Icons.description_outlined, 'File Name', material.originalFileName ?? material.title),
@@ -595,7 +525,9 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
 
                   const SizedBox(height: AppSpacing.md),
 
-                  // Labels Section
+                  // ==========================================
+                  // 3. [LABELS]
+                  // ==========================================
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -661,10 +593,9 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Description / Notes Content
-                  if (material.description != null && material.description!.isNotEmpty)
+                  // Description
+                  if (material.description != null && material.description!.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -691,8 +622,10 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         ],
                       ),
                     ),
+                  ],
 
-                  if (material.content != null && material.content!.isNotEmpty) ...[
+                  // Text content preview if not rendered in main preview card
+                  if (material.type != VaultMaterialType.note && material.content != null && material.content!.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.md),
                     Container(
                       width: double.infinity,
@@ -706,7 +639,7 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Content Preview',
+                            'Text Content',
                             style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.textSecondary,
@@ -722,132 +655,382 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md),
 
-                  // Primary Action Buttons
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      // Open Viewer
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.visibility_outlined, size: 18),
-                        label: const Text('Open Document'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                  // ==========================================
+                  // 4. [ACTIONS]
+                  // ==========================================
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppRadius.card,
+                      border: AppBorders.allStandard,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Actions',
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                        onPressed: _handleOpenViewer,
-                      ),
-                      // Open with...
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                        label: const Text('Open with...'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        const SizedBox(height: AppSpacing.md),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            // Open Document
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.visibility_outlined, size: 18),
+                              label: const Text('Open Document'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleOpenViewer,
+                            ),
+                            // Open with...
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                              label: const Text('Open with...'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleOpenWith,
+                            ),
+                            // Share File
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.share_rounded, size: 18),
+                              label: const Text('Share File'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleSystemShare,
+                            ),
+                            // Download
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.download_rounded, size: 18),
+                              label: const Text('Download'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleDownload,
+                            ),
+                            // AI Assistant
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.psychology_outlined, size: 18, color: AppColors.primaryLight),
+                              label: const Text('AI Assistant'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                foregroundColor: AppColors.primaryLight,
+                                side: const BorderSide(color: AppColors.primaryLight),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: () => AiMaterialSidePanel.showModal(context, material),
+                            ),
+                            // Rename
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              label: const Text('Rename'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleRename,
+                            ),
+                            // Move
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.drive_file_move_outlined, size: 18),
+                              label: const Text('Move'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleMove,
+                            ),
+                            // Archive / Restore
+                            ElevatedButton.icon(
+                              icon: Icon(
+                                material.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                                size: 18,
+                              ),
+                              label: Text(material.isArchived ? 'Restore' : 'Archive'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surfaceSecondary,
+                                foregroundColor: AppColors.textPrimary,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleArchiveToggle,
+                            ),
+                            // Delete
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                              label: const Text('Delete', style: TextStyle(color: AppColors.error)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.error.withValues(alpha: 0.12),
+                                foregroundColor: AppColors.error,
+                                side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                              ),
+                              onPressed: _handleDelete,
+                            ),
+                          ],
                         ),
-                        onPressed: _handleOpenWith,
-                      ),
-                      // System Share
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.share_rounded, size: 18),
-                        label: const Text('Share File'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleSystemShare,
-                      ),
-                      // Download
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.download_rounded, size: 18),
-                        label: const Text('Download'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleDownload,
-                      ),
-                      // AI Assistant
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.psychology_outlined, size: 18, color: AppColors.primaryLight),
-                        label: const Text('AI Assistant'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                          foregroundColor: AppColors.primaryLight,
-                          side: const BorderSide(color: AppColors.primaryLight),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: () => AiMaterialSidePanel.showModal(context, material),
-                      ),
-                      // Rename
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Rename'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleRename,
-                      ),
-                      // Move
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.drive_file_move_outlined, size: 18),
-                        label: const Text('Move'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleMove,
-                      ),
-                      // Archive / Restore
-                      ElevatedButton.icon(
-                        icon: Icon(
-                          material.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-                          size: 18,
-                        ),
-                        label: Text(material.isArchived ? 'Restore' : 'Archive'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceSecondary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleArchiveToggle,
-                      ),
-                      // Delete
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                        label: const Text('Delete', style: TextStyle(color: AppColors.error)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error.withValues(alpha: 0.12),
-                          foregroundColor: AppColors.error,
-                          side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
-                        ),
-                        onPressed: _handleDelete,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a prominent, interactive preview card for the document.
+  Widget _buildDocumentPreview(MaterialItem material) {
+    final previewHeight = (MediaQuery.of(context).size.width * 0.65).clamp(220.0, 360.0);
+    final filePath = material.filePath ?? material.storagePath ?? '';
+    final hasLocalFile = filePath.isNotEmpty && File(filePath).existsSync();
+    final remoteUrl = material.remoteUrl ?? '';
+    final hasRemoteUrl = remoteUrl.isNotEmpty;
+
+    Widget previewContent;
+
+    if (material.type == VaultMaterialType.pdf && (hasLocalFile || hasRemoteUrl)) {
+      previewContent = Stack(
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: hasLocalFile
+                  ? SfPdfViewer.file(
+                      File(filePath),
+                      canShowScrollHead: false,
+                      canShowScrollStatus: false,
+                      enableDoubleTapZooming: false,
+                    )
+                  : SfPdfViewer.network(
+                      remoteUrl,
+                      canShowScrollHead: false,
+                      canShowScrollStatus: false,
+                      enableDoubleTapZooming: false,
+                    ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.75),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (material.type == VaultMaterialType.image && (hasLocalFile || hasRemoteUrl)) {
+      previewContent = hasLocalFile
+          ? Image.file(
+              File(filePath),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _buildFallbackPreview(material),
+            )
+          : Image.network(
+              remoteUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _buildFallbackPreview(material),
+            );
+    } else if (material.type == VaultMaterialType.note && material.content != null && material.content!.isNotEmpty) {
+      previewContent = Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        color: AppColors.surfaceSecondary,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, size: 18, color: Color(0xFFF59E0B)),
+                const SizedBox(width: 6),
+                Text(
+                  'Note Preview',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFF59E0B),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                material.content!,
+                style: AppTypography.body.copyWith(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 8,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      previewContent = _buildFallbackPreview(material);
+    }
+
+    return Container(
+      width: double.infinity,
+      height: previewHeight,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: _handleOpenViewer,
+          child: Stack(
+            children: [
+              Positioned.fill(child: previewContent),
+              // Type badge top-left
+              Positioned(
+                left: 12,
+                top: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: material.type.color.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(material.type.icon, size: 12, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text(
+                        material.type.label,
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Open reader pill bottom-right
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.75),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.fullscreen_rounded, size: 16, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tap to open reader',
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackPreview(MaterialItem material) {
+    return Container(
+      color: AppColors.surfaceSecondary,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: material.type.color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(material.type.icon, size: 30, color: material.type.color),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Text(
+                material.title,
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${material.type.label} Document',
+              style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+            ),
+          ],
         ),
       ),
     );

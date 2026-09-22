@@ -90,13 +90,38 @@ class SubjectCard extends StatelessWidget {
 
               const SizedBox(height: AppSpacing.xs),
 
-              // Material count (real data only, e.g. "12 materials" or "No materials yet")
-              Text(
-                countLabel,
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    countLabel,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: subjectWithCount.materialCount > 0 ? AppColors.emerald : AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        subjectWithCount.materialCount > 0 ? 'Active' : 'No activity',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
