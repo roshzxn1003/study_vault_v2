@@ -332,6 +332,8 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
       filePath: path,
       mimeType: _material!.mimeType,
       title: _material!.title,
+      storagePath: _material!.storagePath,
+      remoteUrl: _material!.remoteUrl,
     );
   }
 
@@ -348,6 +350,8 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
       context: context,
       filePath: path,
       title: _material!.title,
+      storagePath: _material!.storagePath,
+      remoteUrl: _material!.remoteUrl,
     );
   }
 
@@ -364,6 +368,8 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
       context: context,
       sourceFilePath: path,
       fileName: _material!.originalFileName ?? '${_material!.title}.${_material!.type.fileExtension}',
+      storagePath: _material!.storagePath,
+      remoteUrl: _material!.remoteUrl,
     );
   }
 

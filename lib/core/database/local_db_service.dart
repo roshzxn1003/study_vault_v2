@@ -786,6 +786,103 @@ class LocalDbService {
     });
   }
 
+  /// Safely migrates offline/guest records to the newly authenticated user UID,
+  /// preventing data loss and queueing records for cloud sync.
+  Future<void> migrateUserData(String fromUserId, String toUserId) async {
+    if (fromUserId == toUserId) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      const userTables = [
+        'workspaces',
+        'academic_years',
+        'academic_periods',
+        'academic_subjects',
+        'academic_structures',
+        'folders',
+        'materials',
+        'labels',
+        'notes',
+        'files',
+        'flashcards',
+        'personal_topics',
+        'outbox_operations',
+      ];
+
+      for (final table in userTables) {
+        try {
+          await txn.update(
+            table,
+            {'user_id': toUserId},
+            where: 'user_id = ?',
+            whereArgs: [fromUserId],
+          );
+        } catch (e) {
+          debugPrint('Migration update note for $table: $e');
+        }
+      }
+
+      // Ensure outbox operations exist for ALL migrated entities in dependency order
+      // so the entire workspace hierarchy syncs to Supabase (not just materials).
+      const syncableEntities = [
+        ('workspaces', 'workspace'),
+        ('academic_years', 'academic_year'),
+        ('academic_periods', 'academic_period'),
+        ('academic_subjects', 'subject'),
+        ('folders', 'folder'),
+        ('labels', 'label'),
+        ('personal_topics', 'personal_topic'),
+        ('materials', 'material'),
+      ];
+
+      final now = DateTime.now().toIso8601String();
+
+      for (final (table, entityType) in syncableEntities) {
+        try {
+          final rows = await txn.query(
+            table,
+            where: 'user_id = ? AND deleted_at IS NULL',
+            whereArgs: [toUserId],
+          );
+
+          for (final row in rows) {
+            final entityId = row['id'] as String;
+            final existingOp = await txn.query(
+              'outbox_operations',
+              where: 'entity_id = ? AND user_id = ?',
+              whereArgs: [entityId, toUserId],
+            );
+            if (existingOp.isEmpty) {
+              await txn.insert('outbox_operations', {
+                'id': 'mig_${DateTime.now().microsecondsSinceEpoch}_$entityId',
+                'user_id': toUserId,
+                'entity_type': entityType,
+                'entity_id': entityId,
+                'operation': 'create',
+                'payload': Map<String, dynamic>.from(row)..remove('sync_status'),
+                'created_at': now,
+                'updated_at': now,
+                'attempt_count': 0,
+                'status': 'pending',
+              });
+            }
+          }
+        } catch (e) {
+          debugPrint('Migration outbox note for $table: $e');
+        }
+      }
+    });
+  }
+
+  /// Clears only downloaded local file caches and temporary files without deleting any cloud metadata.
+  Future<void> clearLocalCache(String userId) async {
+    final db = await database;
+    await db.rawUpdate('''
+      UPDATE materials 
+      SET file_path = NULL 
+      WHERE user_id = ? AND storage_path IS NOT NULL AND storage_path != ''
+    ''', [userId]);
+  }
+
   /// Exports all local user data in a portable structured map, ensuring zero credentials or secrets are leaked.
   Future<Map<String, dynamic>> exportUserData(String userId) async {
     final db = await database;

@@ -89,6 +89,8 @@ class MaterialActionSheet extends StatelessWidget {
       filePath: path,
       mimeType: material.mimeType,
       title: material.title,
+      storagePath: material.storagePath,
+      remoteUrl: material.remoteUrl,
     );
   }
 
@@ -105,6 +107,8 @@ class MaterialActionSheet extends StatelessWidget {
       context: context,
       filePath: path,
       title: material.title,
+      storagePath: material.storagePath,
+      remoteUrl: material.remoteUrl,
     );
   }
 
@@ -121,6 +125,8 @@ class MaterialActionSheet extends StatelessWidget {
       context: context,
       sourceFilePath: path,
       fileName: material.originalFileName ?? '${material.title}.${material.type.fileExtension}',
+      storagePath: material.storagePath,
+      remoteUrl: material.remoteUrl,
     );
   }
 

@@ -50,9 +50,9 @@ class AppScaffold extends StatelessWidget {
       final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
       final screenWidth = MediaQuery.of(context).size.width;
       final isNarrow = screenWidth < 360;
-      final horizontalMargin = isNarrow ? 12.0 : 20.0;
-      final floatingBottomMargin = bottomPadding > 0 ? bottomPadding + 6.0 : 16.0;
-      const navBarHeight = 64.0;
+      final horizontalMargin = isNarrow ? 12.0 : 18.0;
+      final floatingBottomMargin = bottomPadding > 0 ? bottomPadding + 8.0 : 20.0;
+      const navBarHeight = 68.0;
 
       return Scaffold(
         backgroundColor: backgroundColor ?? AppColors.background,
@@ -73,19 +73,27 @@ class AppScaffold extends StatelessWidget {
                 child: floatingActionButton!,
               ),
 
-            // 3. True Floating Bottom Navigation Bar (floats above page content)
+            // 3. True Floating Bottom Navigation Bar (floats above page content, centered with max width)
             if (!isKeyboardOpen)
               Positioned(
-                left: horizontalMargin,
-                right: horizontalMargin,
+                left: 0,
+                right: 0,
                 bottom: floatingBottomMargin,
-                child: customBottomBar ??
-                    AppBottomNavigation(
-                      currentIndex: navigationIndex!,
-                      onTap: onNavigationChanged!,
-                      onAddTap: onAddTap,
-                      items: navigationItems,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalMargin),
+                      child: customBottomBar ??
+                          AppBottomNavigation(
+                            currentIndex: navigationIndex!,
+                            onTap: onNavigationChanged!,
+                            onAddTap: onAddTap,
+                            items: navigationItems,
+                          ),
                     ),
+                  ),
+                ),
               ),
           ],
         ),

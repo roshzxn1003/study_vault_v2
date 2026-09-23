@@ -21,32 +21,54 @@ class FileActionService {
     required BuildContext context,
     required String filePath,
     required String fileName,
+    String? storagePath,
+    String? remoteUrl,
   }) async {
-    if (filePath.isEmpty) return null;
+    if (filePath.isNotEmpty) {
+      final localFile = File(filePath);
+      if (localFile.existsSync()) return localFile;
+    }
 
-    final localFile = File(filePath);
-    if (localFile.existsSync()) return localFile;
-    if (filePath.startsWith('/')) return null;
+    final hasRemote = (storagePath != null && storagePath.isNotEmpty) ||
+        (remoteUrl != null && remoteUrl.isNotEmpty) ||
+        filePath.startsWith('http://') ||
+        filePath.startsWith('https://');
+
+    if (!hasRemote && (filePath.startsWith('/') || filePath.isEmpty)) {
+      return null;
+    }
 
     try {
-      final tempDir = await getTemporaryDirectory();
+      Directory baseDir;
+      try {
+        baseDir = await getApplicationDocumentsDirectory();
+      } catch (_) {
+        baseDir = await getTemporaryDirectory();
+      }
       final sanitized = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final cacheFile = File('${tempDir.path}/$sanitized');
+      final cacheFile = File('${baseDir.path}/study_materials/$sanitized');
       if (cacheFile.existsSync() && cacheFile.lengthSync() > 0) {
         return cacheFile;
       }
 
       Uint8List? bytes;
-      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-        final res = await http.get(Uri.parse(filePath));
+      final targetPath = (storagePath != null && storagePath.isNotEmpty)
+          ? storagePath
+          : filePath;
+
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        final res = await http.get(Uri.parse(remoteUrl));
         if (res.statusCode == 200) bytes = res.bodyBytes;
-      } else if (!filePath.startsWith('/')) {
+      } else if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
+        final res = await http.get(Uri.parse(targetPath));
+        if (res.statusCode == 200) bytes = res.bodyBytes;
+      } else if (!targetPath.startsWith('/') && targetPath.isNotEmpty) {
         // Supabase storage path
         try {
-          bytes = await Supabase.instance.client.storage.from('study_materials').download(filePath);
+          bytes = await Supabase.instance.client.storage.from('study_materials').download(targetPath);
         } catch (_) {
           try {
-            final signed = await Supabase.instance.client.storage.from('study_materials').createSignedUrl(filePath, 3600);
+            final signed = await Supabase.instance.client.storage.from('study_materials').createSignedUrl(targetPath, 3600);
             final res = await http.get(Uri.parse(signed));
             if (res.statusCode == 200) bytes = res.bodyBytes;
           } catch (_) {}
@@ -54,6 +76,9 @@ class FileActionService {
       }
 
       if (bytes != null && bytes.isNotEmpty) {
+        if (!await cacheFile.parent.exists()) {
+          await cacheFile.parent.create(recursive: true);
+        }
         await cacheFile.writeAsBytes(bytes);
         return cacheFile;
       }
@@ -70,11 +95,15 @@ class FileActionService {
     required String filePath,
     String? mimeType,
     required String title,
+    String? storagePath,
+    String? remoteUrl,
   }) async {
     final file = await resolveLocalFile(
       context: context,
       filePath: filePath,
       fileName: title,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
 
     if (file == null || !file.existsSync()) {
@@ -92,7 +121,7 @@ class FileActionService {
 
     try {
       final result = await OpenFilex.open(
-        filePath,
+        file.path,
         type: mimeType,
       );
 
@@ -158,11 +187,15 @@ class FileActionService {
     required BuildContext context,
     required String filePath,
     required String title,
+    String? storagePath,
+    String? remoteUrl,
   }) async {
     final file = await resolveLocalFile(
       context: context,
       filePath: filePath,
       fileName: title,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
 
     if (file == null || !file.existsSync()) {
@@ -205,11 +238,15 @@ class FileActionService {
     required BuildContext context,
     required String sourceFilePath,
     required String fileName,
+    String? storagePath,
+    String? remoteUrl,
   }) async {
     final source = await resolveLocalFile(
       context: context,
       filePath: sourceFilePath,
       fileName: fileName,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
 
     if (source == null || !source.existsSync()) {

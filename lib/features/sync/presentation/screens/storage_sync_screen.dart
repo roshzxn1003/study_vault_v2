@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/design/tokens/app_colors.dart';
 import 'package:study_vault/core/design/tokens/app_spacing.dart';
 import 'package:study_vault/core/design/tokens/app_typography.dart';
@@ -11,7 +16,7 @@ import 'package:study_vault/features/sync/presentation/widgets/offline_banner.da
 
 /// Storage & Synchronization Settings Screen.
 /// Displays local SQLite storage metrics, Supabase cloud sync status,
-/// outbox queue stats, and manual sync / retry controls.
+/// outbox queue stats, toggles for Wi-Fi/auto-sync, and manual sync / retry controls.
 class StorageSyncScreen extends ConsumerStatefulWidget {
   const StorageSyncScreen({super.key});
 
@@ -21,6 +26,37 @@ class StorageSyncScreen extends ConsumerStatefulWidget {
 
 class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
   bool _isCleaningOutbox = false;
+  bool _isClearingCache = false;
+  bool _autoSyncEnabled = true;
+  bool _wifiOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _autoSyncEnabled = prefs.getBool('sync_auto_enabled') ?? true;
+        _wifiOnly = prefs.getBool('sync_wifi_only') ?? false;
+      });
+    }
+  }
+
+  Future<void> _updateAutoSync(bool val) async {
+    setState(() => _autoSyncEnabled = val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sync_auto_enabled', val);
+  }
+
+  Future<void> _updateWifiOnly(bool val) async {
+    setState(() => _wifiOnly = val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sync_wifi_only', val);
+  }
 
   String _formatBytes(int bytes) {
     if (bytes <= 0) return '0 B';
@@ -43,6 +79,199 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _showClearCacheDialog(String userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.destructive, size: 24),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Clear Local Cache?',
+              style: AppTypography.title.copyWith(color: AppColors.textPrimary),
+            ),
+          ],
+        ),
+        content: Text(
+          'This will remove locally cached file copies to free up device space.\n\nYour materials and cloud files remain completely safe in your Supabase account and will download automatically when accessed.',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTypography.button.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Clear Cache'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isClearingCache = true);
+      try {
+        await LocalDbService.instance.clearLocalCache(userId);
+
+        // Delete temporary cached documents
+        try {
+          Directory baseDir;
+          try {
+            baseDir = await getApplicationDocumentsDirectory();
+          } catch (_) {
+            baseDir = await getTemporaryDirectory();
+          }
+          final matDir = Directory(p.join(baseDir.path, 'study_materials'));
+          if (await matDir.exists()) {
+            await for (final entity in matDir.list()) {
+              if (entity is File) {
+                await entity.delete();
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('[StorageSyncScreen] Clear cache file delete note: $e');
+        }
+
+        ref.invalidate(storageUsageProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Local cache cleared. Cloud files remain safe.'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed clearing cache: $e'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isClearingCache = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _showSyncErrorsBottomSheet() async {
+    final failedOps = await ref.read(syncProvider.notifier).getFailedOperations();
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Sync Issues (${failedOps.length})',
+                      style: AppTypography.title.copyWith(color: AppColors.textPrimary),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (failedOps.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    child: Center(
+                      child: Text(
+                        'No sync errors found. All changes are synchronized!',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: failedOps.length,
+                      separatorBuilder: (context, index) => const Divider(color: AppColors.border),
+                      itemBuilder: (context, index) {
+                        final op = failedOps[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.destructive.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.sync_problem_rounded, color: AppColors.destructive, size: 20),
+                          ),
+                          title: Text(
+                            '${op.entityType.toUpperCase()} (${op.operation.name})',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            op.lastError ?? 'Unknown synchronization error',
+                            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Text(
+                            'Try #${op.attemptCount}',
+                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.md),
+                if (failedOps.isNotEmpty)
+                  AppButton(
+                    text: 'Retry All Now',
+                    icon: const Icon(Icons.replay_rounded, size: 18),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ref.read(syncProvider.notifier).retryFailed();
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final syncState = ref.watch(syncProvider);
@@ -50,6 +279,7 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
     final usageAsync = ref.watch(storageUsageProvider);
     final authRepo = ref.watch(authRepositoryProvider);
     final currentUser = authRepo.getCurrentUser();
+    final userId = currentUser?.id ?? 'guest';
 
     final pendingCount = countsAsync.value?.pending ?? 0;
     final failedCount = countsAsync.value?.failed ?? 0;
@@ -79,7 +309,12 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
                 const SizedBox(height: AppSpacing.md),
                 _buildStorageUsageSection(usageAsync),
                 const SizedBox(height: AppSpacing.md),
+                _buildSyncPreferencesCard(),
+                const SizedBox(height: AppSpacing.md),
+                _buildDangerZoneCard(userId),
+                const SizedBox(height: AppSpacing.md),
                 _buildArchitectureCard(),
+                const SizedBox(height: AppSpacing.xl),
               ],
             ),
           ),
@@ -97,6 +332,14 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
       statusColor = AppColors.textSecondary;
       statusLabel = 'Offline Mode';
       statusIcon = Icons.cloud_off_rounded;
+    } else if (syncState.isDownloading) {
+      statusColor = AppColors.info;
+      statusLabel = 'Downloading Files...';
+      statusIcon = Icons.cloud_download_rounded;
+    } else if (syncState.isUploading) {
+      statusColor = AppColors.primary;
+      statusLabel = 'Uploading Files...';
+      statusIcon = Icons.cloud_upload_rounded;
     } else if (syncState.isSyncing) {
       statusColor = AppColors.primary;
       statusLabel = 'Syncing...';
@@ -107,7 +350,7 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
       statusIcon = Icons.error_outline_rounded;
     } else {
       statusColor = AppColors.success;
-      statusLabel = 'Up to date';
+      statusLabel = 'All Files Synced';
       statusIcon = Icons.cloud_done_rounded;
     }
 
@@ -159,15 +402,38 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            userEmail != null ? 'Connected Account: $userEmail' : 'Local Guest Account',
-            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+          Row(
+            children: [
+              Icon(
+                userEmail != null ? Icons.account_circle_outlined : Icons.person_outline_rounded,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  userEmail != null
+                      ? 'Connected: $userEmail'
+                      : 'Local Guest Account (Login to sync across devices)',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: userEmail != null ? AppColors.textPrimary : AppColors.amber,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             'Last Synced: ${_formatSyncTime(syncState.lastSyncTime)}',
             style: AppTypography.caption.copyWith(color: AppColors.textMuted),
           ),
+          if (syncState.syncedFilesCount > 0) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              '${syncState.syncedFilesCount} materials synchronized in cloud',
+              style: AppTypography.caption.copyWith(color: AppColors.primaryLight),
+            ),
+          ],
           if (syncState.errorMessage != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -180,7 +446,11 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
             children: [
               Expanded(
                 child: AppButton(
-                  text: syncState.isSyncing ? 'Syncing...' : 'Sync Now',
+                  text: syncState.isSyncing
+                      ? (syncState.isDownloading ? 'Downloading...' : (syncState.isUploading ? 'Uploading...' : 'Syncing...'))
+                      : 'Sync Now',
+                  icon: syncState.isSyncing ? null : const Icon(Icons.sync_rounded, size: 18),
+                  isLoading: syncState.isSyncing,
                   onPressed: syncState.isSyncing
                       ? null
                       : () async {
@@ -189,6 +459,182 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStorageUsageSection(AsyncValue<StorageUsage> usageAsync) {
+    const quotaBytes = 5 * 1024 * 1024 * 1024; // 5 GB Free Tier
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Storage Breakdown',
+            style: AppTypography.body.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          usageAsync.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (err, _) => Text(
+              'Unable to query storage metrics: $err',
+              style: AppTypography.caption.copyWith(color: AppColors.destructive),
+            ),
+            data: (usage) {
+              final usedBytes = usage.remoteStorageBytes;
+              final fraction = (usedBytes / quotaBytes).clamp(0.0, 1.0);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Cloud Storage Usage',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        '${_formatBytes(usedBytes)} of 5.0 GB',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: fraction,
+                      minHeight: 8,
+                      backgroundColor: AppColors.surfaceSecondary,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        fraction > 0.9 ? AppColors.destructive : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildStorageRow(
+                    icon: Icons.storage_rounded,
+                    title: 'Local SQLite Database',
+                    subtitle: 'Workspaces, periods, subjects, outbox metadata',
+                    size: _formatBytes(usage.localDbBytes),
+                  ),
+                  const Divider(color: AppColors.border, height: AppSpacing.md),
+                  _buildStorageRow(
+                    icon: Icons.folder_copy_outlined,
+                    title: 'Local Cached Documents',
+                    subtitle: 'Locally cached materials and PDF previews',
+                    size: _formatBytes(usage.localMaterialFilesBytes),
+                  ),
+                  const Divider(color: AppColors.border, height: AppSpacing.md),
+                  _buildStorageRow(
+                    icon: Icons.cloud_outlined,
+                    title: 'Cloud Storage (Supabase)',
+                    subtitle: 'Study materials uploaded to cloud bucket',
+                    size: _formatBytes(usage.remoteStorageBytes),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total On-Device Usage',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        _formatBytes(usage.totalLocalBytes),
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSyncPreferencesCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sync Preferences',
+            style: AppTypography.body.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Automatic Background Sync',
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Continuously synchronize edits and files when connected',
+                style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+              ),
+              value: _autoSyncEnabled,
+              activeThumbColor: AppColors.primary,
+              onChanged: _updateAutoSync,
+            ),
+          ),
+          const Divider(color: AppColors.border, height: 1),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Sync on Wi-Fi Only',
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Conserve cellular data by pausing file uploads on mobile networks',
+                style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+              ),
+              value: _wifiOnly,
+              activeThumbColor: AppColors.primary,
+              onChanged: _updateWifiOnly,
+            ),
           ),
         ],
       ),
@@ -266,22 +712,133 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
           ),
           if (failed > 0) ...[
             const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.destructive,
-                side: const BorderSide(color: AppColors.destructive),
-                minimumSize: const Size.fromHeight(40),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              icon: const Icon(Icons.replay_rounded, size: 16),
-              label: const Text('Retry Failed Mutations'),
-              onPressed: isSyncing
-                  ? null
-                  : () async {
-                      await ref.read(syncProvider.notifier).retryFailed();
-                    },
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.destructive,
+                      side: const BorderSide(color: AppColors.destructive),
+                      minimumSize: const Size.fromHeight(38),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.error_outline_rounded, size: 16),
+                    label: const Text('View Sync Errors'),
+                    onPressed: _showSyncErrorsBottomSheet,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.destructive,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(38),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.replay_rounded, size: 16),
+                    label: const Text('Retry Failed Mutations'),
+                    onPressed: isSyncing
+                        ? null
+                        : () async {
+                            await ref.read(syncProvider.notifier).retryFailed();
+                          },
+                  ),
+                ),
+              ],
             ),
           ],
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              side: const BorderSide(color: AppColors.border),
+              minimumSize: const Size.fromHeight(38),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: _isCleaningOutbox
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  )
+                : const Icon(Icons.cleaning_services_rounded, size: 16),
+            label: const Text('Purge Synced Outbox Logs'),
+            onPressed: _isCleaningOutbox
+                ? null
+                : () async {
+                    setState(() => _isCleaningOutbox = true);
+                    try {
+                      final count = await ref.read(syncProvider.notifier).purgeSynced(
+                            olderThan: const Duration(days: 0),
+                          );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Cleaned $count synced outbox records.'),
+                            backgroundColor: AppColors.surfaceSecondary,
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isCleaningOutbox = false);
+                      }
+                    }
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDangerZoneCard(String userId) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.delete_sweep_outlined, color: AppColors.destructive, size: 18),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Local Storage Management',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.destructive,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Running out of space on this device? Clear offline cached files. Your files remain securely backed up in the cloud and will re-download on demand.',
+            style: AppTypography.caption.copyWith(color: AppColors.textMuted, height: 1.4),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.destructive,
+              side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.6)),
+              minimumSize: const Size.fromHeight(38),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: _isClearingCache
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.destructive),
+                  )
+                : const Icon(Icons.delete_outline_rounded, size: 16),
+            label: const Text('Clear Local File Cache'),
+            onPressed: _isClearingCache ? null : () => _showClearCacheDialog(userId),
+          ),
         ],
       ),
     );
@@ -323,127 +880,6 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStorageUsageSection(AsyncValue<StorageUsage> usageAsync) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Storage Breakdown',
-            style: AppTypography.body.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          usageAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (err, _) => Text(
-              'Unable to query storage metrics: $err',
-              style: AppTypography.caption.copyWith(color: AppColors.destructive),
-            ),
-            data: (usage) {
-              return Column(
-                children: [
-                  _buildStorageRow(
-                    icon: Icons.storage_rounded,
-                    title: 'Local SQLite Database',
-                    subtitle: 'Workspaces, periods, subjects, outbox metadata',
-                    size: _formatBytes(usage.localDbBytes),
-                  ),
-                  const Divider(color: AppColors.border, height: AppSpacing.md),
-                  _buildStorageRow(
-                    icon: Icons.folder_copy_outlined,
-                    title: 'Local Material Files',
-                    subtitle: 'Cached documents, images, and notes on device',
-                    size: _formatBytes(usage.localMaterialFilesBytes),
-                  ),
-                  const Divider(color: AppColors.border, height: AppSpacing.md),
-                  _buildStorageRow(
-                    icon: Icons.cloud_outlined,
-                    title: 'Cloud Storage (Supabase)',
-                    subtitle: 'Study materials uploaded to cloud bucket',
-                    size: _formatBytes(usage.remoteStorageBytes),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total On-Device Usage',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        _formatBytes(usage.totalLocalBytes),
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              side: const BorderSide(color: AppColors.border),
-              minimumSize: const Size.fromHeight(38),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            icon: _isCleaningOutbox
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                  )
-                : const Icon(Icons.cleaning_services_rounded, size: 16),
-            label: const Text('Purge Synced Outbox Logs'),
-            onPressed: _isCleaningOutbox
-                ? null
-                : () async {
-                    setState(() => _isCleaningOutbox = true);
-                    try {
-                      final count = await ref.read(syncProvider.notifier).purgeSynced(
-                            olderThan: const Duration(days: 0),
-                          );
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Cleaned $count synced outbox records.'),
-                            backgroundColor: AppColors.surfaceSecondary,
-                          ),
-                        );
-                      }
-                    } finally {
-                      if (mounted) {
-                        setState(() => _isCleaningOutbox = false);
-                      }
-                    }
-                  },
           ),
         ],
       ),
@@ -515,7 +951,7 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Study Vault is local-first. All workspaces, subjects, materials, and edits are written directly to your on-device SQLite database. When internet connectivity is available, an Outbox worker deterministically replicates changes to Supabase in the background.',
+            'Study Vault is offline-first. All workspaces, subjects, materials, and edits are written directly to your on-device SQLite database. When internet connectivity is available, an Outbox worker replicates changes to Supabase and downloads missing files automatically in the background.',
             style: AppTypography.caption.copyWith(
               color: AppColors.textMuted,
               height: 1.5,

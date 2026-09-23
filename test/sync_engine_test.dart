@@ -94,6 +94,11 @@ class MockRemoteSyncService implements RemoteSyncService {
       remoteUrl: 'https://supabase.example.com/storage/v1/object/public/study_materials/$userId/${materialId}_$fileName',
     );
   }
+
+  @override
+  Future<List<int>> downloadMaterialFile({required String storagePath}) async {
+    return [1, 2, 3, 4];
+  }
 }
 
 class FakeSyncNotifier extends StateNotifier<SyncState> implements SyncNotifier {
@@ -118,6 +123,9 @@ class FakeSyncNotifier extends StateNotifier<SyncState> implements SyncNotifier 
         localMaterialFilesBytes: 2048,
         remoteStorageBytes: 4096,
       );
+
+  @override
+  Future<List<OutboxOperation>> getFailedOperations() async => [];
 }
 
 void main() {

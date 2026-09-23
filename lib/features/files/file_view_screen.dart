@@ -160,28 +160,34 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
     );
   }
 
-  void _handleOpenWith(String filePath, String title, String? mimeType) {
+  void _handleOpenWith(String filePath, String title, String? mimeType, {String? storagePath, String? remoteUrl}) {
     FileActionService.instance.openWith(
       context: context,
       filePath: filePath,
       title: title,
       mimeType: mimeType,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
   }
 
-  void _handleShare(String filePath, String title) {
+  void _handleShare(String filePath, String title, {String? storagePath, String? remoteUrl}) {
     FileActionService.instance.shareSystemFile(
       context: context,
       filePath: filePath,
       title: title,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
   }
 
-  void _handleDownload(String filePath, String fileName) {
+  void _handleDownload(String filePath, String fileName, {String? storagePath, String? remoteUrl}) {
     FileActionService.instance.downloadFile(
       context: context,
       sourceFilePath: filePath,
       fileName: fileName,
+      storagePath: storagePath,
+      remoteUrl: remoteUrl,
     );
   }
 
@@ -350,11 +356,13 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
           ),
           // More options (Open with, Share, Download, Delete)
           fileAsync.when(
-            data: (file) {
+             data: (file) {
               if (file == null) return const SizedBox.shrink();
               final path = file['storage_path'] ?? '';
               final name = file['name'] ?? 'document.pdf';
               final mime = file['mime_type'] as String?;
+              final cloudPath = file['storage_path'] as String?;
+              final cloudUrl = file['remote_url'] as String?;
 
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
@@ -371,13 +379,13 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                       _fitToWidth();
                       break;
                     case 'open_with':
-                      _handleOpenWith(path, name, mime);
+                      _handleOpenWith(path, name, mime, storagePath: cloudPath, remoteUrl: cloudUrl);
                       break;
                     case 'share':
-                      _handleShare(path, name);
+                      _handleShare(path, name, storagePath: cloudPath, remoteUrl: cloudUrl);
                       break;
                     case 'download':
-                      _handleDownload(path, name);
+                      _handleDownload(path, name, storagePath: cloudPath, remoteUrl: cloudUrl);
                       break;
                     case 'delete':
                       _confirmDelete(context, file);

@@ -2,6 +2,8 @@
 enum SyncStatus {
   idle,
   syncing,
+  uploading,
+  downloading,
   synced,
   offline,
   failed,
@@ -13,6 +15,7 @@ class SyncState {
   final DateTime? lastSyncedAt;
   final int pendingCount;
   final int failedCount;
+  final int syncedFilesCount;
   final String? errorMessage;
   final bool isOnline;
   final int localStorageBytes;
@@ -23,13 +26,19 @@ class SyncState {
     this.lastSyncedAt,
     this.pendingCount = 0,
     this.failedCount = 0,
+    this.syncedFilesCount = 0,
     this.errorMessage,
     this.isOnline = true,
     this.localStorageBytes = 0,
     this.cloudStorageBytes = 0,
   });
 
-  bool get isSyncing => status == SyncStatus.syncing;
+  bool get isSyncing =>
+      status == SyncStatus.syncing ||
+      status == SyncStatus.uploading ||
+      status == SyncStatus.downloading;
+  bool get isUploading => status == SyncStatus.uploading;
+  bool get isDownloading => status == SyncStatus.downloading;
   bool get hasPendingChanges => pendingCount > 0;
   bool get hasFailedChanges => failedCount > 0;
   bool get isOffline => !isOnline || status == SyncStatus.offline;
@@ -41,6 +50,7 @@ class SyncState {
     DateTime? lastSyncedAt,
     int? pendingCount,
     int? failedCount,
+    int? syncedFilesCount,
     String? errorMessage,
     bool? isOnline,
     int? localStorageBytes,
@@ -52,6 +62,7 @@ class SyncState {
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       pendingCount: pendingCount ?? this.pendingCount,
       failedCount: failedCount ?? this.failedCount,
+      syncedFilesCount: syncedFilesCount ?? this.syncedFilesCount,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isOnline: isOnline ?? this.isOnline,
       localStorageBytes: localStorageBytes ?? this.localStorageBytes,

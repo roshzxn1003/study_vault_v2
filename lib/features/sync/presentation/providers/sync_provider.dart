@@ -5,6 +5,7 @@ import 'package:study_vault/features/sync/data/repositories/outbox_repository.da
 import 'package:study_vault/features/sync/data/services/remote_sync_service.dart';
 import 'package:study_vault/features/sync/data/services/supabase_sync_service.dart';
 import 'package:study_vault/features/sync/data/services/sync_engine.dart';
+import 'package:study_vault/features/sync/domain/models/outbox_operation.dart';
 import 'package:study_vault/features/sync/domain/models/sync_state.dart';
 
 /// Provider for OutboxRepository.
@@ -84,6 +85,12 @@ class SyncNotifier extends StateNotifier<SyncState> {
   Future<StorageUsage> getStorageUsage() async {
     final userId = _currentUserId;
     return await _engine.calculateStorageUsage(userId: userId);
+  }
+
+  /// Retrieves all failed outbox operations for inspection in the UI.
+  Future<List<OutboxOperation>> getFailedOperations() async {
+    final userId = _currentUserId;
+    return await _outboxRepo.getFailedOperations(userId: userId);
   }
 
   @override

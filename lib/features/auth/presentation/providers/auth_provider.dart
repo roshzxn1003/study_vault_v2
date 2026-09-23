@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/features/auth/data/repositories/supabase_auth_repository.dart';
 import 'package:study_vault/features/auth/domain/repositories/auth_repository.dart';
+import 'package:study_vault/features/sync/presentation/providers/sync_provider.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 
 enum AuthStatus {
@@ -47,9 +48,18 @@ class AuthControllerState {
 
 class AuthController extends StateNotifier<AuthControllerState> {
   final AuthRepository _repository;
+  final Ref? _ref;
 
-  AuthController(this._repository) : super(const AuthControllerState()) {
+  AuthController(this._repository, [this._ref]) : super(const AuthControllerState()) {
     _checkCurrentUser();
+  }
+
+  void _triggerBackgroundSync() {
+    try {
+      _ref?.read(syncProvider.notifier).syncNow();
+    } catch (e) {
+      debugPrint('[AuthController] Sync trigger note: $e');
+    }
   }
 
   Future<bool> signInWithGoogle() async {
@@ -59,15 +69,16 @@ class AuthController extends StateNotifier<AuthControllerState> {
       final user = _repository.getCurrentUser();
       if (user != null) {
         try {
-          await LocalDbService.instance.clearUserData('guest');
+          await LocalDbService.instance.migrateUserData('guest', user.id);
         } catch (e) {
-          debugPrint('Auth clear guest data on Google signin note: $e');
+          debugPrint('Auth migrate guest data on Google signin note: $e');
         }
         state = AuthControllerState(
           status: AuthStatus.authenticated,
           userId: user.id,
           successMessage: 'Signed in successfully',
         );
+        _triggerBackgroundSync();
       }
       return true;
     } on AuthException catch (e) {
@@ -93,6 +104,7 @@ class AuthController extends StateNotifier<AuthControllerState> {
           status: AuthStatus.authenticated,
           userId: user.id,
         );
+        _triggerBackgroundSync();
       } else {
         state = const AuthControllerState(status: AuthStatus.unauthenticated);
       }
@@ -106,16 +118,24 @@ class AuthController extends StateNotifier<AuthControllerState> {
     try {
       await _repository.signIn(email: email, password: password);
       final user = _repository.getCurrentUser();
-      try {
-        await LocalDbService.instance.clearUserData('guest');
-      } catch (e) {
-        debugPrint('Auth clear guest data on signIn note: $e');
+      if (user != null) {
+        try {
+          await LocalDbService.instance.migrateUserData('guest', user.id);
+        } catch (e) {
+          debugPrint('Auth migrate guest data on signIn note: $e');
+        }
+        state = AuthControllerState(
+          status: AuthStatus.authenticated,
+          userId: user.id,
+          successMessage: 'Signed in successfully',
+        );
+        _triggerBackgroundSync();
+      } else {
+        state = const AuthControllerState(
+          status: AuthStatus.authenticated,
+          successMessage: 'Signed in successfully',
+        );
       }
-      state = AuthControllerState(
-        status: AuthStatus.authenticated,
-        userId: user?.id,
-        successMessage: 'Signed in successfully',
-      );
       return true;
     } on AuthException catch (e) {
       state = AuthControllerState(
@@ -143,15 +163,16 @@ class AuthController extends StateNotifier<AuthControllerState> {
       final user = _repository.getCurrentUser();
       if (user != null) {
         try {
-          await LocalDbService.instance.clearUserData('guest');
+          await LocalDbService.instance.migrateUserData('guest', user.id);
         } catch (e) {
-          debugPrint('Auth clear guest data on signUp note: $e');
+          debugPrint('Auth migrate guest data on signUp note: $e');
         }
         state = AuthControllerState(
           status: AuthStatus.authenticated,
           userId: user.id,
           successMessage: 'Account created successfully',
         );
+        _triggerBackgroundSync();
       } else {
         // Confirmation email sent
         state = const AuthControllerState(
@@ -268,7 +289,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthControllerState>((ref) {
-  return AuthController(ref.watch(authRepositoryProvider));
+  return AuthController(ref.watch(authRepositoryProvider), ref);
 });
 
 // Backward compatibility entity for existing stream-based watchers

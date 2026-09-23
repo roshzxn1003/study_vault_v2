@@ -4,6 +4,8 @@ import 'package:study_vault/features/academic/data/repositories/academic_workspa
 import 'package:study_vault/features/academic/domain/models/models.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_state.dart';
 import 'package:study_vault/features/auth/presentation/providers/auth_provider.dart';
+import 'package:study_vault/features/sync/domain/models/sync_state.dart';
+import 'package:study_vault/features/sync/presentation/providers/sync_provider.dart';
 
 export 'academic_workspace_state.dart';
 
@@ -20,6 +22,17 @@ class AcademicWorkspaceNotifier extends StateNotifier<AcademicWorkspaceState> {
   AcademicWorkspaceNotifier(this._repository, this._ref)
       : super(const AcademicWorkspaceState()) {
     init();
+
+    // Re-bootstrap when background sync completes pulling cloud workspaces/subjects
+    _ref.listen<SyncState>(syncProvider, (previous, current) {
+      if ((previous?.status == SyncStatus.syncing ||
+              previous?.status == SyncStatus.downloading ||
+              previous?.status == SyncStatus.uploading) &&
+          current.status == SyncStatus.synced) {
+        debugPrint('[AcademicWorkspaceNotifier] Sync finished. Reloading workspaces from DB.');
+        init();
+      }
+    });
   }
 
   String get _currentUserId {
@@ -41,11 +54,21 @@ class AcademicWorkspaceNotifier extends StateNotifier<AcademicWorkspaceState> {
         return;
       }
 
-      // Default to active or first workspace
-      final activeWs = state.activeWorkspace != null &&
-              workspaces.any((w) => w.id == state.activeWorkspace!.id)
-          ? state.activeWorkspace!
-          : workspaces.first;
+      // Default to active or first workspace, prioritizing workspaces with actual academic structure
+      AcademicWorkspace activeWs;
+      if (state.activeWorkspace != null &&
+          workspaces.any((w) => w.id == state.activeWorkspace!.id)) {
+        activeWs = state.activeWorkspace!;
+      } else {
+        activeWs = workspaces.first;
+        for (final ws in workspaces) {
+          final years = await _repository.getAcademicYears(ws.id);
+          if (years.isNotEmpty) {
+            activeWs = ws;
+            break;
+          }
+        }
+      }
 
       await _loadWorkspaceData(activeWs, workspaces);
     } catch (e) {

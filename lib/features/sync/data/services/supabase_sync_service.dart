@@ -45,6 +45,14 @@ class SupabaseSyncService implements RemoteSyncService {
 
     // Strip local-only metadata
     data.remove('sync_status');
+    data.remove('remote_updated_at');
+
+    // Convert empty string foreign keys/dates to null for Postgres types
+    for (final key in data.keys.toList()) {
+      if (data[key] == '') {
+        data[key] = null;
+      }
+    }
 
     // Normalize boolean columns (SQLite integers 0/1 -> Supabase booleans)
     const boolFields = [
@@ -130,6 +138,13 @@ class SupabaseSyncService implements RemoteSyncService {
     }
 
     return (storagePath: storagePath, remoteUrl: publicUrl);
+  }
+
+  @override
+  Future<List<int>> downloadMaterialFile({
+    required String storagePath,
+  }) async {
+    return await client.storage.from('study_materials').download(storagePath);
   }
 
   @override

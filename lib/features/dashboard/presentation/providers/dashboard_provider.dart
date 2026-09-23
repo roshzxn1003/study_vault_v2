@@ -20,6 +20,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   DashboardNotifier(this._repository, this._ref)
       : super(const DashboardState()) {
     Future.microtask(() => init());
+
+    // Automatically update dashboard whenever academic workspace state changes (e.g. from sync or switch)
+    _ref.listen<AcademicWorkspaceState>(academicWorkspaceProvider, (previous, current) {
+      if (previous != current) {
+        _syncWithAcademicState(current);
+      }
+    });
   }
 
   String get _currentUserId {

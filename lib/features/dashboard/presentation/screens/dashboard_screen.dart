@@ -191,7 +191,8 @@ class DashboardScreen extends ConsumerWidget {
                     // 9. Upcoming Academic Target
                     const UpcomingAcademicSection(),
 
-                    const SizedBox(height: AppSpacing.xxl),
+                    // Bottom clearance for floating navigation bar
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),

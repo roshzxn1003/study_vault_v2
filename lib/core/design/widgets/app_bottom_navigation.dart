@@ -51,8 +51,9 @@ class AppNavigationItem {
   ];
 }
 
-/// True floating academic navigation bar for Study Vault.
-/// Detached from screen edges, pill-shaped, with frosted glass elevation.
+/// Floating layered glassmorphism navigation bar for Study Vault.
+/// Detached from screen edges, pill-shaped, with frosted glass elevation,
+/// subtle ambient purple glow, and interactive central action.
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -76,37 +77,45 @@ class AppBottomNavigation extends StatelessWidget {
     final isNarrow = screenWidth < 360;
 
     return Container(
-      height: 66,
+      height: 68,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(33),
+        borderRadius: BorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 24,
+            color: Colors.black.withValues(alpha: 0.55),
+            blurRadius: 28,
             spreadRadius: 2,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.16),
-            blurRadius: 14,
+            color: AppColors.primary.withValues(alpha: 0.22),
+            blurRadius: 18,
+            spreadRadius: -2,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(33),
+        borderRadius: BorderRadius.circular(34),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated.withValues(alpha: 0.94),
-              borderRadius: BorderRadius.circular(33),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF1E1E2C).withValues(alpha: 0.72),
+                  const Color(0xFF12121B).withValues(alpha: 0.65),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(34),
               border: Border.all(
-                color: AppColors.border.withValues(alpha: 0.85),
+                color: Colors.white.withValues(alpha: 0.16),
                 width: 1.2,
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(items.length, (index) {
@@ -131,12 +140,12 @@ class AppBottomNavigation extends StatelessWidget {
                           splashColor: Colors.white.withValues(alpha: 0.3),
                           highlightColor: Colors.white.withValues(alpha: 0.15),
                           child: Container(
-                            width: isNarrow ? 42 : 46,
-                            height: isNarrow ? 42 : 46,
+                            width: isNarrow ? 44 : 48,
+                            height: isNarrow ? 44 : 48,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [
-                                  AppColors.primary,
+                                  Color(0xFF6366F1),
                                   Color(0xFF4F46E5),
                                 ],
                                 begin: Alignment.topLeft,
@@ -145,19 +154,19 @@ class AppBottomNavigation extends StatelessWidget {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.45),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
+                                  color: const Color(0xFF6366F1).withValues(alpha: 0.45),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                width: 1.2,
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.4,
                               ),
                             ),
                             child: const Icon(
                               Icons.add_rounded,
-                              size: 26,
+                              size: 28,
                               color: Colors.white,
                             ),
                           ),
@@ -194,9 +203,15 @@ class AppBottomNavigation extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.primary.withValues(alpha: 0.18)
+                                    ? AppColors.primary.withValues(alpha: 0.20)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
+                                border: isSelected
+                                    ? Border.all(
+                                        color: AppColors.primaryLight.withValues(alpha: 0.30),
+                                        width: 1,
+                                      )
+                                    : null,
                               ),
                               child: Icon(
                                 isSelected ? item.activeIcon : item.icon,

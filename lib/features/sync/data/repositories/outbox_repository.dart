@@ -240,6 +240,20 @@ class OutboxRepository {
     );
   }
 
+  /// Retrieves all failed operations for inspection and troubleshooting.
+  Future<List<OutboxOperation>> getFailedOperations({String? userId}) async {
+    final db = await _localDb.database;
+    final where = userId != null && userId.isNotEmpty ? "status = 'failed' AND user_id = ?" : "status = 'failed'";
+    final args = userId != null && userId.isNotEmpty ? [userId] : null;
+    final rows = await db.query(
+      'outbox_operations',
+      where: where,
+      whereArgs: args,
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map((r) => OutboxOperation.fromMap(r)).toList();
+  }
+
   /// Checks if an active un-synced outbox mutation exists for an entity.
   Future<bool> hasPendingMutation(String entityId) async {
     final db = await _localDb.database;

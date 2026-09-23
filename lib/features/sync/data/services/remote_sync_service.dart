@@ -19,6 +19,11 @@ abstract class RemoteSyncService {
     required String fileName,
   });
 
+  /// Downloads a physical material file from cloud storage bucket as bytes.
+  Future<List<int>> downloadMaterialFile({
+    required String storagePath,
+  });
+
   /// Pulls remote records that changed since the specified timestamp.
   Future<List<Map<String, dynamic>>> pullEntities({
     required String entityType,
