@@ -52,3 +52,6 @@ app.*.map.json
 .env.*
 *.db
 
+
+linux/flutter/ephemeral.old/
+windows/flutter/ephemeral.old/
