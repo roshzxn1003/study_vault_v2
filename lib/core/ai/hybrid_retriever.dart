@@ -277,30 +277,70 @@ class HybridRetriever implements Retriever {
       final content = (row['content'] as String?) ?? (row['description'] as String?) ?? '';
       if (content.trim().isEmpty) continue;
 
-      int matches = 0;
-      final lowerContent = content.toLowerCase();
-      final lowerTitle = title.toLowerCase();
+      // Break long content into paragraphs or sliding windows of ~700 chars
+      final paragraphs = content.split(RegExp(r'\n\s*\n')).map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+      final windows = <Map<String, dynamic>>[];
 
-      for (final t in queryTokens) {
-        if (lowerContent.contains(t)) matches += 2;
-        if (lowerTitle.contains(t)) matches += 3;
+      if (paragraphs.isEmpty || (paragraphs.length == 1 && paragraphs.first.length <= 800)) {
+        windows.add({'text': content.trim(), 'page': 1, 'index': 0});
+      } else {
+        int windowIdx = 0;
+        int currentEstimatedPage = 1;
+        int accumulatedCharsOnPage = 0;
+
+        for (final para in paragraphs) {
+          accumulatedCharsOnPage += para.length;
+          if (accumulatedCharsOnPage > 2000) {
+            currentEstimatedPage++;
+            accumulatedCharsOnPage = 0;
+          }
+
+          if (para.length <= 800) {
+            windows.add({'text': para, 'page': currentEstimatedPage, 'index': windowIdx++});
+          } else {
+            // Split huge paragraphs into 700-char sub-windows
+            for (int i = 0; i < para.length; i += 600) {
+              final end = (i + 700 < para.length) ? i + 700 : para.length;
+              windows.add({
+                'text': para.substring(i, end).trim(),
+                'page': currentEstimatedPage,
+                'index': windowIdx++,
+              });
+            }
+          }
+        }
       }
 
-      if (matches > 0 || queryTokens.isEmpty) {
-        final score = queryTokens.isEmpty
-            ? 0.7
-            : (matches / (queryTokens.length * 2.0)).clamp(0.4, 0.9);
+      // Score each window against query tokens
+      for (final win in windows) {
+        final winText = win['text'] as String;
+        if (winText.isEmpty) continue;
 
-        results.add(RetrievedChunk(
-          chunkId: 'content_$id',
-          materialId: id,
-          materialTitle: title,
-          pageNumber: 1,
-          chunkIndex: 0,
-          text: content.length > 800 ? content.substring(0, 800) : content,
-          score: score,
-          matchType: 'keyword',
-        ));
+        int matches = 0;
+        final lowerText = winText.toLowerCase();
+        final lowerTitle = title.toLowerCase();
+
+        for (final t in queryTokens) {
+          if (lowerText.contains(t)) matches += 2;
+          if (lowerTitle.contains(t)) matches += 3;
+        }
+
+        if (matches > 0 || queryTokens.isEmpty) {
+          final score = queryTokens.isEmpty
+              ? 0.7
+              : (matches / (queryTokens.length * 2.0)).clamp(0.4, 0.95);
+
+          results.add(RetrievedChunk(
+            chunkId: 'content_${id}_${win['index']}',
+            materialId: id,
+            materialTitle: title,
+            pageNumber: win['page'] as int,
+            chunkIndex: win['index'] as int,
+            text: winText,
+            score: score,
+            matchType: 'keyword',
+          ));
+        }
       }
     }
 

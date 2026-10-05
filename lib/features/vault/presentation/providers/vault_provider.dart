@@ -24,8 +24,12 @@ class VaultNotifier extends StateNotifier<VaultState> {
   }
 
   String get _currentUserId {
-    final authRepo = _ref.read(authRepositoryProvider);
-    return authRepo.getCurrentUser()?.id ?? 'guest';
+    try {
+      final authRepo = _ref.read(authRepositoryProvider);
+      return authRepo.getCurrentUser()?.id ?? 'guest';
+    } catch (_) {
+      return 'guest';
+    }
   }
 
   String? get _currentWorkspaceId {

@@ -18,6 +18,7 @@ import 'package:study_vault/features/sync/presentation/providers/sync_provider.d
 import 'package:study_vault/features/vault/domain/models/models.dart';
 import 'package:study_vault/features/vault/presentation/providers/vault_provider.dart';
 import 'package:study_vault/features/vault/presentation/providers/subject_vault_provider.dart';
+import 'package:study_vault/core/providers/document_providers.dart';
 
 final materialUploadServiceProvider = Provider<MaterialUploadService>((ref) {
   return MaterialUploadService(ref);
@@ -198,6 +199,16 @@ class MaterialUploadService {
         }
 
         uploadedMaterials.add(material);
+
+        // Auto-index newly added material in background for RAG
+        try {
+          final processor = _ref.read(documentProcessorProvider);
+          processor.processDocument(material.id).catchError((err) {
+            debugPrint('[MaterialUploadService] Auto-index note: $err');
+          });
+        } catch (e) {
+          debugPrint('[MaterialUploadService] Auto-index trigger note: $e');
+        }
       } catch (e) {
         debugPrint('[MaterialUploadService] Failed processing file ${pickedFile.name}: $e');
       }
@@ -287,6 +298,16 @@ class MaterialUploadService {
         );
 
         uploaded.add(material);
+
+        // Auto-index image in background for OCR & RAG
+        try {
+          final processor = _ref.read(documentProcessorProvider);
+          processor.processDocument(material.id).catchError((err) {
+            debugPrint('[MaterialUploadService] Image auto-index note: $err');
+          });
+        } catch (e) {
+          debugPrint('[MaterialUploadService] Image auto-index trigger note: $e');
+        }
       }
 
       if (uploaded.isNotEmpty) {
@@ -417,6 +438,16 @@ class MaterialUploadService {
         isInbox: folderId == null && subjectId == null,
         source: 'Note',
       );
+
+      // Auto-index markdown note in background for RAG
+      try {
+        final processor = _ref.read(documentProcessorProvider);
+        processor.processDocument(material.id).catchError((err) {
+          debugPrint('[MaterialUploadService] Note auto-index note: $err');
+        });
+      } catch (e) {
+        debugPrint('[MaterialUploadService] Note auto-index trigger note: $e');
+      }
 
       _invalidateProviders(subjectId);
       try {

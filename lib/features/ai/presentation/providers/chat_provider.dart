@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/ai/llm_service.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
-import 'package:study_vault/core/database/local_db_service.dart';
+import 'package:study_vault/features/ai/data/repositories/ai_conversation_repository.dart';
 
 class ChatMessage {
   final String id;
@@ -54,6 +54,11 @@ class ChatState {
   final String? activeMaterialTitle;
   final String? errorMessage;
   final String? lastUserPrompt;
+  final String? conversationId;
+  final String activeModel;
+  final String? statusMessage;
+  final List<AiConversationItem> conversations;
+  final bool isLoadingHistory;
 
   ChatState({
     this.messages = const [],
@@ -66,6 +71,11 @@ class ChatState {
     this.activeMaterialTitle,
     this.errorMessage,
     this.lastUserPrompt,
+    this.conversationId,
+    this.activeModel = 'gemini-1.5-flash',
+    this.statusMessage,
+    this.conversations = const [],
+    this.isLoadingHistory = false,
   });
 
   ChatState copyWith({
@@ -80,6 +90,13 @@ class ChatState {
     String? errorMessage,
     bool clearError = false,
     String? lastUserPrompt,
+    String? conversationId,
+    bool clearConversation = false,
+    String? activeModel,
+    String? statusMessage,
+    bool clearStatus = false,
+    List<AiConversationItem>? conversations,
+    bool? isLoadingHistory,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
@@ -92,6 +109,11 @@ class ChatState {
       activeMaterialTitle: activeMaterialTitle ?? this.activeMaterialTitle,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastUserPrompt: lastUserPrompt ?? this.lastUserPrompt,
+      conversationId: clearConversation ? null : (conversationId ?? this.conversationId),
+      activeModel: activeModel ?? this.activeModel,
+      statusMessage: clearStatus ? null : (statusMessage ?? this.statusMessage),
+      conversations: conversations ?? this.conversations,
+      isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
     );
   }
 }
@@ -104,9 +126,29 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final Ref ref;
   AiCancelToken? _currentCancelToken;
   StreamSubscription<AiChunk>? _currentStreamSub;
+  late final AiConversationRepository _conversationRepo;
 
-  ChatNotifier(this.ref) : super(ChatState());
+  ChatNotifier(this.ref) : super(ChatState()) {
+    _conversationRepo = ref.read(aiConversationRepositoryProvider);
+    loadHistory();
+  }
 
+  /// Loads list of user conversations for drawer history.
+  Future<void> loadHistory() async {
+    try {
+      state = state.copyWith(isLoadingHistory: true);
+      final list = await _conversationRepo.listConversations();
+      if (!mounted) return;
+      state = state.copyWith(conversations: list, isLoadingHistory: false);
+    } catch (e) {
+      debugPrint('ChatNotifier: loadHistory failed: $e');
+      if (mounted) {
+        state = state.copyWith(isLoadingHistory: false);
+      }
+    }
+  }
+
+  /// Sets context filters for workspace/subject.
   void setContext({
     String? subject,
     String? workspace,
@@ -121,8 +163,108 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
   }
 
+  /// Attaches or clears active material grounding.
+  void setMaterial(String? materialId, String? materialTitle) {
+    state = state.copyWith(
+      activeMaterialId: materialId,
+      activeMaterialTitle: materialTitle,
+    );
+  }
+
+  /// Clears active material grounding (scopes queries to all materials).
+  void clearMaterial() {
+    state = ChatState(
+      messages: state.messages,
+      isGenerating: state.isGenerating,
+      isThinking: state.isThinking,
+      currentMode: state.currentMode,
+      activeSubject: state.activeSubject,
+      activeWorkspace: state.activeWorkspace,
+      activeMaterialId: null,
+      activeMaterialTitle: null,
+      errorMessage: state.errorMessage,
+      lastUserPrompt: state.lastUserPrompt,
+      conversationId: state.conversationId,
+      activeModel: state.activeModel,
+      conversations: state.conversations,
+      isLoadingHistory: state.isLoadingHistory,
+    );
+  }
+
+  /// Switches active model ('gemini-1.5-flash', 'gemini-1.5-pro', etc.).
+  void setModel(String model) {
+    state = state.copyWith(activeModel: model);
+  }
+
+  /// Sets interaction mode ('ask', 'tutor', 'summarize', 'quiz', 'explain').
   void setMode(String mode) {
     state = state.copyWith(currentMode: mode);
+  }
+
+  /// Starts a fresh ChatGPT-style conversation session.
+  void startNewChat({
+    String? subject,
+    String? workspace,
+    String? materialId,
+    String? materialTitle,
+  }) {
+    stopGeneration();
+    state = ChatState(
+      conversationId: null,
+      messages: const [],
+      activeSubject: subject ?? state.activeSubject,
+      activeWorkspace: workspace ?? state.activeWorkspace,
+      activeMaterialId: materialId ?? state.activeMaterialId,
+      activeMaterialTitle: materialTitle ?? state.activeMaterialTitle,
+      activeModel: state.activeModel,
+      currentMode: state.currentMode,
+      conversations: state.conversations,
+    );
+  }
+
+  /// Loads an existing conversation session from the database.
+  Future<void> loadConversation(String convId) async {
+    if (state.conversationId == convId) return;
+    stopGeneration();
+
+    try {
+      final msgs = await _conversationRepo.loadMessages(convId);
+      if (!mounted) return;
+      final conv = state.conversations.where((c) => c.id == convId).firstOrNull;
+
+      state = state.copyWith(
+        conversationId: convId,
+        messages: msgs,
+        activeMaterialId: conv?.materialId,
+        currentMode: conv?.mode ?? state.currentMode,
+        clearError: true,
+      );
+    } catch (e) {
+      debugPrint('ChatNotifier: loadConversation failed: $e');
+    }
+  }
+
+  /// Deletes a conversation session from the database.
+  Future<void> deleteConversation(String convId) async {
+    try {
+      await _conversationRepo.deleteConversation(convId);
+      if (state.conversationId == convId) {
+        startNewChat();
+      }
+      await loadHistory();
+    } catch (e) {
+      debugPrint('ChatNotifier: deleteConversation failed: $e');
+    }
+  }
+
+  /// Renames a conversation session in the database.
+  Future<void> renameConversation(String convId, String newTitle) async {
+    try {
+      await _conversationRepo.renameConversation(convId, newTitle);
+      await loadHistory();
+    } catch (e) {
+      debugPrint('ChatNotifier: renameConversation failed: $e');
+    }
   }
 
   /// Sends a message and streams the AI response with token buffering.
@@ -133,10 +275,35 @@ class ChatNotifier extends StateNotifier<ChatState> {
     // Cancel any ongoing generation
     stopGeneration();
 
+    // Auto-create persistent conversation if not currently in a session
+    String? convId = state.conversationId;
+    if (convId == null) {
+      try {
+        final title = clean.length > 36 ? '${clean.substring(0, 36)}...' : clean;
+        final newConv = await _conversationRepo.createConversation(
+          title: title,
+          workspaceId: state.activeWorkspace,
+          subjectId: state.activeSubject,
+          materialId: state.activeMaterialId,
+          mode: state.currentMode,
+        );
+        convId = newConv.id;
+        state = state.copyWith(conversationId: convId);
+        loadHistory();
+      } catch (e) {
+        debugPrint('ChatNotifier: auto-create conversation failed: $e');
+      }
+    }
+
     final userMsg = ChatMessage(
       role: 'user',
       content: clean,
     );
+
+    // Save user message to persistent DB
+    if (convId != null) {
+      _conversationRepo.saveMessage(convId, userMsg);
+    }
 
     state = state.copyWith(
       messages: [...state.messages, userMsg],
@@ -185,6 +352,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
           workspaceContext: state.activeWorkspace,
           subjectContext: state.activeSubject,
           academicContext: state.activeSubject != null ? 'Course: ${state.activeSubject}' : null,
+          materialId: state.activeMaterialId,
+          materialTitle: state.activeMaterialTitle,
+          modelOverride: state.activeModel,
+          isStrictGrounded: state.activeMaterialId != null,
           conversationHistory: state.messages.take(6).map((m) => AiChatMessage(
                 role: m.role,
                 content: m.content,
@@ -295,7 +466,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
       isThinking: false,
     );
 
-    _persistLastMessage(msgId, content, sources);
+    final convId = state.conversationId;
+    if (convId != null) {
+      final assistantMsg = ChatMessage(
+        id: msgId,
+        role: 'assistant',
+        content: content.isEmpty ? "I couldn't generate a response. Please try again." : content,
+        sources: sources,
+        createdAt: DateTime.now(),
+      );
+      _conversationRepo.saveMessage(convId, assistantMsg);
+      loadHistory();
+    }
   }
 
   void _handleStreamError(String msgId, Object error) {
@@ -327,32 +509,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
   }
 
-  Future<void> _persistLastMessage(String msgId, String content, List<AiSource>? sources) async {
-    try {
-      final db = await LocalDbService.instance.database;
-      await db.insert('ai_messages', {
-        'id': msgId,
-        'conversation_id': 'default_session',
-        'user_id': 'guest',
-        'role': 'assistant',
-        'content': content,
-        'sources': sources?.map((s) => s.toMap()).toString(),
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      debugPrint('ChatNotifier: Failed to cache assistant message: $e');
-    }
-  }
-
   void clearChat() {
-    stopGeneration();
-    state = ChatState(
-      activeSubject: state.activeSubject,
-      activeWorkspace: state.activeWorkspace,
-      activeMaterialId: state.activeMaterialId,
-      activeMaterialTitle: state.activeMaterialTitle,
-      currentMode: state.currentMode,
-    );
+    startNewChat();
   }
 
   @override

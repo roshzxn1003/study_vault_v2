@@ -67,6 +67,14 @@ class DocumentProcessor {
           if (ocrText.trim().isNotEmpty) {
             pages.add({'page': '1', 'text': ocrText.trim()});
           }
+        } else if (filePath.toLowerCase().endsWith('.txt') ||
+            filePath.toLowerCase().endsWith('.md') ||
+            filePath.toLowerCase().endsWith('.csv') ||
+            filePath.toLowerCase().endsWith('.json')) {
+          final txt = await File(filePath).readAsString();
+          if (txt.trim().isNotEmpty) {
+            pages.add({'page': '1', 'text': txt.trim()});
+          }
         }
       } else if (storagePath != null && storagePath.isNotEmpty) {
         // Attempt cloud download from Supabase Storage if local file path missing
@@ -118,6 +126,47 @@ class DocumentProcessor {
       await _documentRepo.updateProcessingStatus(materialId, 'FAILED', error: e.toString());
       rethrow;
     }
+  }
+
+  /// Ensures a document is processed and indexed for RAG retrieval.
+  Future<void> ensureIndexed(String materialId) async {
+    final status = await _documentRepo.getProcessingStatus(materialId);
+    if (status != 'INDEXED') {
+      await processDocument(materialId);
+    }
+  }
+
+  /// Scans for any materials that have not been indexed yet and processes them in batch.
+  Future<int> autoIndexPendingMaterials({String? userId}) async {
+    int count = 0;
+    try {
+      final db = await _localDb.database;
+      final whereClause = userId != null
+          ? "user_id = ? AND (indexing_status IS NULL OR indexing_status = 'NOT_INDEXED' OR indexing_status = 'FAILED')"
+          : "(indexing_status IS NULL OR indexing_status = 'NOT_INDEXED' OR indexing_status = 'FAILED')";
+      final whereArgs = userId != null ? [userId] : null;
+
+      final rows = await db.query(
+        'materials',
+        columns: ['id'],
+        where: whereClause,
+        whereArgs: whereArgs,
+        limit: 10,
+      );
+
+      for (final row in rows) {
+        final id = row['id'] as String;
+        try {
+          await processDocument(id);
+          count++;
+        } catch (e) {
+          debugPrint('autoIndexPendingMaterials failed for $id: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('autoIndexPendingMaterials query error: $e');
+    }
+    return count;
   }
 
   bool _isImage(String path, String mimeType) {

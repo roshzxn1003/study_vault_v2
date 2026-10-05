@@ -66,163 +66,182 @@ class StreamingMessageWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isUser = message.isUser;
     final isPartial = message.isPartial;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.88,
-        ),
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm + 4,
-        ),
-        decoration: BoxDecoration(
-          color: isUser ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 16 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 16),
+    if (isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.82,
           ),
-          border: isUser ? null : Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 11,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2E2F38) : const Color(0xFFE9ECEF),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(6),
             ),
-          ],
+          ),
+          child: Text(
+            message.content,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 15,
+              height: 1.45,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (isUser)
-              Text(
-                message.content,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-            else ...[
-              // Assistant Message Content
-              if (message.content.isEmpty && isPartial)
-                _buildGeneratingPlaceholder()
-              else
-                _buildMarkdownContent(context, message.content),
+      );
+    }
 
-              // Streaming Progress / Typing Indicator
-              if (isPartial) ...[
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Generating response...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (onStop != null)
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    // Assistant Message Layout (ChatGPT style with sparkle avatar)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(top: 2, right: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 17,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message.content.isEmpty && isPartial)
+                  _buildGeneratingPlaceholder()
+                else
+                  _buildMarkdownContent(context, message.content),
+
+                // Streaming Progress / Typing Indicator
+                if (isPartial) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primaryLight,
                         ),
-                        icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
-                        label: const Text(
-                          'Stop',
-                          style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: onStop,
                       ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Reasoning & retrieving citations...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (onStop != null)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
+                          label: const Text(
+                            'Stop',
+                            style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: onStop,
+                        ),
+                    ],
+                  ),
+                ],
 
-              // Source Citations
-              if (message.sources != null && message.sources!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.border),
-                const SizedBox(height: 8),
-                _buildSourcesSection(context, message.sources!),
-              ],
+                // Source Citations
+                if (message.sources != null && message.sources!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 8),
+                  _buildSourcesSection(context, message.sources!),
+                ],
 
-              // Action Bar
-              if (!isPartial) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1, color: AppColors.border),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        if (onListen != null)
+                // Action Bar
+                if (!isPartial) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          if (onListen != null)
+                            IconButton(
+                              icon: const Icon(Icons.volume_up_outlined, size: 16),
+                              color: AppColors.textSecondary,
+                              tooltip: 'Read aloud',
+                              onPressed: onListen,
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.only(right: 12),
+                            ),
                           IconButton(
-                            icon: const Icon(Icons.volume_up_outlined, size: 16),
+                            icon: const Icon(Icons.copy_outlined, size: 16),
                             color: AppColors.textSecondary,
-                            tooltip: 'Read aloud',
-                            onPressed: onListen,
+                            tooltip: 'Copy response',
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: message.content));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Copied response to clipboard'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.only(right: 12),
                           ),
-                        IconButton(
-                          icon: const Icon(Icons.copy_outlined, size: 16),
-                          color: AppColors.textSecondary,
-                          tooltip: 'Copy response',
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: message.content));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Copied response to clipboard'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.only(right: 12),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                          color: AppColors.emerald,
-                          tooltip: 'Save as Note',
-                          onPressed: () => _saveAsNote(context),
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.only(right: 8),
-                        ),
-                      ],
-                    ),
-                    if (message.content.contains('⚠️') && onRetry != null)
-                      TextButton.icon(
-                        icon: const Icon(Icons.refresh, size: 14),
-                        label: const Text('Retry', style: TextStyle(fontSize: 12)),
-                        onPressed: onRetry,
+                          IconButton(
+                            icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                            color: AppColors.emerald,
+                            tooltip: 'Save as Note',
+                            onPressed: () => _saveAsNote(context),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.only(right: 8),
+                          ),
+                        ],
                       ),
-                  ],
-                ),
+                      if (message.content.contains('⚠️') && onRetry != null)
+                        TextButton.icon(
+                          icon: const Icon(Icons.refresh, size: 14),
+                          label: const Text('Retry', style: TextStyle(fontSize: 12)),
+                          onPressed: onRetry,
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
