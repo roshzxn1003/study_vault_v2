@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/core/services/speech_service.dart';
 import 'package:study_vault/core/services/text_to_speech_service.dart';
@@ -10,7 +9,6 @@ import 'package:study_vault/features/ai/data/repositories/ai_conversation_reposi
 import 'package:study_vault/features/ai/presentation/providers/chat_provider.dart';
 import 'package:study_vault/features/ai/presentation/widgets/material_attachment_dialog.dart';
 import 'package:study_vault/features/ai/presentation/widgets/streaming_message.dart';
-import 'package:study_vault/features/vault/presentation/screens/material_detail_screen.dart';
 
 /// Modern ChatGPT-style AI Study Assistant screen.
 /// Includes model selector pill, conversation history drawer,
@@ -334,20 +332,6 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     });
   }
 
-  void _navigateToSourceMaterial(AiSource source) {
-    if (source.fileId.isNotEmpty && source.fileId != 'local_id') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => MaterialDetailScreen(materialId: source.fileId),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Source: ${source.fileName} (Page ${source.pageNumber})')),
-      );
-    }
-  }
-
   void _showRenameDialog(AiConversationItem conv) {
     final textCtrl = TextEditingController(text: conv.title);
     showDialog(
@@ -483,7 +467,6 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                             ? () => ref.read(chatProvider.notifier).stopGeneration()
                             : null,
                         onRetry: () => ref.read(chatProvider.notifier).retryLast(),
-                        onOpenSource: _navigateToSourceMaterial,
                       );
                     },
                   ),

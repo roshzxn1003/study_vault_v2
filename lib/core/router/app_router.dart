@@ -165,7 +165,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/folder/:id', builder: (context, state) => FolderDetailsScreen(id: state.pathParameters['id']!)),
       GoRoute(path: '/notes/create', builder: (context, state) => const CreateNoteScreen()),
       GoRoute(path: '/notes/:id', builder: (context, state) => NoteViewerScreen(id: state.pathParameters['id']!)),
-      GoRoute(path: '/files/:id', builder: (context, state) => FileViewScreen(id: state.pathParameters['id']!)),
+      GoRoute(
+        path: '/files/:id',
+        builder: (context, state) {
+          final pageStr = state.uri.queryParameters['page'];
+          final initialPage = pageStr != null ? int.tryParse(pageStr) : null;
+          final highlightQuery = state.uri.queryParameters['query'];
+          return FileViewScreen(
+            id: state.pathParameters['id']!,
+            initialPage: initialPage,
+            highlightQuery: highlightQuery,
+          );
+        },
+      ),
       GoRoute(path: '/settings', builder: (context, state) => const AccountSettingsScreen()),
       GoRoute(path: '/settings/storage-sync', builder: (context, state) => const StorageSyncScreen()),
       GoRoute(path: '/progress', builder: (context, state) => const ProgressScreen()),

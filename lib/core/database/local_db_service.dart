@@ -980,6 +980,20 @@ class LocalDbService {
     await batch.commit(noResult: true);
   }
 
+  Future<void> updateFlashcardMastery(String id, int masteryLevel) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    await db.update(
+      'flashcards',
+      {
+        'mastery_level': masteryLevel,
+        'last_reviewed': now,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // --- SCRATCHPAD ---
   Future<String> getScratchpadContent() async {
     final db = await database;

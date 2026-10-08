@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/ai/citation_builder.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/features/ai/presentation/providers/chat_provider.dart';
 
 /// Clean academic message bubble supporting live streaming tokens,
@@ -57,6 +59,74 @@ class StreamingMessageWidget extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving note: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _createFlashcards(BuildContext context, WidgetRef ref) async {
+    final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
+    final topic = titleMatch?.group(1)?.trim() ??
+        (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Generating flashcards from response...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      final llm = ref.read(llmServiceProvider);
+      final cards = await llm.generateFlashcardDeck(
+        topic: topic,
+        context: message.content,
+      );
+
+      if (cards.isNotEmpty) {
+        final now = DateTime.now().toIso8601String();
+        final dbCards = cards.asMap().entries.map((entry) {
+          return {
+            'id': 'card_${DateTime.now().millisecondsSinceEpoch}_${entry.key}',
+            'user_id': 'guest',
+            'topic': topic,
+            'front': entry.value['front'] ?? '',
+            'back': entry.value['back'] ?? '',
+            'mastery_level': 0,
+            'created_at': now,
+            'last_reviewed': null,
+          };
+        }).toList();
+
+        await LocalDbService.instance.saveFlashcards(dbCards);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Created ${cards.length} flashcards for "$topic"'),
+              backgroundColor: AppColors.emerald,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Study Now',
+                textColor: Colors.white,
+                onPressed: () {
+                  context.push('/study/flashcards/${Uri.encodeComponent(topic)}');
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not generate flashcards from this response')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating flashcards: $e')),
         );
       }
     }
@@ -227,6 +297,14 @@ class StreamingMessageWidget extends ConsumerWidget {
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.only(right: 8),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.style_outlined, size: 16),
+                            color: AppColors.amber,
+                            tooltip: 'Create Flashcards',
+                            onPressed: () => _createFlashcards(context, ref),
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.only(right: 8),
+                          ),
                         ],
                       ),
                       if (message.content.contains('⚠️') && onRetry != null)
@@ -394,47 +472,77 @@ class StreamingMessageWidget extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.menu_book_rounded, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      source.fileName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Page ${source.pageNumber} • Grounding Confidence: ${(source.similarity * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              if (source.snippet != null && source.snippet!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
                   child: Text(
-                    source.fileName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    source.snippet!,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Page ${source.pageNumber} • Grounding Confidence: ${(source.similarity * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            if (source.snippet != null && source.snippet!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
+              const SizedBox(height: 16),
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Text(
-                  source.snippet!,
-                  style: const TextStyle(fontSize: 13, height: 1.4),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.menu_book_rounded, size: 18),
+                  label: Text('Open Page ${source.pageNumber} in PDF Reader'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final targetId = source.fileId.isNotEmpty && source.fileId != 'local_id'
+                        ? source.fileId
+                        : 'sample';
+                    final firstWords = (source.snippet ?? '')
+                        .trim()
+                        .split(RegExp(r'\s+'))
+                        .take(4)
+                        .join(' ');
+                    final queryPart = firstWords.isNotEmpty
+                        ? '&query=${Uri.encodeComponent(firstWords)}'
+                        : '';
+                    context.push('/files/$targetId?page=${source.pageNumber}$queryPart');
+                  },
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );

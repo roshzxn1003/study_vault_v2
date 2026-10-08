@@ -23,7 +23,15 @@ final fileDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>
 /// - Image and Markdown/Text viewing
 class FileViewScreen extends ConsumerStatefulWidget {
   final String id;
-  const FileViewScreen({super.key, required this.id});
+  final int? initialPage;
+  final String? highlightQuery;
+
+  const FileViewScreen({
+    super.key,
+    required this.id,
+    this.initialPage,
+    this.highlightQuery,
+  });
 
   @override
   ConsumerState<FileViewScreen> createState() => _FileViewScreenState();
@@ -40,12 +48,42 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
   String? _textContent;
   String? _pdfLoadError;
   int _retryKey = 0;
+  bool _showCitationBanner = false;
+  bool _didPerformInitialJump = false;
 
   @override
   void initState() {
     super.initState();
     _pdfViewerController = PdfViewerController();
     _searchResult = PdfTextSearchResult();
+    _showCitationBanner = widget.initialPage != null && widget.initialPage! > 0;
+    if (widget.initialPage != null && widget.initialPage! > 0) {
+      _currentPageNumber = widget.initialPage!;
+    }
+  }
+
+  void _onPdfDocumentLoaded(PdfDocumentLoadedDetails details) {
+    if (mounted) {
+      setState(() {
+        _totalPageCount = details.document.pages.count;
+        _pdfLoadError = null;
+      });
+      if (!_didPerformInitialJump && widget.initialPage != null && widget.initialPage! > 0) {
+        _didPerformInitialJump = true;
+        final targetPage = widget.initialPage!.clamp(1, details.document.pages.count);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _pdfViewerController.jumpToPage(targetPage);
+            if (widget.highlightQuery != null && widget.highlightQuery!.isNotEmpty) {
+              _searchController.text = widget.highlightQuery!;
+              _isSearchOpen = true;
+              _searchResult = _pdfViewerController.searchText(widget.highlightQuery!);
+              setState(() {});
+            }
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -328,6 +366,25 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
           error: (e, _) => const Text("Document Viewer"),
         ),
         actions: [
+          // Ask AI about this page
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryLight),
+            tooltip: 'Ask AI about this page',
+            onPressed: () {
+              fileAsync.whenData((file) {
+                final fileName = file?['name'] ?? 'Document';
+                ref.read(chatProvider.notifier).setContext(
+                  materialId: widget.id,
+                  materialTitle: fileName,
+                );
+                ref.read(chatProvider.notifier).setMode('explain');
+                ref.read(chatProvider.notifier).sendMessage(
+                  'Explain key concepts on page $_currentPageNumber of "$fileName".',
+                );
+                context.push('/ai?materialId=${widget.id}&materialTitle=${Uri.encodeComponent(fileName)}');
+              });
+            },
+          ),
           // Search in document
           IconButton(
             icon: Icon(_isSearchOpen ? Icons.search_off : Icons.search),
@@ -507,6 +564,43 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
 
           return Column(
             children: [
+              // AI Citation Navigation Banner
+              if (_showCitationBanner)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AppColors.primaryLight, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Navigated to Page ${widget.initialPage} from AI Citation',
+                          style: const TextStyle(
+                            color: AppColors.primaryLight,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => setState(() => _showCitationBanner = false),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(Icons.close, size: 14, color: AppColors.primaryLight),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Search Toolbar (if active)
               if (_isSearchOpen)
                 Container(
@@ -887,14 +981,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
         canShowScrollHead: true,
         canShowScrollStatus: true,
         enableDoubleTapZooming: true,
-        onDocumentLoaded: (details) {
-          if (mounted) {
-            setState(() {
-              _totalPageCount = details.document.pages.count;
-              _pdfLoadError = null;
-            });
-          }
-        },
+        onDocumentLoaded: _onPdfDocumentLoaded,
         onDocumentLoadFailed: (details) {
           if (mounted) {
             setState(() {
@@ -918,14 +1005,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
         canShowScrollHead: true,
         canShowScrollStatus: true,
         enableDoubleTapZooming: true,
-        onDocumentLoaded: (details) {
-          if (mounted) {
-            setState(() {
-              _totalPageCount = details.document.pages.count;
-              _pdfLoadError = null;
-            });
-          }
-        },
+        onDocumentLoaded: _onPdfDocumentLoaded,
         onDocumentLoadFailed: (details) {
           if (mounted) {
             setState(() {

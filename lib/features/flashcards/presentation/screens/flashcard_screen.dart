@@ -3,10 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 
 class FlashcardScreen extends ConsumerStatefulWidget {
   final String topic;
-  const FlashcardScreen({super.key, required this.topic});
+  final List<Map<String, String>>? initialCards;
+  final bool persistProgress;
+
+  const FlashcardScreen({
+    super.key,
+    required this.topic,
+    this.initialCards,
+    this.persistProgress = true,
+  });
 
   @override
   ConsumerState<FlashcardScreen> createState() => _FlashcardScreenState();
@@ -25,19 +34,67 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchDynamicFlashcards();
+    if (widget.initialCards != null && widget.initialCards!.isNotEmpty) {
+      _cards = List.from(widget.initialCards!);
+      _isLoading = false;
+    } else {
+      _fetchDynamicFlashcards();
+    }
   }
 
   Future<void> _fetchDynamicFlashcards() async {
-    setState(() => _isLoading = true);
     try {
+      final localCards = await LocalDbService.instance.getFlashcards(topic: widget.topic);
+      if (localCards.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _cards = localCards.map((c) => {
+              'id': c['id']?.toString() ?? '',
+              'front': c['front']?.toString() ?? '',
+              'back': c['back']?.toString() ?? '',
+              'topic': c['topic']?.toString() ?? widget.topic,
+            }).toList();
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
       final llm = ref.read(llmServiceProvider);
       final cards = await llm.generateFlashcardDeck(topic: widget.topic);
-      if (mounted) {
-        setState(() {
-          _cards = cards;
-          _isLoading = false;
-        });
+      if (cards.isNotEmpty) {
+        final now = DateTime.now().toIso8601String();
+        final dbCards = cards.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final c = entry.value;
+          final cardId = 'card_${DateTime.now().millisecondsSinceEpoch}_$idx';
+          return {
+            'id': cardId,
+            'user_id': 'guest',
+            'topic': widget.topic,
+            'front': c['front'] ?? '',
+            'back': c['back'] ?? '',
+            'mastery_level': 0,
+            'created_at': now,
+            'last_reviewed': null,
+          };
+        }).toList();
+        await LocalDbService.instance.saveFlashcards(dbCards);
+        if (mounted) {
+          setState(() {
+            _cards = dbCards.map((c) => {
+              'id': c['id']?.toString() ?? '',
+              'front': c['front']?.toString() ?? '',
+              'back': c['back']?.toString() ?? '',
+              'topic': c['topic']?.toString() ?? widget.topic,
+            }).toList();
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -47,6 +104,17 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   }
 
   void _markCard(bool mastered) {
+    if (widget.persistProgress) {
+      if (_cards.isNotEmpty && _currentIndex < _cards.length) {
+        final card = _cards[_currentIndex];
+        final cardId = card['id'];
+        if (cardId != null && cardId.isNotEmpty) {
+          LocalDbService.instance.updateFlashcardMastery(cardId, mastered ? 1 : 0);
+        }
+      }
+      LocalDbService.instance.recordStudyAction('flashcard_review');
+    }
+
     if (mastered) {
       _masteredCount++;
     } else {
