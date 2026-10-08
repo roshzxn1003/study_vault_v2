@@ -305,6 +305,19 @@ class StreamingMessageWidget extends ConsumerWidget {
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.only(right: 8),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.quiz_outlined, size: 16),
+                            color: AppColors.cyan,
+                            tooltip: 'Practice Quiz',
+                            onPressed: () {
+                              final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
+                              final topic = titleMatch?.group(1)?.trim() ??
+                                  (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
+                              context.push('/study/quiz/${Uri.encodeComponent(topic)}');
+                            },
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.only(right: 8),
+                          ),
                         ],
                       ),
                       if (message.content.contains('⚠️') && onRetry != null)
@@ -538,6 +551,24 @@ class StreamingMessageWidget extends ConsumerWidget {
                         ? '&query=${Uri.encodeComponent(firstWords)}'
                         : '';
                     context.push('/files/$targetId?page=${source.pageNumber}$queryPart');
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.cyan,
+                    side: const BorderSide(color: AppColors.cyan),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.quiz_outlined, size: 18),
+                  label: const Text('Quiz Me on this Document'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/study/quiz/${Uri.encodeComponent(source.fileName)}');
                   },
                 ),
               ),

@@ -994,6 +994,47 @@ class LocalDbService {
     );
   }
 
+  // --- AI QUIZZES ---
+  Future<List<Map<String, dynamic>>> getAiQuizzes({String? topic}) async {
+    final db = await database;
+    if (topic != null && topic.isNotEmpty) {
+      return await db.query(
+        'ai_quizzes',
+        where: 'title = ? OR title LIKE ?',
+        whereArgs: [topic, '%$topic%'],
+        orderBy: 'created_at DESC',
+      );
+    }
+    return await db.query('ai_quizzes', orderBy: 'created_at DESC');
+  }
+
+  Future<void> saveAiQuiz({
+    required String id,
+    required String userId,
+    required String title,
+    required String questionsJson,
+    String? workspaceId,
+    String? subjectId,
+    String? materialId,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    await db.insert(
+      'ai_quizzes',
+      {
+        'id': id,
+        'user_id': userId,
+        'workspace_id': workspaceId,
+        'subject_id': subjectId,
+        'material_id': materialId,
+        'title': title,
+        'questions_data': questionsJson,
+        'created_at': now,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   // --- SCRATCHPAD ---
   Future<String> getScratchpadContent() async {
     final db = await database;

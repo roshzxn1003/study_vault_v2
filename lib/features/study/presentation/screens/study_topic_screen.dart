@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
+import 'package:study_vault/features/progress/presentation/providers/progress_provider.dart';
 
 class StudyTopicScreen extends ConsumerWidget {
   final String topic;
@@ -9,6 +10,17 @@ class StudyTopicScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(topicProgressProvider);
+    final statsList = statsAsync.value ?? [];
+    final matchingStat = statsList.cast<TopicStat?>().firstWhere(
+      (s) => s != null && s.topic.toLowerCase() == topic.toLowerCase(),
+      orElse: () => null,
+    );
+
+    final double progressValue = matchingStat != null ? matchingStat.accuracy : 0.0;
+    final int scorePercent = (progressValue * 100).toInt();
+    final bool hasStarted = matchingStat != null && matchingStat.attempts > 0;
+
     return Scaffold(
       appBar: AppBar(title: Text(topic)),
       body: SingleChildScrollView(
@@ -34,29 +46,48 @@ class StudyTopicScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color: (hasStarted && scorePercent >= 70 ? AppColors.emerald : AppColors.primary).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text('In Progress', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          hasStarted ? (scorePercent >= 70 ? 'Mastered' : 'In Progress') : 'Not Started',
+                          style: TextStyle(
+                            color: hasStarted && scorePercent >= 70 ? AppColors.emerald : (hasStarted ? AppColors.primaryLight : AppColors.textSecondary),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: const LinearProgressIndicator(
-                      value: 0.65,
+                    child: LinearProgressIndicator(
+                      value: progressValue,
                       minHeight: 8,
                       backgroundColor: AppColors.surfaceVariant,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.emerald),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        scorePercent >= 70 ? AppColors.emerald : AppColors.primaryLight,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("65% Mastery Score", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.emerald)),
-                      Text("Target: 100% for Exam", style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(
+                        hasStarted ? "$scorePercent% Mastery Score" : "0% Mastery Score",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: hasStarted && scorePercent >= 70 ? AppColors.emerald : (hasStarted ? AppColors.primaryLight : AppColors.textSecondary),
+                        ),
+                      ),
+                      Text(
+                        hasStarted ? "${matchingStat.correct}/${matchingStat.attempts} cards mastered" : "Target: 100% for Exam",
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ],
@@ -121,16 +152,19 @@ class StudyTopicScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.cardBorder),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.15),
-          child: Icon(icon, color: color, size: 22),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+          onTap: onTap,
         ),
-        title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
-        onTap: onTap,
       ),
     );
   }
