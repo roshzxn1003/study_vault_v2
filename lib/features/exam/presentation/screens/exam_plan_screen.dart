@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 
 class ExamPlanScreen extends ConsumerStatefulWidget {
-  const ExamPlanScreen({super.key});
+  final List<Map<String, dynamic>>? initialDays;
+  final String? initialExamTitle;
+  final String? initialSubject;
+
+  const ExamPlanScreen({
+    super.key,
+    this.initialDays,
+    this.initialExamTitle,
+    this.initialSubject,
+  });
 
   @override
   ConsumerState<ExamPlanScreen> createState() => _ExamPlanScreenState();
@@ -12,17 +22,111 @@ class ExamPlanScreen extends ConsumerStatefulWidget {
 
 class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
   final List<Map<String, dynamic>> _days = [];
+  String _examTitle = 'Exam Prep Plan';
+  String _subject = 'General';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialDays != null) {
+      _days.addAll(widget.initialDays!);
+      _examTitle = widget.initialExamTitle ?? 'Exam Prep Plan';
+      _subject = widget.initialSubject ?? 'General';
+      _isLoading = false;
+    } else {
+      _loadPlanFromDb();
+    }
+  }
+
+  Future<void> _loadPlanFromDb() async {
+    try {
+      final goals = await LocalDbService.instance.getExamGoals();
+      if (!mounted) return;
+      if (goals.isNotEmpty) {
+        final goal = goals.first;
+        _examTitle = (goal['title'] as String?)?.trim().isNotEmpty == true
+            ? goal['title'] as String
+            : 'Upcoming Exam';
+        _subject = (goal['subject'] as String?)?.trim().isNotEmpty == true
+            ? goal['subject'] as String
+            : 'Study Plan';
+
+        DateTime? targetDate;
+        if (goal['target_date'] != null) {
+          targetDate = DateTime.tryParse(goal['target_date'] as String);
+        }
+        final now = DateTime.now();
+        final daysUntil = targetDate != null
+            ? (targetDate.difference(now).inDays + 1).clamp(2, 14)
+            : 5;
+
+        final generatedDays = _generateMilestones(_subject, _examTitle, daysUntil);
+        setState(() {
+          _days.addAll(generatedDays);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading exam goals: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> _generateMilestones(String subject, String title, int count) {
+    final templates = [
+      {'phase': 'Core Foundations & Concepts', 'duration': '1.5 hrs', 'priority': 'High', 'subtopics': 'Definitions, axioms, foundational overview'},
+      {'phase': 'Deep Dive & Key Methodologies', 'duration': '2.0 hrs', 'priority': 'High', 'subtopics': 'Mechanisms, equations, step-by-step algorithms'},
+      {'phase': 'Applied Problem Solving & Workflows', 'duration': '1.5 hrs', 'priority': 'Medium', 'subtopics': 'Practical scenarios, exercises & worked examples'},
+      {'phase': 'Edge Cases & Advanced Applications', 'duration': '2.0 hrs', 'priority': 'Medium', 'subtopics': 'Complex topics, common pitfalls & counterexamples'},
+      {'phase': 'High-Yield Review & Active Recall', 'duration': '1.5 hrs', 'priority': 'High', 'subtopics': 'Key formulas, flashcard retention & definitions'},
+      {'phase': 'Mock Exam Simulation & Timed Drills', 'duration': '2.5 hrs', 'priority': 'High', 'subtopics': 'Simulated test questions, self-evaluation & grading'},
+      {'phase': 'Targeted Weak Spot Remediation', 'duration': '1.5 hrs', 'priority': 'Medium', 'subtopics': 'Review missed quiz questions & tricky concepts'},
+      {'phase': 'Comprehensive Final Revision & Polish', 'duration': '1.0 hr', 'priority': 'High', 'subtopics': 'Cheat sheet review, summary diagrams & confidence boost'},
+    ];
+
+    final days = <Map<String, dynamic>>[];
+    for (int i = 0; i < count; i++) {
+      final t = templates[i % templates.length];
+      days.add({
+        'day': i + 1,
+        'topic': '$subject: ${t['phase']}',
+        'subtopics': t['subtopics'] as String,
+        'duration': t['duration'] as String,
+        'priority': t['priority'] as String,
+        'completed': false,
+      });
+    }
+    return days;
+  }
 
   void _toggleDay(int index) {
     if (index >= 0 && index < _days.length) {
       setState(() {
-        _days[index]['completed'] = !(_days[index]['completed'] as bool);
+        final willComplete = !(_days[index]['completed'] as bool);
+        _days[index]['completed'] = willComplete;
+        if (willComplete) {
+          LocalDbService.instance.recordStudyAction('milestone_complete');
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("AI Study Plan")),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (_days.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text("AI Study Plan")),
@@ -103,9 +207,9 @@ class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "DBMS Midterm Prep",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                      Text(
+                        _examTitle,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -246,22 +350,32 @@ class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
                             children: [
                               OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
-                                onPressed: () => context.push('/study/learn/${day['topic']}'),
+                                onPressed: () => context.push('/study/learn/${Uri.encodeComponent(day['topic'] as String)}'),
                                 icon: const Icon(Icons.school_outlined, size: 14),
-                                label: const Text('AI Tutor', style: TextStyle(fontSize: 12)),
+                                label: const Text('AI Tutor', style: TextStyle(fontSize: 11)),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () => context.push('/study/flashcards/${Uri.encodeComponent(day['topic'] as String)}'),
+                                icon: const Icon(Icons.style_outlined, size: 14),
+                                label: const Text('Flashcards', style: TextStyle(fontSize: 11)),
+                              ),
+                              const SizedBox(width: 6),
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
-                                onPressed: () => context.push('/study/quiz/${day['topic']}'),
+                                onPressed: () => context.push('/study/quiz/${Uri.encodeComponent(day['topic'] as String)}'),
                                 icon: const Icon(Icons.quiz_outlined, size: 14),
-                                label: const Text('Quiz', style: TextStyle(fontSize: 12)),
+                                label: const Text('Quiz', style: TextStyle(fontSize: 11)),
                               ),
                             ],
                           ),

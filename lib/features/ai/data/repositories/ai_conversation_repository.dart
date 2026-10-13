@@ -145,6 +145,7 @@ class AiConversationRepository {
         role: r['role'] as String,
         content: r['content'] as String,
         sources: sources,
+        imagePath: r['image_path'] as String?,
         createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
       );
     }).toList();
@@ -172,6 +173,7 @@ class AiConversationRepository {
       'role': message.role,
       'content': message.content,
       'sources': encodedSources,
+      'image_path': message.imagePath,
       'created_at': message.createdAt.toIso8601String(),
     });
 

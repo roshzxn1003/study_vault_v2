@@ -222,33 +222,37 @@ class _SemesterTransitionDialogState
                   Container(
                     constraints: const BoxConstraints(maxHeight: 160),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSecondary,
                       borderRadius: AppRadius.brMd,
                       border: AppBorders.allStandard,
                     ),
-                    child: ListView(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      children: widget.previousSubjectNames.map((subject) {
-                        final isChecked =
-                            _selectedSubjectsToCopy.contains(subject);
-                        return CheckboxListTile(
-                          dense: true,
-                          title: Text(subject, style: AppTypography.bodySmall),
-                          value: isChecked,
-                          activeColor: AppColors.primaryLight,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          onChanged: (selected) {
-                            setState(() {
-                              if (selected == true) {
-                                _selectedSubjectsToCopy.add(subject);
-                              } else {
-                                _selectedSubjectsToCopy.remove(subject);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                    child: Material(
+                      color: AppColors.surfaceSecondary,
+                      borderRadius: AppRadius.brMd,
+                      clipBehavior: Clip.antiAlias,
+                      child: ListView(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        children: widget.previousSubjectNames.map((subject) {
+                          final isChecked =
+                              _selectedSubjectsToCopy.contains(subject);
+                          return CheckboxListTile(
+                            dense: true,
+                            title: Text(subject, style: AppTypography.bodySmall),
+                            value: isChecked,
+                            activeColor: AppColors.primaryLight,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (selected) {
+                              setState(() {
+                                if (selected == true) {
+                                  _selectedSubjectsToCopy.add(subject);
+                                } else {
+                                  _selectedSubjectsToCopy.remove(subject);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ],

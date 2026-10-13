@@ -82,36 +82,36 @@ class AppBottomNavigation extends StatelessWidget {
         borderRadius: BorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.55),
-            blurRadius: 28,
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 32,
             spreadRadius: 2,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 12),
           ),
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.22),
-            blurRadius: 18,
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.20),
+            blurRadius: 20,
             spreadRadius: -2,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(34),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF1E1E2C).withValues(alpha: 0.72),
-                  const Color(0xFF12121B).withValues(alpha: 0.65),
+                  const Color(0xFF161626).withValues(alpha: 0.65),
+                  const Color(0xFF0F0F1A).withValues(alpha: 0.65),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
               borderRadius: BorderRadius.circular(34),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.16),
+                color: Colors.white.withValues(alpha: 0.18),
                 width: 1.2,
               ),
             ),
@@ -140,11 +140,12 @@ class AppBottomNavigation extends StatelessWidget {
                           splashColor: Colors.white.withValues(alpha: 0.3),
                           highlightColor: Colors.white.withValues(alpha: 0.15),
                           child: Container(
-                            width: isNarrow ? 44 : 48,
-                            height: isNarrow ? 44 : 48,
+                            width: isNarrow ? 46 : 50,
+                            height: isNarrow ? 46 : 50,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [
+                                  Color(0xFF8B5CF6),
                                   Color(0xFF6366F1),
                                   Color(0xFF4F46E5),
                                 ],
@@ -154,14 +155,20 @@ class AppBottomNavigation extends StatelessWidget {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF6366F1).withValues(alpha: 0.45),
-                                  blurRadius: 14,
+                                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.50),
+                                  blurRadius: 18,
                                   offset: const Offset(0, 4),
+                                ),
+                                BoxShadow(
+                                  color: const Color(0xFF6366F1).withValues(alpha: 0.30),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1.4,
+                                color: Colors.white.withValues(alpha: 0.40),
+                                width: 1.5,
                               ),
                             ),
                             child: const Icon(
@@ -199,26 +206,42 @@ class AppBottomNavigation extends StatelessWidget {
                               duration: const Duration(milliseconds: 200),
                               padding: EdgeInsets.symmetric(
                                 horizontal: isNarrow ? 10 : 14,
-                                vertical: 3,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary.withValues(alpha: 0.20)
-                                    : Colors.transparent,
+                                gradient: isSelected
+                                    ? LinearGradient(
+                                        colors: [
+                                          const Color(0xFF8B5CF6).withValues(alpha: 0.32),
+                                          const Color(0xFF6366F1).withValues(alpha: 0.20),
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      )
+                                    : null,
                                 borderRadius: BorderRadius.circular(16),
                                 border: isSelected
                                     ? Border.all(
-                                        color: AppColors.primaryLight.withValues(alpha: 0.30),
+                                        color: const Color(0xFFA78BFA).withValues(alpha: 0.40),
                                         width: 1,
                                       )
+                                    : null,
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.22),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
                                     : null,
                               ),
                               child: Icon(
                                 isSelected ? item.activeIcon : item.icon,
                                 size: isNarrow ? 20 : 22,
                                 color: isSelected
-                                    ? AppColors.primaryLight
-                                    : AppColors.textMuted,
+                                    ? Colors.white
+                                    : AppColors.textSecondary.withValues(alpha: 0.85),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -234,9 +257,9 @@ class AppBottomNavigation extends StatelessWidget {
                                       ? FontWeight.w700
                                       : FontWeight.w500,
                                   color: isSelected
-                                      ? AppColors.primaryLight
-                                      : AppColors.textMuted,
-                                  letterSpacing: isSelected ? 0.1 : 0,
+                                      ? Colors.white
+                                      : AppColors.textSecondary.withValues(alpha: 0.80),
+                                  letterSpacing: isSelected ? 0.2 : 0,
                                 ),
                               ),
                             ),

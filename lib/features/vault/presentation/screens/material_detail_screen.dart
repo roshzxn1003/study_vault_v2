@@ -61,15 +61,15 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: SafeArea(
-          top: false,
-          child: Column(
+      builder: (ctx) => Material(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: SafeArea(
+            top: false,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -159,8 +159,9 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _handleRename() async {
     if (_material == null) return;
@@ -924,7 +925,6 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
       width: double.infinity,
       height: previewHeight,
       decoration: BoxDecoration(
-        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
         boxShadow: [
@@ -935,8 +935,10 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
           ),
         ],
       ),
-      child: ClipRRect(
+      child: Material(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: _handleOpenViewer,
           child: Stack(

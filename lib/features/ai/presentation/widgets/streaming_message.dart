@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -132,6 +133,60 @@ class StreamingMessageWidget extends ConsumerWidget {
     }
   }
 
+  void _openImageLightbox(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: InteractiveViewer(
+                panEnabled: true,
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: File(path).existsSync()
+                    ? Image.file(File(path), fit: BoxFit.contain)
+                    : Container(
+                        padding: const EdgeInsets.all(32),
+                        color: Colors.black54,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.image_outlined, color: Colors.white70, size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              path.split(Platform.pathSeparator).last,
+                              style: const TextStyle(color: Colors.white70, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                tooltip: 'Close preview',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isUser = message.isUser;
@@ -140,6 +195,7 @@ class StreamingMessageWidget extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     if (isUser) {
+      final hasImage = message.imagePath != null && message.imagePath!.isNotEmpty;
       return Align(
         alignment: Alignment.centerRight,
         child: Container(
@@ -160,14 +216,79 @@ class StreamingMessageWidget extends ConsumerWidget {
               bottomRight: Radius.circular(6),
             ),
           ),
-          child: Text(
-            message.content,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 15,
-              height: 1.45,
-              fontWeight: FontWeight.w400,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasImage) ...[
+                GestureDetector(
+                  key: const ValueKey('chat_image_thumbnail'),
+                  onTap: () => _openImageLightbox(context, message.imagePath!),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        maxHeight: 180,
+                        maxWidth: 240,
+                      ),
+                      color: isDark ? Colors.black26 : Colors.black12,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (File(message.imagePath!).existsSync())
+                            Image.file(
+                              File(message.imagePath!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.image, size: 20, color: AppColors.primaryLight),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      message.imagePath!.split(Platform.pathSeparator).last,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Positioned(
+                            bottom: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (message.content.isNotEmpty) const SizedBox(height: 8),
+              ],
+              if (message.content.isNotEmpty)
+                Text(
+                  message.content,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 15,
+                    height: 1.45,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+            ],
           ),
         ),
       );
@@ -262,63 +383,68 @@ class StreamingMessageWidget extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          if (onListen != null)
-                            IconButton(
-                              icon: const Icon(Icons.volume_up_outlined, size: 16),
-                              color: AppColors.textSecondary,
-                              tooltip: 'Read aloud',
-                              onPressed: onListen,
-                              constraints: const BoxConstraints(),
-                              padding: const EdgeInsets.only(right: 12),
-                            ),
-                          IconButton(
-                            icon: const Icon(Icons.copy_outlined, size: 16),
-                            color: AppColors.textSecondary,
-                            tooltip: 'Copy response',
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: message.content));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Copied response to clipboard'),
-                                  duration: Duration(seconds: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              if (onListen != null)
+                                IconButton(
+                                  icon: const Icon(Icons.volume_up_outlined, size: 16),
+                                  color: AppColors.textSecondary,
+                                  tooltip: 'Read aloud',
+                                  onPressed: onListen,
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.only(right: 12),
                                 ),
-                              );
-                            },
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.only(right: 12),
+                              IconButton(
+                                icon: const Icon(Icons.copy_outlined, size: 16),
+                                color: AppColors.textSecondary,
+                                tooltip: 'Copy response',
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: message.content));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Copied response to clipboard'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 12),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                                color: AppColors.emerald,
+                                tooltip: 'Save as Note',
+                                onPressed: () => _saveAsNote(context),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.style_outlined, size: 16),
+                                color: AppColors.amber,
+                                tooltip: 'Create Flashcards',
+                                onPressed: () => _createFlashcards(context, ref),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.quiz_outlined, size: 16),
+                                color: AppColors.cyan,
+                                tooltip: 'Practice Quiz',
+                                onPressed: () {
+                                  final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
+                                  final topic = titleMatch?.group(1)?.trim() ??
+                                      (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
+                                  context.push('/study/quiz/${Uri.encodeComponent(topic)}');
+                                },
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                            color: AppColors.emerald,
-                            tooltip: 'Save as Note',
-                            onPressed: () => _saveAsNote(context),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.only(right: 8),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.style_outlined, size: 16),
-                            color: AppColors.amber,
-                            tooltip: 'Create Flashcards',
-                            onPressed: () => _createFlashcards(context, ref),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.only(right: 8),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.quiz_outlined, size: 16),
-                            color: AppColors.cyan,
-                            tooltip: 'Practice Quiz',
-                            onPressed: () {
-                              final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
-                              final topic = titleMatch?.group(1)?.trim() ??
-                                  (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
-                              context.push('/study/quiz/${Uri.encodeComponent(topic)}');
-                            },
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.only(right: 8),
-                          ),
-                        ],
+                        ),
                       ),
                       if (message.content.contains('⚠️') && onRetry != null)
                         TextButton.icon(

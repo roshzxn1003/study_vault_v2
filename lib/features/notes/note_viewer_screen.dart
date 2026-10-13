@@ -220,7 +220,7 @@ class _NoteViewerScreenState extends ConsumerState<NoteViewerScreen> {
                       _aiActionButton(
                         icon: Icons.quiz_outlined,
                         label: 'Take Quiz',
-                        onTap: () => context.push('/study/quiz/$title'),
+                        onTap: () => context.push('/study/quiz/${Uri.encodeComponent(title)}'),
                       ),
                     ],
                   ),

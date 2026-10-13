@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../tokens/tokens.dart';
 import 'app_bottom_navigation.dart';
@@ -13,6 +14,7 @@ class AppScaffold extends StatelessWidget {
   final int? navigationIndex;
   final ValueChanged<int>? onNavigationChanged;
   final VoidCallback? onAddTap;
+  final VoidCallback? onAiTap;
   final List<AppNavigationItem> navigationItems;
   final Widget? customBottomBar;
   final Color? backgroundColor;
@@ -25,6 +27,7 @@ class AppScaffold extends StatelessWidget {
     this.navigationIndex,
     this.onNavigationChanged,
     this.onAddTap,
+    this.onAiTap,
     this.navigationItems = AppNavigationItem.defaultItems,
     this.customBottomBar,
     this.backgroundColor,
@@ -109,14 +112,19 @@ class AppScaffold extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       body: Row(
         children: [
-          // Sidebar / Rail
+          // Sidebar / Rail with Translucent Frosted Glass Styling
           Container(
             width: isDesktop
                 ? AppDimensions.sidebarWidth
                 : AppDimensions.navRailWidth,
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(right: AppBorders.standard),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C0C14).withValues(alpha: 0.65),
+              border: Border(
+                right: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 1.0,
+                ),
+              ),
             ),
             child: SafeArea(
               child: Column(
@@ -133,17 +141,34 @@ class AppScaffold extends StatelessWidget {
                           : MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceSecondary,
-                            borderRadius: AppRadius.brSm,
-                            border: AppBorders.allStandard,
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF8B5CF6),
+                                Color(0xFF6366F1),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.30),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.auto_stories_rounded,
                             size: 20,
-                            color: AppColors.primaryLight,
+                            color: Colors.white,
                           ),
                         ),
                         if (isDesktop) ...[
@@ -151,9 +176,9 @@ class AppScaffold extends StatelessWidget {
                           const Text(
                             'Study Vault',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
+                              letterSpacing: -0.4,
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -161,7 +186,10 @@ class AppScaffold extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Divider(color: AppColors.border, height: 1),
+                  Divider(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    height: 1,
+                  ),
                   AppSpacing.v8,
 
                   // Navigation Links
@@ -177,23 +205,36 @@ class AppScaffold extends StatelessWidget {
 
                         if (isDesktop) {
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
+                            padding: const EdgeInsets.only(bottom: 4),
                             child: Material(
                               color: isSelected
-                                  ? AppColors.surfaceSecondary
+                                  ? const Color(0xFF8B5CF6).withValues(alpha: 0.16)
                                   : Colors.transparent,
-                              borderRadius: AppRadius.brMd,
+                              borderRadius: BorderRadius.circular(12),
                               child: InkWell(
                                 onTap: () => onNavigationChanged!(index),
-                                borderRadius: AppRadius.brMd,
+                                borderRadius: BorderRadius.circular(12),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.md,
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
                                     border: isSelected
-                                        ? const Border(left: AppBorders.focus)
+                                        ? Border.all(
+                                            color: const Color(0xFFA78BFA).withValues(alpha: 0.35),
+                                            width: 1,
+                                          )
+                                        : null,
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
                                         : null,
                                   ),
                                   child: Row(
@@ -204,7 +245,7 @@ class AppScaffold extends StatelessWidget {
                                             : item.icon,
                                         size: AppIcons.md,
                                         color: isSelected
-                                            ? AppColors.primaryLight
+                                            ? Colors.white
                                             : AppColors.textSecondary,
                                       ),
                                       AppSpacing.h12,
@@ -212,7 +253,7 @@ class AppScaffold extends StatelessWidget {
                                         item.label,
                                         style: AppTypography.bodySmall.copyWith(
                                           color: isSelected
-                                              ? AppColors.textPrimary
+                                              ? Colors.white
                                               : AppColors.textSecondary,
                                           fontWeight: isSelected
                                               ? FontWeight.w600
@@ -251,9 +292,174 @@ class AppScaffold extends StatelessWidget {
           ),
 
           // Main Screen Content
-          Expanded(child: body),
+          Expanded(
+            child: Column(
+              children: [
+                if (topBar == null)
+                  ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(
+                        height: 58,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F0F1A).withValues(alpha: 0.65),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Workspace / Breadcrumb Indicator
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                                        blurRadius: 6,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Study Space',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    '/',
+                                    style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _getSectionTitle(navigationIndex),
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+
+                            // Dedicated Elegant Top AI Navigation Button
+                            if (onAiTap != null) ...[
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  key: const ValueKey('desktop_top_ai_nav_button'),
+                                  onTap: onAiTap,
+                                  borderRadius: BorderRadius.circular(22),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFF8B5CF6).withValues(alpha: 0.90),
+                                          const Color(0xFF6366F1).withValues(alpha: 0.85),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(22),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                        width: 1.2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.40),
+                                          blurRadius: 14,
+                                          spreadRadius: 0,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.auto_awesome_rounded,
+                                          size: 15,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Ask AI Tutor',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                Expanded(child: body),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _getSectionTitle(int? index) {
+    if (index == null || index < 0 || index >= navigationItems.length) {
+      return 'Overview';
+    }
+    return navigationItems[index].label;
   }
 }

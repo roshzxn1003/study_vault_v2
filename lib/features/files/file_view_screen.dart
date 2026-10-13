@@ -284,7 +284,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                 trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.push('/study/learn/$fileName');
+                  context.push('/study/learn/${Uri.encodeComponent(fileName)}');
                 },
               ),
               ListTile(
@@ -298,7 +298,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                 trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.push('/study/quiz/$fileName');
+                  context.push('/study/quiz/${Uri.encodeComponent(fileName)}');
                 },
               ),
               ListTile(
@@ -312,7 +312,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                 trailing: const Icon(Icons.chevron_right, size: 20),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.push('/study/flashcards/$fileName');
+                  context.push('/study/flashcards/${Uri.encodeComponent(fileName)}');
                 },
               ),
               ListTile(
@@ -569,37 +569,42 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.primaryLight, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Navigated to Page ${widget.initialPage} from AI Citation',
-                          style: const TextStyle(
-                            color: AppColors.primaryLight,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                  child: Material(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, color: AppColors.primaryLight, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Navigated to Page ${widget.initialPage} from AI Citation',
+                              style: const TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      InkWell(
-                        onTap: () => setState(() => _showCitationBanner = false),
-                        borderRadius: BorderRadius.circular(12),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4.0),
-                          child: Icon(Icons.close, size: 14, color: AppColors.primaryLight),
+                        InkWell(
+                          onTap: () => setState(() => _showCitationBanner = false),
+                          borderRadius: BorderRadius.circular(12),
+                          child: const Padding(
+                            padding: EdgeInsets.all(4.0),
+                            child: Icon(Icons.close, size: 14, color: AppColors.primaryLight),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
+              ),
 
               // Search Toolbar (if active)
               if (_isSearchOpen)
@@ -683,26 +688,29 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                                 ? () => _pdfViewerController.previousPage()
                                 : null,
                           ),
-                          InkWell(
-                            onTap: _showJumpToPageDialog,
+                          Material(
+                            color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.cardBorder),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.menu_book_rounded, size: 13, color: AppColors.primaryLight),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "$_currentPageNumber/$_totalPageCount",
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                                  ),
-                                ],
+                            child: InkWell(
+                              onTap: _showJumpToPageDialog,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.cardBorder),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.menu_book_rounded, size: 13, color: AppColors.primaryLight),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "$_currentPageNumber/$_totalPageCount",
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

@@ -61,13 +61,13 @@ class _AiTopicLauncherSheetState extends ConsumerState<AiTopicLauncherSheet> {
 
     switch (type) {
       case 'tutor':
-        context.push('/study/learn/$topic');
+        context.push('/study/learn/${Uri.encodeComponent(topic)}');
         break;
       case 'quiz':
-        context.push('/study/quiz/$topic');
+        context.push('/study/quiz/${Uri.encodeComponent(topic)}');
         break;
       case 'flashcards':
-        context.push('/study/flashcards/$topic');
+        context.push('/study/flashcards/${Uri.encodeComponent(topic)}');
         break;
       case 'summary':
         ref.read(chatProvider.notifier).setMode('summarize');

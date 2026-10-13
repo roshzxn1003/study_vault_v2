@@ -17,7 +17,7 @@ import '../../features/ai/ai_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/account_settings_screen.dart';
 import '../../features/profile/ai_settings_screen.dart';
-import '../../features/gamification/presentation/screens/progress_screen.dart';
+import '../../features/progress/presentation/screens/progress_screen.dart';
 import '../../features/vault/presentation/screens/vault_screen.dart';
 import '../../features/vault/presentation/screens/material_detail_screen.dart';
 import '../../features/import/presentation/screens/import_screen.dart';
@@ -181,16 +181,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (context, state) => const AccountSettingsScreen()),
       GoRoute(path: '/settings/storage-sync', builder: (context, state) => const StorageSyncScreen()),
       GoRoute(path: '/progress', builder: (context, state) => const ProgressScreen()),
+      GoRoute(path: '/gamification', redirect: (_, _) => '/progress'),
       GoRoute(path: '/academic/history', builder: (context, state) => const AcademicHistoryScreen()),
       GoRoute(path: '/academic/settings', builder: (context, state) => const AcademicSettingsScreen()),
       
       // Exam, Study & Flashcards
       GoRoute(path: '/exam/setup', builder: (context, state) => const ExamSetupScreen()),
       GoRoute(path: '/exam/plan', builder: (context, state) => const ExamPlanScreen()),
-      GoRoute(path: '/study/:topic', builder: (context, state) => StudyTopicScreen(topic: state.pathParameters['topic']!)),
-      GoRoute(path: '/study/learn/:topic', builder: (context, state) => StudyTutorScreen(topic: state.pathParameters['topic']!)),
-      GoRoute(path: '/study/quiz/:topic', builder: (context, state) => QuizPlayerScreen(topic: state.pathParameters['topic']!)),
-      GoRoute(path: '/study/flashcards/:topic', builder: (context, state) => FlashcardScreen(topic: state.pathParameters['topic']!)),
+      GoRoute(path: '/study/:topic', builder: (context, state) => StudyTopicScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
+      GoRoute(path: '/study/learn/:topic', builder: (context, state) => StudyTutorScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
+      GoRoute(path: '/study/quiz/:topic', builder: (context, state) => QuizPlayerScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
+      GoRoute(path: '/study/flashcards/:topic', builder: (context, state) => FlashcardScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
     ],
   );
 });
@@ -214,6 +215,7 @@ class MainNavigationShell extends StatelessWidget {
         location.startsWith('/settings')) {
       return 4;
     }
+    if (location.startsWith('/ai')) return -1;
     return 0;
   }
 
@@ -246,6 +248,7 @@ class MainNavigationShell extends StatelessWidget {
       navigationIndex: selectedIndex,
       onNavigationChanged: (index) => _onNavigationChanged(context, index),
       onAddTap: () => AddMaterialSheet.show(context),
+      onAiTap: () => context.go('/ai'),
     );
   }
 }

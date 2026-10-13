@@ -11,6 +11,7 @@ class ChatMessage {
   final String role;
   final String content;
   final List<AiSource>? sources;
+  final String? imagePath;
   final DateTime createdAt;
   final bool isPartial;
 
@@ -22,6 +23,7 @@ class ChatMessage {
     required this.role,
     required this.content,
     this.sources,
+    this.imagePath,
     DateTime? createdAt,
     this.isPartial = false,
   })  : id = id ?? 'msg_${DateTime.now().microsecondsSinceEpoch}',
@@ -30,6 +32,7 @@ class ChatMessage {
   ChatMessage copyWith({
     String? content,
     List<AiSource>? sources,
+    String? imagePath,
     bool? isPartial,
   }) {
     return ChatMessage(
@@ -37,6 +40,7 @@ class ChatMessage {
       role: role,
       content: content ?? this.content,
       sources: sources ?? this.sources,
+      imagePath: imagePath ?? this.imagePath,
       createdAt: createdAt,
       isPartial: isPartial ?? this.isPartial,
     );
@@ -298,6 +302,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final userMsg = ChatMessage(
       role: 'user',
       content: clean,
+      imagePath: imagePath,
     );
 
     // Save user message to persistent DB

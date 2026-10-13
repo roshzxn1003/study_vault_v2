@@ -32,7 +32,7 @@ class AcademicHistoryScreen extends ConsumerWidget {
               onAction: () => context.pop(),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120),
               itemCount: state.history.length,
               itemBuilder: (context, index) {
                 final yearWithPeriods = state.history[index];
@@ -107,9 +107,6 @@ class AcademicHistoryScreen extends ConsumerWidget {
             return Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: isCurrent
-                    ? AppColors.surface
-                    : AppColors.surfaceSecondary.withValues(alpha: 0.6),
                 borderRadius: AppRadius.brMd,
                 border: Border.all(
                   color: isCurrent
@@ -118,7 +115,13 @@ class AcademicHistoryScreen extends ConsumerWidget {
                   width: isCurrent ? 1.5 : 1,
                 ),
               ),
-              child: ListTile(
+              child: Material(
+                color: isCurrent
+                    ? AppColors.surface
+                    : AppColors.surfaceSecondary.withValues(alpha: 0.6),
+                borderRadius: AppRadius.brMd,
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                   vertical: 4,
@@ -192,7 +195,8 @@ class AcademicHistoryScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            );
+            ),
+          );
           }),
         ],
       ),

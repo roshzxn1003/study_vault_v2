@@ -55,60 +55,65 @@ class UpcomingAcademicSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          InkWell(
-            onTap: () => context.push('/exam/plan'),
-            borderRadius: AppRadius.card,
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSecondary,
-                borderRadius: AppRadius.button,
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: AppRadius.button,
-                    ),
-                    child: const Icon(
-                      Icons.school_rounded,
-                      size: 20,
-                      color: AppColors.primaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Exam Study Plan & Review',
-                          style: AppTypography.body.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            fontSize: 13,
-                          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.button,
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Material(
+              color: AppColors.surfaceSecondary,
+              borderRadius: AppRadius.button,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => context.push('/exam/plan'),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          borderRadius: AppRadius.button,
                         ),
-                        Text(
-                          'Track unit milestones and flashcard decks',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
+                        child: const Icon(
+                          Icons.school_rounded,
+                          size: 20,
+                          color: AppColors.primaryLight,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Exam Study Plan & Review',
+                              style: AppTypography.body.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Track unit milestones and flashcard decks',
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textMuted,
+                        size: 18,
+                      ),
+                    ],
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textMuted,
-                    size: 18,
-                  ),
-                ],
+                ),
               ),
             ),
           ),

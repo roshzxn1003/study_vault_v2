@@ -476,37 +476,38 @@ class ImportScreen extends ConsumerWidget {
           // Duplicate Notice
           if (isDuplicate) ...[
             const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: AppRadius.card,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 16),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      'Potential duplicate found in Vault.',
-                      style: AppTypography.caption.copyWith(color: AppColors.warning),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => _showDuplicateDialog(context, ref, item),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            Material(
+              color: AppColors.warning.withValues(alpha: 0.1),
+              borderRadius: AppRadius.card,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 16),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
                       child: Text(
-                        'Review',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.warning,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
+                        'Potential duplicate found in Vault.',
+                        style: AppTypography.caption.copyWith(color: AppColors.warning),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => _showDuplicateDialog(context, ref, item),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        child: Text(
+                          'Review',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

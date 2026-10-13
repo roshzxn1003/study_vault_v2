@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:study_vault/features/scan/presentation/providers/scan_provider.dart';
-import 'ocr_review_screen.dart';
 
 class ScanScreen extends ConsumerWidget {
   const ScanScreen({super.key});
@@ -99,12 +99,7 @@ class ScanScreen extends ConsumerWidget {
             if (scanState.extractedText != null)
               ElevatedButton(
                 style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const OCRReviewScreen()),
-                  );
-                },
+                onPressed: () => context.push('/scan/review'),
                 child: const Text('Review & Save to Vault'),
               ),
             if (scanState.error != null)

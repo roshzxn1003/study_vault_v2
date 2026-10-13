@@ -261,43 +261,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 3. GROUP 1: ACADEMIC
                 // =============================================================
                 _buildSectionHeader('ACADEMIC'),
-                Container(
-                  decoration: _cardBoxDecoration,
-                  child: Column(
-                    children: [
-                      Consumer(
-                        builder: (ctx, ref, _) {
-                          final academicState = ref.watch(academicWorkspaceProvider);
-                          final program = academicState.activeWorkspace?.name ?? 'Academic Program';
-                          final period = academicState.activePeriod?.name ?? 'Current Term';
+                _buildCardGroup(
+                  children: [
+                    Consumer(
+                      builder: (ctx, ref, _) {
+                        final academicState = ref.watch(academicWorkspaceProvider);
+                        final program = academicState.activeWorkspace?.name ?? 'Academic Program';
+                        final period = academicState.activePeriod?.name ?? 'Current Term';
 
-                          return ListTile(
-                            leading: _buildTileIcon(Icons.school_rounded, const Color(0xFFF59E0B)),
-                            title: const Text('Academic Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            subtitle: Text('$program • $period', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                            trailing: const Icon(Icons.chevron_right, size: 20),
-                            onTap: () => context.push('/academic/profile'),
-                          );
-                        },
-                      ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.auto_stories_rounded, AppColors.primaryLight),
-                        title: const Text('Manage Subjects', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Courses, subject codes, and instructors'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/academic/settings'),
-                      ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.history_edu_rounded, AppColors.cyan),
-                        title: const Text('Academic Year & History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Previous semesters and academic milestones'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/academic/history'),
-                      ),
-                    ],
-                  ),
+                        return ListTile(
+                          leading: _buildTileIcon(Icons.school_rounded, const Color(0xFFF59E0B)),
+                          title: const Text('Academic Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: Text('$program • $period', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => context.push('/academic/profile'),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.auto_stories_rounded, AppColors.primaryLight),
+                      title: const Text('Manage Subjects', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Courses, subject codes, and instructors'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/academic/settings'),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.history_edu_rounded, AppColors.cyan),
+                      title: const Text('Academic Year & History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Previous semesters and academic milestones'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/academic/history'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -305,51 +302,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 4. GROUP 2: ACCOUNT & CLOUD SYNC
                 // =============================================================
                 _buildSectionHeader('ACCOUNT & STORAGE'),
-                Container(
-                  decoration: _cardBoxDecoration,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: _buildTileIcon(
-                          syncState.isSyncing
-                              ? Icons.sync_rounded
-                              : (syncState.hasError ? Icons.sync_problem_rounded : Icons.cloud_done_rounded),
-                          syncState.hasError ? AppColors.destructive : (syncState.isSyncing ? AppColors.primaryLight : AppColors.emerald),
-                        ),
-                        title: const Text('Cloud & Sync Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: Text(
-                          syncState.isSyncing
-                              ? 'Syncing materials now...'
-                              : (syncState.lastSyncTime != null
-                                  ? 'Last synced: ${syncState.lastSyncTime!.hour.toString().padLeft(2, '0')}:${syncState.lastSyncTime!.minute.toString().padLeft(2, '0')}'
-                                  : 'Offline storage active'),
-                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                        ),
-                        trailing: TextButton(
-                          onPressed: syncState.isSyncing ? null : () => syncNotifier.syncNow(),
-                          child: const Text('Sync Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
+                _buildCardGroup(
+                  children: [
+                    ListTile(
+                      leading: _buildTileIcon(
+                        syncState.isSyncing
+                            ? Icons.sync_rounded
+                            : (syncState.hasError ? Icons.sync_problem_rounded : Icons.cloud_done_rounded),
+                        syncState.hasError ? AppColors.destructive : (syncState.isSyncing ? AppColors.primaryLight : AppColors.emerald),
                       ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.pie_chart_outline_rounded, const Color(0xFF8B5CF6)),
-                        title: const Text('Storage Breakdown', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Local cache size and offline copies'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/settings/storage-sync'),
+                      title: const Text('Cloud & Sync Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(
+                        syncState.isSyncing
+                            ? 'Syncing materials now...'
+                            : (syncState.lastSyncTime != null
+                                ? 'Last synced: ${syncState.lastSyncTime!.hour.toString().padLeft(2, '0')}:${syncState.lastSyncTime!.minute.toString().padLeft(2, '0')}'
+                                : 'Offline storage active'),
+                        style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                       ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.shield_outlined, AppColors.emerald),
-                        title: const Text('Privacy & Sharing Preferences', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Student search visibility, QR and invites'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const PrivacySharingSettingsScreen()),
-                        ),
+                      trailing: TextButton(
+                        onPressed: syncState.isSyncing ? null : () => syncNotifier.syncNow(),
+                        child: const Text('Sync Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
-                    ],
-                  ),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.pie_chart_outline_rounded, const Color(0xFF8B5CF6)),
+                      title: const Text('Storage Breakdown', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Local cache size and offline copies'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/settings/storage-sync'),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.shield_outlined, AppColors.emerald),
+                      title: const Text('Privacy & Sharing Preferences', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Student search visibility, QR and invites'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PrivacySharingSettingsScreen()),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -357,42 +351,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 5. GROUP 3: APP PREFERENCES
                 // =============================================================
                 _buildSectionHeader('APP PREFERENCES'),
-                Container(
-                  decoration: _cardBoxDecoration,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: _buildTileIcon(Icons.dark_mode_rounded, AppColors.primaryLight),
-                        title: const Text('Appearance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Dark theme (Academic Purple accent)'),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text('Dark Mode', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.bold)),
+                _buildCardGroup(
+                  children: [
+                    ListTile(
+                      leading: _buildTileIcon(Icons.dark_mode_rounded, AppColors.primaryLight),
+                      title: const Text('Appearance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Dark theme (Academic Purple accent)'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        onTap: () {},
+                        child: const Text('Dark Mode', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.manage_accounts_rounded, AppColors.cyan),
-                        title: const Text('Account Security & Auth', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Password, session and security controls'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/settings'),
-                      ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.lock_outline_rounded, const Color(0xFFF59E0B)),
-                        title: const Text('Local SQLite & Encryption', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Offline-first data security and local database'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/privacy'),
-                      ),
-                    ],
-                  ),
+                      onTap: () {},
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.manage_accounts_rounded, AppColors.cyan),
+                      title: const Text('Account Security & Auth', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Password, session and security controls'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/settings'),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.lock_outline_rounded, const Color(0xFFF59E0B)),
+                      title: const Text('Local SQLite & Encryption', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Offline-first data security and local database'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/privacy'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -400,37 +391,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 6. GROUP 4: TOOLS & AI
                 // =============================================================
                 _buildSectionHeader('TOOLS & INTELLIGENCE'),
-                Container(
-                  decoration: _cardBoxDecoration,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: _buildTileIcon(Icons.auto_awesome_rounded, const Color(0xFF8B5CF6)),
-                        title: const Text('AI Assistant Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Model configuration, API key & RAG indexing'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const AiSettingsScreen()),
-                        ),
+                _buildCardGroup(
+                  children: [
+                    ListTile(
+                      leading: _buildTileIcon(Icons.auto_awesome_rounded, const Color(0xFF8B5CF6)),
+                      title: const Text('AI Assistant Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Model configuration, API key & RAG indexing'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AiSettingsScreen()),
                       ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.bar_chart_rounded, AppColors.primaryLight),
-                        title: const Text('Study Analytics & Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Revision time, mastery scores & badges'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => context.push('/progress'),
-                      ),
-                      const Divider(height: 1, color: AppColors.borderSubtle),
-                      ListTile(
-                        leading: _buildTileIcon(Icons.qr_code_2_rounded, AppColors.emerald),
-                        title: const Text('Student QR Card', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('Quick scan for classmate discovery'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => QrDiscoveryModal.show(context),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.bar_chart_rounded, AppColors.primaryLight),
+                      title: const Text('Study Analytics & Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Revision time, mastery scores & badges'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/progress'),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
+                      leading: _buildTileIcon(Icons.qr_code_2_rounded, AppColors.emerald),
+                      title: const Text('Student QR Card', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Quick scan for classmate discovery'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => QrDiscoveryModal.show(context),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -438,19 +426,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 7. GROUP 5: ABOUT
                 // =============================================================
                 _buildSectionHeader('ABOUT'),
-                Container(
-                  decoration: _cardBoxDecoration,
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: _buildTileIcon(Icons.info_outline_rounded, AppColors.textSecondary),
-                        title: const Text('About Study Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        subtitle: const Text('v2.4.0 • Academic Productivity Suite'),
-                        trailing: const Icon(Icons.chevron_right, size: 20),
-                        onTap: () => _showAboutDialog(context),
-                      ),
-                    ],
-                  ),
+                _buildCardGroup(
+                  children: [
+                    ListTile(
+                      leading: _buildTileIcon(Icons.info_outline_rounded, AppColors.textSecondary),
+                      title: const Text('About Study Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('v2.4.0 • Academic Productivity Suite'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => _showAboutDialog(context),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -571,9 +556,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  BoxDecoration get _cardBoxDecoration => BoxDecoration(
-        color: AppColors.surface,
+  Widget _buildCardGroup({required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.borderSubtle),
-      );
+      ),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
 }

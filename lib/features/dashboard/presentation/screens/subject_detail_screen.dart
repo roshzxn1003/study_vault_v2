@@ -431,7 +431,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                     ActionChip(
                                       avatar: const Icon(Icons.style_rounded, size: 14, color: AppColors.emerald),
                                       label: const Text('Flashcards'),
-                                      onPressed: () => context.push('/study/flashcards/$subjectName'),
+                                      onPressed: () => context.push('/study/flashcards/${Uri.encodeComponent(subjectName)}'),
                                       backgroundColor: AppColors.surfaceSecondary,
                                       side: const BorderSide(color: AppColors.borderSubtle),
                                       labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
@@ -440,7 +440,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                     ActionChip(
                                       avatar: const Icon(Icons.quiz_rounded, size: 14, color: AppColors.amber),
                                       label: const Text('Practice Quiz'),
-                                      onPressed: () => context.push('/study/quiz/$subjectName'),
+                                      onPressed: () => context.push('/study/quiz/${Uri.encodeComponent(subjectName)}'),
                                       backgroundColor: AppColors.surfaceSecondary,
                                       side: const BorderSide(color: AppColors.borderSubtle),
                                       labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),
@@ -449,7 +449,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                     ActionChip(
                                       avatar: const Icon(Icons.psychology_rounded, size: 14, color: AppColors.cyan),
                                       label: const Text('Socratic Tutor'),
-                                      onPressed: () => context.push('/study/learn/$subjectName'),
+                                      onPressed: () => context.push('/study/learn/${Uri.encodeComponent(subjectName)}'),
                                       backgroundColor: AppColors.surfaceSecondary,
                                       side: const BorderSide(color: AppColors.borderSubtle),
                                       labelStyle: AppTypography.caption.copyWith(color: AppColors.textPrimary),

@@ -217,7 +217,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                        onPressed: () => context.push('/study/quiz/$topicName'),
+                        onPressed: () => context.push('/study/quiz/${Uri.encodeComponent(topicName)}'),
                         icon: const Icon(Icons.quiz),
                         label: const Text("Take Quiz"),
                       ),

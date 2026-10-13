@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -11,6 +14,11 @@ import 'features/import/presentation/providers/import_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   CrashMonitoringService.instance.init();
+
+  if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
 
   final supabaseUrl = SupabaseConfig.isConfigured
       ? SupabaseConfig.url

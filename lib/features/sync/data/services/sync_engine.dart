@@ -165,7 +165,7 @@ class SyncEngine {
 
       final db = await _localDb.database;
       final syncedCountRes = await db.rawQuery(
-        'SELECT COUNT(*) as cnt FROM materials WHERE user_id = ? AND storage_path IS NOT NULL AND storage_path NOT LIKE "/%" AND deleted_at IS NULL',
+        "SELECT COUNT(*) as cnt FROM materials WHERE user_id = ? AND storage_path IS NOT NULL AND storage_path NOT LIKE '/%' AND deleted_at IS NULL",
         [userId],
       );
       final syncedFilesCount = (syncedCountRes.first['cnt'] as num?)?.toInt() ?? 0;

@@ -186,61 +186,63 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
           const SizedBox(height: AppSpacing.md),
 
           // Response Pedagogy Style
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
+          Card(
+            color: AppColors.surface,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
+              side: const BorderSide(color: AppColors.cardBorder),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.school_outlined, size: 18, color: AppColors.primaryLight),
-                    SizedBox(width: 8),
-                    Text(
-                      'Preferred Teaching Style',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Choose how the AI assistant formats explanations and answers.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                RadioGroup<String>(
-                  groupValue: _preferredStyle,
-                  onChanged: (v) {
-                    if (v != null) _savePreferredStyle(v);
-                  },
-                  child: Column(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
                     children: [
-                      RadioListTile<String>(
-                        title: const Text('Socratic Tutor (Recommended)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                        subtitle: const Text('5-step sequence: Intuition, Formal rules, Real-world analogy, Exam pitfalls, Active recall.', style: TextStyle(fontSize: 12)),
-                        value: 'socratic',
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      RadioListTile<String>(
-                        title: const Text('Concise & Direct', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                        subtitle: const Text('Bullet-point answers focused directly on facts and equations for fast revision.', style: TextStyle(fontSize: 12)),
-                        value: 'concise',
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      RadioListTile<String>(
-                        title: const Text('Exhaustive & Technical', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                        subtitle: const Text('Deep architectural breakdowns, full mathematical proofs, and system trade-offs.', style: TextStyle(fontSize: 12)),
-                        value: 'detailed',
-                        contentPadding: EdgeInsets.zero,
+                      Icon(Icons.school_outlined, size: 18, color: AppColors.primaryLight),
+                      SizedBox(width: 8),
+                      Text(
+                        'Preferred Teaching Style',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Choose how the AI assistant formats explanations and answers.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+                  RadioGroup<String>(
+                    groupValue: _preferredStyle,
+                    onChanged: (v) {
+                      if (v != null) _savePreferredStyle(v);
+                    },
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('Socratic Tutor (Recommended)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                          subtitle: const Text('5-step sequence: Intuition, Formal rules, Real-world analogy, Exam pitfalls, Active recall.', style: TextStyle(fontSize: 12)),
+                          value: 'socratic',
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        RadioListTile<String>(
+                          title: const Text('Concise & Direct', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Bullet-point answers focused directly on facts and equations for fast revision.', style: TextStyle(fontSize: 12)),
+                          value: 'concise',
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        RadioListTile<String>(
+                          title: const Text('Exhaustive & Technical', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Deep architectural breakdowns, full mathematical proofs, and system trade-offs.', style: TextStyle(fontSize: 12)),
+                          value: 'detailed',
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 

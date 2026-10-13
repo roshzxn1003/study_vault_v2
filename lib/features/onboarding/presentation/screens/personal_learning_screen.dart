@@ -165,44 +165,48 @@ class _PersonalLearningScreenState extends ConsumerState<PersonalLearningScreen>
                   key: ValueKey('personal_topic_${index}_$topic'),
                   margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
                     borderRadius: AppRadius.brMd,
                     border: AppBorders.allStandard,
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: 2,
-                    ),
-                    leading: const AppFileTypeIcon(type: AppFileType.note, size: 32),
-                    title: Text(
-                      topic,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w500,
+                  child: Material(
+                    color: AppColors.surface,
+                    borderRadius: AppRadius.brMd,
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 2,
                       ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppIconButton(
-                          icon: AppIcons.delete,
-                          size: AppIcons.sm,
-                          color: AppColors.destructive,
-                          tooltip: 'Remove',
-                          onPressed: () => notifier.removeTopic(index),
+                      leading: const AppFileTypeIcon(type: AppFileType.note, size: 32),
+                      title: Text(
+                        topic,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
                         ),
-                        ReorderableDragStartListener(
-                          index: index,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(
-                              Icons.drag_indicator_rounded,
-                              size: 20,
-                              color: AppColors.textMuted,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppIconButton(
+                            icon: AppIcons.delete,
+                            size: AppIcons.sm,
+                            color: AppColors.destructive,
+                            tooltip: 'Remove',
+                            onPressed: () => notifier.removeTopic(index),
+                          ),
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Icon(
+                                Icons.drag_indicator_rounded,
+                                size: 20,
+                                color: AppColors.textMuted,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );

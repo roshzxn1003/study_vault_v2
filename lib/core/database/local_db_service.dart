@@ -427,10 +427,12 @@ class LocalDbService {
         role TEXT NOT NULL,
         content TEXT NOT NULL,
         sources TEXT,
+        image_path TEXT,
         created_at TEXT NOT NULL
       )
     ''');
     await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)');
+    await _safeExecute(db, 'ALTER TABLE ai_messages ADD COLUMN image_path TEXT');
 
     // Material indexing status columns
     await _safeExecute(db, "ALTER TABLE materials ADD COLUMN indexing_status TEXT DEFAULT 'NOT_INDEXED'");

@@ -24,7 +24,7 @@ class StudyTopicScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(topic)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -104,7 +104,7 @@ class StudyTopicScreen extends ConsumerWidget {
               "Socratic lesson progression with analogies & code examples",
               Icons.psychology_outlined,
               AppColors.primary,
-              () => context.push('/study/learn/$topic'),
+              () => context.push('/study/learn/${Uri.encodeComponent(topic)}'),
             ),
             _buildActionCard(
               context,
@@ -112,7 +112,7 @@ class StudyTopicScreen extends ConsumerWidget {
               "Flip study cards with topic-specific test questions",
               Icons.style_outlined,
               AppColors.amber,
-              () => context.push('/study/flashcards/$topic'),
+              () => context.push('/study/flashcards/${Uri.encodeComponent(topic)}'),
             ),
             _buildActionCard(
               context,
@@ -120,7 +120,7 @@ class StudyTopicScreen extends ConsumerWidget {
               "Instant grading, answer feedback, and detailed explanations",
               Icons.quiz_outlined,
               AppColors.emerald,
-              () => context.push('/study/quiz/$topic'),
+              () => context.push('/study/quiz/${Uri.encodeComponent(topic)}'),
             ),
             _buildActionCard(
               context,
@@ -128,7 +128,7 @@ class StudyTopicScreen extends ConsumerWidget {
               "Deep conversational Q&A grounded in your vault notes",
               Icons.auto_awesome_outlined,
               AppColors.cyan,
-              () => context.push('/ai'),
+              () => context.push('/ai?subject=${Uri.encodeComponent(topic)}'),
             ),
             const SizedBox(height: 20),
           ],

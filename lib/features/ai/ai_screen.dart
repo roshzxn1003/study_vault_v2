@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/core/services/speech_service.dart';
 import 'package:study_vault/core/services/text_to_speech_service.dart';
 import 'package:study_vault/features/ai/data/repositories/ai_conversation_repository.dart';
+import 'package:study_vault/features/ai/data/services/chat_export_service.dart';
 import 'package:study_vault/features/ai/presentation/providers/chat_provider.dart';
 import 'package:study_vault/features/ai/presentation/widgets/material_attachment_dialog.dart';
 import 'package:study_vault/features/ai/presentation/widgets/streaming_message.dart';
@@ -255,9 +257,6 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? theme.colorScheme.primary.withValues(alpha: 0.08)
-                        : (isDark ? const Color(0xFF282830) : const Color(0xFFF9FAFB)),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected
@@ -266,7 +265,13 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
-                  child: ListTile(
+                  child: Material(
+                    color: isSelected
+                        ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                        : (isDark ? const Color(0xFF282830) : const Color(0xFFF9FAFB)),
+                    borderRadius: BorderRadius.circular(14),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: isSelected
                           ? theme.colorScheme.primary
@@ -311,7 +316,8 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                       Navigator.of(ctx).pop();
                     },
                   ),
-                );
+                ),
+              );
               }),
             ],
           ),
@@ -364,6 +370,44 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportChatAsStudyNote(ChatState chatState) async {
+    if (chatState.messages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No conversation messages to export yet'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final result = await ChatExportService.exportToStudyNote(chatState: chatState);
+      if (result != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported study guide to Vault Notes as "${result.title}"'),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'View Note',
+              textColor: Colors.white,
+              onPressed: () {
+                context.push('/notes/${result.noteId}');
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error exporting study note: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -433,6 +477,12 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            key: const ValueKey('export_chat_button'),
+            icon: const Icon(Icons.bookmark_add_outlined, size: 20),
+            tooltip: 'Export as Study Note',
+            onPressed: () => _exportChatAsStudyNote(chatState),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_square, size: 20),
             tooltip: 'New Chat',
@@ -973,12 +1023,15 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Material(
         color: isSelected
             ? theme.colorScheme.primary.withValues(alpha: 0.12)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
-      ),
-      child: ListTile(
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
         dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         leading: Icon(
@@ -1038,6 +1091,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ref.read(chatProvider.notifier).loadConversation(conv.id);
         },
       ),
-    );
+    ),
+  );
   }
 }
