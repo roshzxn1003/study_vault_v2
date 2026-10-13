@@ -1,12 +1,22 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 
 class QuizPlayerScreen extends ConsumerStatefulWidget {
   final String topic;
-  const QuizPlayerScreen({super.key, required this.topic});
+  final List<Map<String, dynamic>>? initialQuestions;
+  final bool persistProgress;
+
+  const QuizPlayerScreen({
+    super.key,
+    required this.topic,
+    this.initialQuestions,
+    this.persistProgress = true,
+  });
 
   @override
   ConsumerState<QuizPlayerScreen> createState() => _QuizPlayerScreenState();
@@ -25,19 +35,58 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchDynamicQuestions();
+    if (widget.initialQuestions != null && widget.initialQuestions!.isNotEmpty) {
+      _questions = List.from(widget.initialQuestions!);
+      _isLoading = false;
+    } else {
+      _fetchDynamicQuestions();
+    }
   }
 
   Future<void> _fetchDynamicQuestions() async {
     setState(() => _isLoading = true);
     try {
+      final cachedQuizzes = await LocalDbService.instance.getAiQuizzes(topic: widget.topic);
+      if (cachedQuizzes.isNotEmpty) {
+        final rawJson = cachedQuizzes.first['questions_data'] as String?;
+        if (rawJson != null && rawJson.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rawJson) as List;
+            final parsed = decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+            if (parsed.isNotEmpty && mounted) {
+              setState(() {
+                _questions = parsed;
+                _isLoading = false;
+              });
+              return;
+            }
+          } catch (_) {}
+        }
+      }
+
       final llm = ref.read(llmServiceProvider);
       final questions = await llm.generateQuizQuestions(topic: widget.topic);
-      if (mounted) {
-        setState(() {
-          _questions = questions;
-          _isLoading = false;
-        });
+      if (questions.isNotEmpty) {
+        if (widget.persistProgress) {
+          try {
+            await LocalDbService.instance.saveAiQuiz(
+              id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
+              userId: 'guest',
+              title: widget.topic,
+              questionsJson: jsonEncode(questions),
+            );
+          } catch (_) {}
+        }
+        if (mounted) {
+          setState(() {
+            _questions = questions;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -65,6 +114,11 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
       });
     } else {
       setState(() => _isFinished = true);
+      if (widget.persistProgress) {
+        try {
+          LocalDbService.instance.recordStudyAction('quiz_complete');
+        } catch (_) {}
+      }
     }
   }
 

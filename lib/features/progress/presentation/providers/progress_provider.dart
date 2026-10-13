@@ -44,7 +44,7 @@ final topicProgressProvider = FutureProvider<List<TopicStat>>((ref) async {
     final rows = await db.rawQuery('''
       SELECT topic, 
              COUNT(*) as total_cards, 
-             SUM(CASE WHEN mastery_level >= 3 THEN 1 ELSE 0 END) as mastered 
+             SUM(CASE WHEN mastery_level >= 1 THEN 1 ELSE 0 END) as mastered 
       FROM flashcards 
       WHERE topic IS NOT NULL AND topic != ''
       GROUP BY topic

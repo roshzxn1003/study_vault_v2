@@ -160,7 +160,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildSearchAndAiBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: [
@@ -171,12 +170,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
-              onTap: () => context.push('/search'),
+      child: Material(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                onTap: () => context.push('/search'),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
@@ -208,8 +211,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildVaultMetricsBanner(AsyncValue<Map<String, dynamic>> statsAsync) {
     return statsAsync.when(
@@ -288,10 +292,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: Column(
           children: [
@@ -313,8 +319,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildExamTargetWidget(AsyncValue<List<Map<String, dynamic>>> examGoalsAsync) {
     return examGoalsAsync.when(

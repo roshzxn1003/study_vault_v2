@@ -190,7 +190,7 @@ class _StudyTutorScreenState extends ConsumerState<StudyTutorScreen> {
           IconButton(
             icon: const Icon(Icons.quiz_outlined),
             tooltip: 'Take Quiz',
-            onPressed: () => context.push('/study/quiz/${widget.topic}'),
+            onPressed: () => context.push('/study/quiz/${Uri.encodeComponent(widget.topic)}'),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

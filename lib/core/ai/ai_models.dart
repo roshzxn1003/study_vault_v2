@@ -144,6 +144,11 @@ class AiRequest {
   final String? workspaceContext;
   final String? subjectContext;
   final String? academicContext;
+  final String? materialId;
+  final String? materialTitle;
+  final List<String>? targetMaterialIds;
+  final bool isStrictGrounded;
+  final String? modelOverride;
   final List<AiChatMessage> conversationHistory;
   final AiOutputFormat outputFormat;
   final String? systemInstruction;
@@ -158,6 +163,11 @@ class AiRequest {
     this.workspaceContext,
     this.subjectContext,
     this.academicContext,
+    this.materialId,
+    this.materialTitle,
+    this.targetMaterialIds,
+    this.isStrictGrounded = true,
+    this.modelOverride,
     this.conversationHistory = const [],
     this.outputFormat = AiOutputFormat.markdown,
     this.systemInstruction,
@@ -173,6 +183,11 @@ class AiRequest {
     String? workspaceContext,
     String? subjectContext,
     String? academicContext,
+    String? materialId,
+    String? materialTitle,
+    List<String>? targetMaterialIds,
+    bool? isStrictGrounded,
+    String? modelOverride,
     List<AiChatMessage>? conversationHistory,
     AiOutputFormat? outputFormat,
     String? systemInstruction,
@@ -187,6 +202,11 @@ class AiRequest {
       workspaceContext: workspaceContext ?? this.workspaceContext,
       subjectContext: subjectContext ?? this.subjectContext,
       academicContext: academicContext ?? this.academicContext,
+      materialId: materialId ?? this.materialId,
+      materialTitle: materialTitle ?? this.materialTitle,
+      targetMaterialIds: targetMaterialIds ?? this.targetMaterialIds,
+      isStrictGrounded: isStrictGrounded ?? this.isStrictGrounded,
+      modelOverride: modelOverride ?? this.modelOverride,
       conversationHistory: conversationHistory ?? this.conversationHistory,
       outputFormat: outputFormat ?? this.outputFormat,
       systemInstruction: systemInstruction ?? this.systemInstruction,

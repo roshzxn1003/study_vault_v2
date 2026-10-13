@@ -183,53 +183,57 @@ class _SchoolSubjectsScreenState extends ConsumerState<SchoolSubjectsScreen> {
                   key: ValueKey('school_subject_${index}_$subject'),
                   margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
                     borderRadius: AppRadius.brMd,
                     border: AppBorders.allStandard,
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: 2,
-                    ),
-                    leading: const AppFileTypeIcon(type: AppFileType.folder, size: 32),
-                    title: Text(
-                      subject,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: FontWeight.w500,
+                  child: Material(
+                    color: AppColors.surface,
+                    borderRadius: AppRadius.brMd,
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 2,
                       ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppIconButton(
-                          icon: AppIcons.edit,
-                          size: AppIcons.sm,
-                          tooltip: 'Rename',
-                          onPressed: () => _showRenameDialog(index, subject),
+                      leading: const AppFileTypeIcon(type: AppFileType.folder, size: 32),
+                      title: Text(
+                        subject,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
                         ),
-                        AppIconButton(
-                          icon: AppIcons.delete,
-                          size: AppIcons.sm,
-                          color: AppColors.destructive,
-                          tooltip: 'Remove',
-                          onPressed: () => notifier.removeSubject(
-                            purpose: OnboardingPurpose.school,
-                            index: index,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppIconButton(
+                            icon: AppIcons.edit,
+                            size: AppIcons.sm,
+                            tooltip: 'Rename',
+                            onPressed: () => _showRenameDialog(index, subject),
                           ),
-                        ),
-                        ReorderableDragStartListener(
-                          index: index,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(
-                              Icons.drag_indicator_rounded,
-                              size: 20,
-                              color: AppColors.textMuted,
+                          AppIconButton(
+                            icon: AppIcons.delete,
+                            size: AppIcons.sm,
+                            color: AppColors.destructive,
+                            tooltip: 'Remove',
+                            onPressed: () => notifier.removeSubject(
+                              purpose: OnboardingPurpose.school,
+                              index: index,
                             ),
                           ),
-                        ),
-                      ],
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Icon(
+                                Icons.drag_indicator_rounded,
+                                size: 20,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

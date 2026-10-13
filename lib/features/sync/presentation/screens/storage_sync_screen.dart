@@ -712,40 +712,55 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
           ),
           if (failed > 0) ...[
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.destructive,
-                      side: const BorderSide(color: AppColors.destructive),
-                      minimumSize: const Size.fromHeight(38),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.error_outline_rounded, size: 16),
-                    label: const Text('View Sync Errors'),
-                    onPressed: _showSyncErrorsBottomSheet,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 420;
+                final viewErrorsBtn = OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.destructive,
+                    side: const BorderSide(color: AppColors.destructive),
+                    minimumSize: const Size.fromHeight(38),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.destructive,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(38),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.replay_rounded, size: 16),
-                    label: const Text('Retry Failed Mutations'),
-                    onPressed: isSyncing
-                        ? null
-                        : () async {
-                            await ref.read(syncProvider.notifier).retryFailed();
-                          },
+                  icon: const Icon(Icons.error_outline_rounded, size: 16),
+                  label: const Text('View Sync Errors'),
+                  onPressed: _showSyncErrorsBottomSheet,
+                );
+
+                final retryBtn = ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.destructive,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(38),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                ),
-              ],
+                  icon: const Icon(Icons.replay_rounded, size: 16),
+                  label: const Text('Retry Failed Mutations'),
+                  onPressed: isSyncing
+                      ? null
+                      : () async {
+                          await ref.read(syncProvider.notifier).retryFailed();
+                        },
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    children: [
+                      viewErrorsBtn,
+                      const SizedBox(height: AppSpacing.xs),
+                      retryBtn,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: viewErrorsBtn),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(child: retryBtn),
+                  ],
+                );
+              },
             ),
           ],
           const SizedBox(height: AppSpacing.sm),
@@ -867,9 +882,13 @@ class _StorageSyncScreenState extends ConsumerState<StorageSyncScreen> {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: AppSpacing.xxs),
-              Text(
-                label,
-                style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

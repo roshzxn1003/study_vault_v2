@@ -127,7 +127,7 @@ class AcademicWorkspaceRepository {
             'academic_period_id': periodId,
             'updated_at': now,
           },
-          where: 'academic_structure_id = ? AND (academic_period_id IS NULL OR academic_period_id = "")',
+          where: "academic_structure_id = ? AND (academic_period_id IS NULL OR academic_period_id = '')",
           whereArgs: [structId],
         );
       }

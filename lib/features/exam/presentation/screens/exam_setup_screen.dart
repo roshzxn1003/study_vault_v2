@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/providers/exam_providers.dart';
 import 'package:study_vault/features/exam/domain/entities/exam.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
@@ -60,7 +61,19 @@ class _ExamSetupScreenState extends ConsumerState<ExamSetupScreen> {
         createdAt: DateTime.now(),
       );
 
-      await ref.read(examRepositoryProvider).createExam(exam);
+      try {
+        await ref.read(examRepositoryProvider).createExam(exam);
+      } catch (e) {
+        debugPrint('Remote exam sync warning: $e');
+      }
+
+      await LocalDbService.instance.saveExamGoal(
+        id: exam.id,
+        title: exam.name,
+        subject: _topics.isNotEmpty ? _topics.first : 'General',
+        targetDate: _selectedDate.toIso8601String(),
+        syllabusPercent: 0,
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -84,7 +97,7 @@ class _ExamSetupScreenState extends ConsumerState<ExamSetupScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("Exam Prep Setup")),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

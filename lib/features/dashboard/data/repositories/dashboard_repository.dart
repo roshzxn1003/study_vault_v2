@@ -252,7 +252,7 @@ class DashboardRepository {
       try {
         final unorganizedFiles = await db.query(
           'files',
-          where: 'user_id = ? AND (subject_id IS NULL OR subject_id = "") AND (folder_id IS NULL OR folder_id = "")',
+          where: "user_id = ? AND (subject_id IS NULL OR subject_id = '') AND (folder_id IS NULL OR folder_id = '')",
           whereArgs: [userId],
           orderBy: 'created_at DESC',
         );
@@ -279,7 +279,7 @@ class DashboardRepository {
       try {
         final unorganizedNotes = await db.query(
           'notes',
-          where: 'user_id = ? AND (subject_id IS NULL OR subject_id = "") AND (folder_id IS NULL OR folder_id = "")',
+          where: "user_id = ? AND (subject_id IS NULL OR subject_id = '') AND (folder_id IS NULL OR folder_id = '')",
           whereArgs: [userId],
           orderBy: 'created_at DESC',
         );

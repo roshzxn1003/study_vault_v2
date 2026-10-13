@@ -52,12 +52,21 @@ class AiOrchestrator {
     // Step 1: Perform RAG retrieval if vault context is enabled and no explicit context was forced
     if (vaultContextAllowed && (request.context == null || request.context!.isEmpty)) {
       try {
+        if (request.materialId != null && documentProcessor != null) {
+          try {
+            await documentProcessor!.ensureIndexed(request.materialId!);
+          } catch (e) {
+            debugPrint('Auto-index check note: $e');
+          }
+        }
+
         retrievedChunks = await _retriever.retrieve(RetrievalQuery(
           queryText: request.userMessage,
           userId: userId,
           workspaceId: request.workspaceContext,
           subjectId: request.subjectContext,
-          topK: 4,
+          materialId: request.materialId,
+          topK: 5,
         ));
 
         if (retrievedChunks.isNotEmpty) {
@@ -115,12 +124,21 @@ class AiOrchestrator {
 
     if (vaultContextAllowed && (request.context == null || request.context!.isEmpty)) {
       try {
+        if (request.materialId != null && documentProcessor != null) {
+          try {
+            await documentProcessor!.ensureIndexed(request.materialId!);
+          } catch (e) {
+            debugPrint('Auto-index check note: $e');
+          }
+        }
+
         retrievedChunks = await _retriever.retrieve(RetrievalQuery(
           queryText: request.userMessage,
           userId: userId,
           workspaceId: request.workspaceContext,
           subjectId: request.subjectContext,
-          topK: 4,
+          materialId: request.materialId,
+          topK: 5,
         ));
 
         if (retrievedChunks.isNotEmpty) {
@@ -363,6 +381,40 @@ class AiOrchestrator {
     ));
   }
 
+  /// Direct streaming Q&A against a specific uploaded material.
+  Stream<AiChunk> askMaterialStream({
+    required String materialId,
+    required String question,
+    String? materialTitle,
+    AiCancelToken? cancelToken,
+  }) {
+    return askStream(
+      AiRequest(
+        mode: AiMode.documentQa,
+        userMessage: question,
+        materialId: materialId,
+        materialTitle: materialTitle,
+      ),
+      cancelToken: cancelToken,
+    );
+  }
+
+  /// Direct synchronous Q&A against a specific uploaded material.
+  Future<AiResponse> askMaterial({
+    required String materialId,
+    required String question,
+    String? materialTitle,
+  }) {
+    return ask(
+      AiRequest(
+        mode: AiMode.documentQa,
+        userMessage: question,
+        materialId: materialId,
+        materialTitle: materialTitle,
+      ),
+    );
+  }
+
   // --- Helper Methods ---
 
   String _resolveCurrentUserId() {
@@ -378,6 +430,20 @@ class AiOrchestrator {
   String _buildSystemPromptForMode(AiMode mode, String context, bool hasGroundedSources) {
     if (mode == AiMode.tutor) {
       return AiConfig.socraticTutorInstruction;
+    }
+    if (mode == AiMode.documentQa || hasGroundedSources) {
+      return '''
+You are Study Vault AI, an elite academic assistant and subject specialist.
+Answer the student's question clearly, accurately, and professionally, grounded in their Study Vault materials.
+
+GROUNDING RULES:
+1. Rely primarily on the provided Grounded Vault Context below.
+2. When referencing concepts from the notes or materials, cite the source document and page number as indicated in the context headers (e.g., [Doc: <Title>, Page <N>]).
+3. If the answer cannot be determined or supported by the provided notes/materials, state clearly:
+   "I couldn't find this in your Study Vault materials."
+   Then, provide an answer based on general academic knowledge, making sure to explicitly prefix it with "General Academic Explanation:".
+4. Never fabricate citations or page numbers.
+''';
     }
     return AiConfig.academicSystemInstruction;
   }

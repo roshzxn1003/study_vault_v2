@@ -109,7 +109,7 @@ class GeminiLlmService implements LlmService {
       );
     }
 
-    final selectedModel = await AiConfig.getSelectedModel();
+    final selectedModel = request.modelOverride ?? await AiConfig.getSelectedModel();
     final candidateModels = [
       selectedModel,
       ...AiConfig.fallbackModels.where((m) => m != selectedModel),
@@ -187,7 +187,7 @@ class GeminiLlmService implements LlmService {
       );
     }
 
-    final selectedModel = await AiConfig.getSelectedModel();
+    final selectedModel = request.modelOverride ?? await AiConfig.getSelectedModel();
     final candidateModels = [
       selectedModel,
       ...AiConfig.fallbackModels.where((m) => m != selectedModel),

@@ -803,15 +803,18 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primarySubtle
-                              : AppColors.surfaceSecondary,
                           borderRadius: AppRadius.brMd,
                           border: Border.all(
                             color: isSelected ? AppColors.primaryLight : AppColors.border,
                           ),
                         ),
-                        child: ListTile(
+                        child: Material(
+                          color: isSelected
+                              ? AppColors.primarySubtle
+                              : AppColors.surfaceSecondary,
+                          borderRadius: AppRadius.brMd,
+                          clipBehavior: Clip.antiAlias,
+                          child: ListTile(
                           title: Text(
                             period.name,
                             style: AppTypography.bodySmall.copyWith(
@@ -848,7 +851,8 @@ class AcademicWorkspaceScreen extends ConsumerWidget {
                             ref.read(academicWorkspaceProvider.notifier).selectPeriod(period.id);
                           },
                         ),
-                      );
+                      ),
+                    );
                     },
                   ),
                 ),

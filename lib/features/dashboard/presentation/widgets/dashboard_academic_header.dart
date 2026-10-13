@@ -59,9 +59,6 @@ class DashboardAcademicHeader extends ConsumerWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.surfaceSecondary
-                        : AppColors.surface,
                     borderRadius: AppRadius.button,
                     border: Border.all(
                       color: isSelected
@@ -70,38 +67,45 @@ class DashboardAcademicHeader extends ConsumerWidget {
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
-                  child: ListTile(
-                    dense: true,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onWorkspaceSelected(ws.id);
-                    },
-                    leading: Icon(
-                      ws.purpose.icon,
-                      color: isSelected
-                          ? AppColors.primaryLight
-                          : AppColors.textSecondary,
-                    ),
-                    title: Text(
-                      ws.name,
-                      style: AppTypography.body.copyWith(
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  child: Material(
+                    color: isSelected
+                        ? AppColors.surfaceSecondary
+                        : AppColors.surface,
+                    borderRadius: AppRadius.button,
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      dense: true,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onWorkspaceSelected(ws.id);
+                      },
+                      leading: Icon(
+                        ws.purpose.icon,
                         color: isSelected
-                            ? AppColors.textPrimary
+                            ? AppColors.primaryLight
                             : AppColors.textSecondary,
                       ),
+                      title: Text(
+                        ws.name,
+                        style: AppTypography.body.copyWith(
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        ws.purpose.title,
+                        style: AppTypography.caption.copyWith(color: AppColors.textMuted),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.primaryLight,
+                              size: 20,
+                            )
+                          : null,
                     ),
-                    subtitle: Text(
-                      ws.purpose.title,
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-                    ),
-                    trailing: isSelected
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.primaryLight,
-                            size: 20,
-                          )
-                        : null,
                   ),
                 );
               }),
@@ -155,7 +159,10 @@ class DashboardAcademicHeader extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       Text(
                         state.greeting,
@@ -165,7 +172,6 @@ class DashboardAcademicHeader extends ConsumerWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       // Subtle Cloud Sync Status Pill
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -222,7 +228,57 @@ class DashboardAcademicHeader extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.xs),
+
+            // Top AI Navigation Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: const ValueKey('top_ai_nav_button'),
+                onTap: () => context.push('/ai'),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 15, color: Colors.white),
+                      SizedBox(width: 5),
+                      Text(
+                        'AI Tutor',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 4),
 
             // Notification Button
             IconButton(
@@ -273,31 +329,35 @@ class DashboardAcademicHeader extends ConsumerWidget {
             const SizedBox(width: 4),
 
             // Profile Avatar Button
-            InkWell(
-              onTap: () => context.push('/profile'),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF4F46E5)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => context.push('/profile'),
+                child: Ink(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF4F46E5)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primaryLight.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
                   ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.primaryLight.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

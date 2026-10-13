@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/ai/citation_builder.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/features/ai/presentation/providers/chat_provider.dart';
 
 /// Clean academic message bubble supporting live streaming tokens,
@@ -62,167 +65,400 @@ class StreamingMessageWidget extends ConsumerWidget {
     }
   }
 
+  Future<void> _createFlashcards(BuildContext context, WidgetRef ref) async {
+    final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
+    final topic = titleMatch?.group(1)?.trim() ??
+        (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Generating flashcards from response...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      final llm = ref.read(llmServiceProvider);
+      final cards = await llm.generateFlashcardDeck(
+        topic: topic,
+        context: message.content,
+      );
+
+      if (cards.isNotEmpty) {
+        final now = DateTime.now().toIso8601String();
+        final dbCards = cards.asMap().entries.map((entry) {
+          return {
+            'id': 'card_${DateTime.now().millisecondsSinceEpoch}_${entry.key}',
+            'user_id': 'guest',
+            'topic': topic,
+            'front': entry.value['front'] ?? '',
+            'back': entry.value['back'] ?? '',
+            'mastery_level': 0,
+            'created_at': now,
+            'last_reviewed': null,
+          };
+        }).toList();
+
+        await LocalDbService.instance.saveFlashcards(dbCards);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Created ${cards.length} flashcards for "$topic"'),
+              backgroundColor: AppColors.emerald,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Study Now',
+                textColor: Colors.white,
+                onPressed: () {
+                  context.push('/study/flashcards/${Uri.encodeComponent(topic)}');
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not generate flashcards from this response')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating flashcards: $e')),
+        );
+      }
+    }
+  }
+
+  void _openImageLightbox(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: InteractiveViewer(
+                panEnabled: true,
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: File(path).existsSync()
+                    ? Image.file(File(path), fit: BoxFit.contain)
+                    : Container(
+                        padding: const EdgeInsets.all(32),
+                        color: Colors.black54,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.image_outlined, color: Colors.white70, size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              path.split(Platform.pathSeparator).last,
+                              style: const TextStyle(color: Colors.white70, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                tooltip: 'Close preview',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isUser = message.isUser;
     final isPartial = message.isPartial;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.88,
-        ),
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm + 4,
-        ),
-        decoration: BoxDecoration(
-          color: isUser ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 16 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 16),
+    if (isUser) {
+      final hasImage = message.imagePath != null && message.imagePath!.isNotEmpty;
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.82,
           ),
-          border: isUser ? null : Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 11,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2E2F38) : const Color(0xFFE9ECEF),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(6),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (isUser)
-              Text(
-                message.content,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-            else ...[
-              // Assistant Message Content
-              if (message.content.isEmpty && isPartial)
-                _buildGeneratingPlaceholder()
-              else
-                _buildMarkdownContent(context, message.content),
-
-              // Streaming Progress / Typing Indicator
-              if (isPartial) ...[
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primaryLight,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasImage) ...[
+                GestureDetector(
+                  key: const ValueKey('chat_image_thumbnail'),
+                  onTap: () => _openImageLightbox(context, message.imagePath!),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        maxHeight: 180,
+                        maxWidth: 240,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Generating response...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (onStop != null)
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
-                        label: const Text(
-                          'Stop',
-                          style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: onStop,
-                      ),
-                  ],
-                ),
-              ],
-
-              // Source Citations
-              if (message.sources != null && message.sources!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.border),
-                const SizedBox(height: 8),
-                _buildSourcesSection(context, message.sources!),
-              ],
-
-              // Action Bar
-              if (!isPartial) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1, color: AppColors.border),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        if (onListen != null)
-                          IconButton(
-                            icon: const Icon(Icons.volume_up_outlined, size: 16),
-                            color: AppColors.textSecondary,
-                            tooltip: 'Read aloud',
-                            onPressed: onListen,
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.only(right: 12),
-                          ),
-                        IconButton(
-                          icon: const Icon(Icons.copy_outlined, size: 16),
-                          color: AppColors.textSecondary,
-                          tooltip: 'Copy response',
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: message.content));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Copied response to clipboard'),
-                                duration: Duration(seconds: 1),
+                      color: isDark ? Colors.black26 : Colors.black12,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (File(message.imagePath!).existsSync())
+                            Image.file(
+                              File(message.imagePath!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.image, size: 20, color: AppColors.primaryLight),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      message.imagePath!.split(Platform.pathSeparator).last,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.only(right: 12),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                          color: AppColors.emerald,
-                          tooltip: 'Save as Note',
-                          onPressed: () => _saveAsNote(context),
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.only(right: 8),
-                        ),
-                      ],
-                    ),
-                    if (message.content.contains('⚠️') && onRetry != null)
-                      TextButton.icon(
-                        icon: const Icon(Icons.refresh, size: 14),
-                        label: const Text('Retry', style: TextStyle(fontSize: 12)),
-                        onPressed: onRetry,
+                            ),
+                          Positioned(
+                            bottom: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
+                if (message.content.isNotEmpty) const SizedBox(height: 8),
               ],
+              if (message.content.isNotEmpty)
+                Text(
+                  message.content,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 15,
+                    height: 1.45,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
+      );
+    }
+
+    // Assistant Message Layout (ChatGPT style with sparkle avatar)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(top: 2, right: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 17,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (message.content.isEmpty && isPartial)
+                  _buildGeneratingPlaceholder()
+                else
+                  _buildMarkdownContent(context, message.content),
+
+                // Streaming Progress / Typing Indicator
+                if (isPartial) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primaryLight,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Reasoning & retrieving citations...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (onStop != null)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
+                          label: const Text(
+                            'Stop',
+                            style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: onStop,
+                        ),
+                    ],
+                  ),
+                ],
+
+                // Source Citations
+                if (message.sources != null && message.sources!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 8),
+                  _buildSourcesSection(context, message.sources!),
+                ],
+
+                // Action Bar
+                if (!isPartial) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              if (onListen != null)
+                                IconButton(
+                                  icon: const Icon(Icons.volume_up_outlined, size: 16),
+                                  color: AppColors.textSecondary,
+                                  tooltip: 'Read aloud',
+                                  onPressed: onListen,
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.only(right: 12),
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.copy_outlined, size: 16),
+                                color: AppColors.textSecondary,
+                                tooltip: 'Copy response',
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: message.content));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Copied response to clipboard'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 12),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                                color: AppColors.emerald,
+                                tooltip: 'Save as Note',
+                                onPressed: () => _saveAsNote(context),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.style_outlined, size: 16),
+                                color: AppColors.amber,
+                                tooltip: 'Create Flashcards',
+                                onPressed: () => _createFlashcards(context, ref),
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.quiz_outlined, size: 16),
+                                color: AppColors.cyan,
+                                tooltip: 'Practice Quiz',
+                                onPressed: () {
+                                  final titleMatch = RegExp(r'^#+\s+(.+)$', multiLine: true).firstMatch(message.content);
+                                  final topic = titleMatch?.group(1)?.trim() ??
+                                      (message.sources?.isNotEmpty == true ? message.sources!.first.fileName : 'AI Study Topic');
+                                  context.push('/study/quiz/${Uri.encodeComponent(topic)}');
+                                },
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.only(right: 8),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (message.content.contains('⚠️') && onRetry != null)
+                        TextButton.icon(
+                          icon: const Icon(Icons.refresh, size: 14),
+                          label: const Text('Retry', style: TextStyle(fontSize: 12)),
+                          onPressed: onRetry,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -375,47 +611,95 @@ class StreamingMessageWidget extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.menu_book_rounded, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      source.fileName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Page ${source.pageNumber} • Grounding Confidence: ${(source.similarity * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              if (source.snippet != null && source.snippet!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
                   child: Text(
-                    source.fileName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    source.snippet!,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Page ${source.pageNumber} • Grounding Confidence: ${(source.similarity * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            if (source.snippet != null && source.snippet!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
+              const SizedBox(height: 16),
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.cardBorder),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.menu_book_rounded, size: 18),
+                  label: Text('Open Page ${source.pageNumber} in PDF Reader'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final targetId = source.fileId.isNotEmpty && source.fileId != 'local_id'
+                        ? source.fileId
+                        : 'sample';
+                    final firstWords = (source.snippet ?? '')
+                        .trim()
+                        .split(RegExp(r'\s+'))
+                        .take(4)
+                        .join(' ');
+                    final queryPart = firstWords.isNotEmpty
+                        ? '&query=${Uri.encodeComponent(firstWords)}'
+                        : '';
+                    context.push('/files/$targetId?page=${source.pageNumber}$queryPart');
+                  },
                 ),
-                child: Text(
-                  source.snippet!,
-                  style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.cyan,
+                    side: const BorderSide(color: AppColors.cyan),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.quiz_outlined, size: 18),
+                  label: const Text('Quiz Me on this Document'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/study/quiz/${Uri.encodeComponent(source.fileName)}');
+                  },
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );

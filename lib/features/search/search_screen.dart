@@ -254,29 +254,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
                           return Container(
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceElevated,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: AppColors.cardBorder),
                             ),
-                            child: ListTile(
-                              onTap: () {
-                                if (item.containsKey('original_file_name') || (item.containsKey('type') && item['type'] != null)) {
-                                  context.push('/vault/material/${item['id']}');
-                                } else if (type == 'Note') {
-                                  context.push('/notes/${item['id']}');
-                                } else if (type == 'PDF') {
-                                  context.push('/files/${item['id']}');
-                                } else if (type == 'Folder') {
-                                  context.push('/folder/${item['id']}');
-                                }
-                              },
-                              leading: CircleAvatar(
-                                backgroundColor: color.withValues(alpha: 0.15),
-                                child: Icon(icon, color: color, size: 20),
+                            child: Material(
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(16),
+                              clipBehavior: Clip.antiAlias,
+                              child: ListTile(
+                                onTap: () {
+                                  if (item.containsKey('original_file_name') || (item.containsKey('type') && item['type'] != null)) {
+                                    context.push('/vault/material/${item['id']}');
+                                  } else if (type == 'Note') {
+                                    context.push('/notes/${item['id']}');
+                                  } else if (type == 'PDF') {
+                                    context.push('/files/${item['id']}');
+                                  } else if (type == 'Folder') {
+                                    context.push('/folder/${item['id']}');
+                                  }
+                                },
+                                leading: CircleAvatar(
+                                  backgroundColor: color.withValues(alpha: 0.15),
+                                  child: Icon(icon, color: color, size: 20),
+                                ),
+                                title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                                subtitle: Text(type, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                                trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
                               ),
-                              title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
-                              subtitle: Text(type, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-                              trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
                             ),
                           );
                         },

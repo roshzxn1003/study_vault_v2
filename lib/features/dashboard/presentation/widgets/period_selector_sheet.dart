@@ -120,9 +120,6 @@ class PeriodSelectorSheet extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 6),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.surfaceSecondary
-                                : AppColors.surface,
                             borderRadius: AppRadius.button,
                             border: Border.all(
                               color: isSelected
@@ -131,57 +128,64 @@ class PeriodSelectorSheet extends StatelessWidget {
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
-                          child: ListTile(
-                            dense: true,
-                            onTap: () {
-                              Navigator.pop(context);
-                              onPeriodSelected(period.id);
-                            },
-                            title: Row(
-                              children: [
-                                Text(
-                                  period.name,
-                                  style: AppTypography.body.copyWith(
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: isSelected
-                                        ? AppColors.textPrimary
-                                        : AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isCurrent
-                                        ? AppColors.emerald.withValues(alpha: 0.15)
-                                        : AppColors.surfaceSecondary,
-                                    borderRadius: AppRadius.chip,
-                                  ),
-                                  child: Text(
-                                    isCurrent ? 'CURRENT' : 'PREVIOUS',
-                                    style: AppTypography.caption.copyWith(
-                                      color: isCurrent
-                                          ? AppColors.emerald
-                                          : AppColors.textMuted,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
+                          child: Material(
+                            color: isSelected
+                                ? AppColors.surfaceSecondary
+                                : AppColors.surface,
+                            borderRadius: AppRadius.button,
+                            clipBehavior: Clip.antiAlias,
+                            child: ListTile(
+                              dense: true,
+                              onTap: () {
+                                Navigator.pop(context);
+                                onPeriodSelected(period.id);
+                              },
+                              title: Row(
+                                children: [
+                                  Text(
+                                    period.name,
+                                    style: AppTypography.body.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isCurrent
+                                          ? AppColors.emerald.withValues(alpha: 0.15)
+                                          : AppColors.surfaceSecondary,
+                                      borderRadius: AppRadius.chip,
+                                    ),
+                                    child: Text(
+                                      isCurrent ? 'CURRENT' : 'PREVIOUS',
+                                      style: AppTypography.caption.copyWith(
+                                        color: isCurrent
+                                            ? AppColors.emerald
+                                            : AppColors.textMuted,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: isSelected
+                                  ? const Icon(
+                                      Icons.check_circle_rounded,
+                                      color: AppColors.primaryLight,
+                                      size: 20,
+                                    )
+                                  : null,
                             ),
-                            trailing: isSelected
-                                ? const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: AppColors.primaryLight,
-                                    size: 20,
-                                  )
-                                : null,
                           ),
                         );
                       }),

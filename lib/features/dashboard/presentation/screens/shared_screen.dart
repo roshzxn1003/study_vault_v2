@@ -465,96 +465,99 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _groupsSubTab = 0),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _groupsSubTab == 0 ? AppColors.surface : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: _groupsSubTab == 0
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.groups_rounded,
-                            size: 16,
-                            color: _groupsSubTab == 0 ? AppColors.primaryLight : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Study Groups',
-                            style: AppTypography.caption.copyWith(
-                              fontWeight: _groupsSubTab == 0 ? FontWeight.bold : FontWeight.normal,
-                              color: _groupsSubTab == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+          child: Material(
+            color: AppColors.surfaceSecondary,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _groupsSubTab = 0),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Ink(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _groupsSubTab == 0 ? AppColors.surface : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _groupsSubTab == 0
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.groups_rounded,
+                              size: 16,
+                              color: _groupsSubTab == 0 ? AppColors.primaryLight : AppColors.textSecondary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Study Groups',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: _groupsSubTab == 0 ? FontWeight.bold : FontWeight.normal,
+                                color: _groupsSubTab == 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _groupsSubTab = 1),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _groupsSubTab == 1 ? AppColors.surface : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: _groupsSubTab == 1
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.folder_zip_outlined,
-                            size: 16,
-                            color: _groupsSubTab == 1 ? AppColors.primaryLight : AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Study Packs',
-                            style: AppTypography.caption.copyWith(
-                              fontWeight: _groupsSubTab == 1 ? FontWeight.bold : FontWeight.normal,
-                              color: _groupsSubTab == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _groupsSubTab = 1),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Ink(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _groupsSubTab == 1 ? AppColors.surface : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _groupsSubTab == 1
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.folder_zip_outlined,
+                              size: 16,
+                              color: _groupsSubTab == 1 ? AppColors.primaryLight : AppColors.textSecondary,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Study Packs',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: _groupsSubTab == 1 ? FontWeight.bold : FontWeight.normal,
+                                color: _groupsSubTab == 1 ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
