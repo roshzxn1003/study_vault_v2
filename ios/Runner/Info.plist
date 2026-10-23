@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Privacy: required usage descriptions for App Store submission -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Study Vault uses the microphone to record lectures and enable Voice Study Mode for hands-free learning.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Study Vault uses speech recognition to transcribe lecture recordings and power the hands-free Voice Study Mode.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Study Vault uses the camera to scan documents and capture study material images for your vault.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Study Vault accesses your photo library to import study images and documents into your vault.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Study Vault saves exported study material to your photo library.</string>
 </dict>
 </plist>

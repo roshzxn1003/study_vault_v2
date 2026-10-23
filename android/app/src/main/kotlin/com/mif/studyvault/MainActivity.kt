@@ -1,4 +1,4 @@
-package com.example.study_vault
+package com.mif.studyvault
 
 import android.content.Intent
 import android.net.Uri
@@ -12,7 +12,7 @@ import java.io.FileOutputStream
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
-    private val channelName = "com.example.study_vault/share_receiver"
+    private val channelName = "com.mif.studyvault/share_receiver"
     private var methodChannel: MethodChannel? = null
     private var initialSharedData: Map<String, Any?>? = null
 

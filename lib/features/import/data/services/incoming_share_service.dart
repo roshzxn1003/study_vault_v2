@@ -10,7 +10,7 @@ import 'import_storage_service.dart';
 
 /// Service interfacing with native Android share targets and platform intent channels.
 class IncomingShareService {
-  static const MethodChannel _channel = MethodChannel('com.example.study_vault/share_receiver');
+  static const MethodChannel _channel = MethodChannel('com.mif.studyvault/share_receiver');
   final ImportStorageService _storageService;
   final Uuid _uuid = const Uuid();
 

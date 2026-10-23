@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.study_vault"
+    namespace = "com.mif.studyvault"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.study_vault"
+        applicationId = "com.mif.studyvault"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
 
