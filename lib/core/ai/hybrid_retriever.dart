@@ -105,17 +105,28 @@ class HybridRetriever implements Retriever {
           }
         }
 
-        // Keyword Term Frequency Scoring
+        // Keyword / BM25 Term Frequency with Length Normalization
         if (queryTokens.isNotEmpty && text.isNotEmpty) {
           final lowerText = text.toLowerCase();
           final lowerTitle = title.toLowerCase();
-          int matchCount = 0;
+          double termFrequencyScore = 0.0;
+          const double k1 = 1.2;
+          const double b = 0.75;
+          final double lenNorm = (1.0 - b) + (b * (text.length / 400.0).clamp(0.5, 3.0));
+
           for (final token in queryTokens) {
-            if (lowerText.contains(token)) matchCount += 2;
-            if (lowerTitle.contains(token)) matchCount += 3;
+            int tf = 0;
+            if (lowerText.contains(token)) tf += 2;
+            if (lowerTitle.contains(token)) tf += 3;
+
+            if (tf > 0) {
+              final double bm25Tf = (tf * (k1 + 1.0)) / (tf + (k1 * lenNorm));
+              termFrequencyScore += bm25Tf;
+            }
           }
-          if (matchCount > 0) {
-            final keywordScore = (matchCount / (queryTokens.length * 2.5)).clamp(0.4, 0.95);
+
+          if (termFrequencyScore > 0) {
+            final bm25Score = (termFrequencyScore / (queryTokens.length * 2.2)).clamp(0.4, 0.95);
             keywordMatches[chunkId] = RetrievedChunk(
               chunkId: chunkId,
               materialId: materialId,
@@ -123,8 +134,8 @@ class HybridRetriever implements Retriever {
               pageNumber: pageNum,
               chunkIndex: chunkIdx,
               text: text,
-              score: keywordScore,
-              matchType: 'keyword',
+              score: bm25Score,
+              matchType: queryVector.isEmpty ? 'bm25_offline' : 'keyword',
             );
           }
         }
@@ -160,7 +171,7 @@ class HybridRetriever implements Retriever {
           matchType = 'semantic';
         } else {
           finalScore = kScore;
-          matchType = 'keyword';
+          matchType = queryVector.isEmpty ? 'bm25_offline' : 'keyword';
         }
 
         final base = v ?? k!;

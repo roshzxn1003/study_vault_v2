@@ -14,6 +14,7 @@ import '../widgets/recent_materials_section.dart';
 import '../widgets/subjects_section.dart';
 import '../widgets/continue_learning_card.dart';
 import '../widgets/ai_assistant_card.dart';
+import '../widgets/daily_due_cards_section.dart';
 import '../widgets/upcoming_academic_section.dart';
 import '../../../import/presentation/widgets/import_source_dialog.dart';
 import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
@@ -145,7 +146,12 @@ class DashboardScreen extends ConsumerWidget {
                     // 6. AI Assistant Card
                     const AIAssistantCard(),
 
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // 6.5 Spaced Repetition Due Cards Section
+                    const DailyDueCardsSection(),
+
+                    const SizedBox(height: AppSpacing.lg),
 
                     // 7. Subjects Section (Compact card/grid)
                     SubjectsSection(

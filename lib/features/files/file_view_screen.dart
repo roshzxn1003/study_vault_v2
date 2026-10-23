@@ -48,6 +48,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
   bool _isDarkModeInvert = false;
   String? _textContent;
   String? _pdfLoadError;
+  String? _selectedPdfText;
   int _retryKey = 0;
   bool _showCitationBanner = false;
   bool _didPerformInitialJump = false;
@@ -330,6 +331,76 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                   ref.read(chatProvider.notifier).setMode('summarize');
                   ref.read(chatProvider.notifier).sendMessage('Provide a structured summary of $fileName for exam preparation.');
                   context.push('/ai');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openAskAiModal(String selectedText, String materialTitle) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded, color: Color(0xFF8B5CF6), size: 20),
+                      const SizedBox(width: 8),
+                      Text('Ask AI on Selected Text', style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  selectedText.length > 180 ? '${selectedText.substring(0, 180)}...' : selectedText,
+                  style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic),
+                ),
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                leading: const Icon(Icons.lightbulb_outline_rounded, color: Colors.amber),
+                title: const Text('Explain this passage simply'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/ai?materialId=${widget.id}&materialTitle=${Uri.encodeComponent(materialTitle)}&query=${Uri.encodeComponent("Explain this passage: \"$selectedText\"")}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.style_outlined, color: Colors.blueAccent),
+                title: const Text('Generate flashcards from this'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/ai?mode=flashcards&materialId=${widget.id}&materialTitle=${Uri.encodeComponent(materialTitle)}&query=${Uri.encodeComponent("Generate high-yield flashcards from this passage: \"$selectedText\"")}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.quiz_outlined, color: AppColors.emerald),
+                title: const Text('Quiz me on this concept'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push('/ai?mode=quiz&materialId=${widget.id}&materialTitle=${Uri.encodeComponent(materialTitle)}&query=${Uri.encodeComponent("Create 3 quiz questions based on: \"$selectedText\"")}');
                 },
               ),
             ],
@@ -670,7 +741,58 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
 
               // Document Body (PDF Viewer / Image / Text Reader)
               Expanded(
-                child: _buildDocumentContent(file),
+                child: Stack(
+                  children: [
+                    _buildDocumentContent(file),
+                    if (_selectedPdfText != null && _selectedPdfText!.trim().isNotEmpty)
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Material(
+                          elevation: 6,
+                          borderRadius: BorderRadius.circular(16),
+                          color: const Color(0xFF1E293B),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.text_fields_rounded, color: Colors.cyanAccent, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Selected: "${_selectedPdfText!.trim()}"',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  key: const ValueKey('ask_ai_on_selection_button'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF8B5CF6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  onPressed: () => _openAskAiModal(_selectedPdfText!, fileName),
+                                  icon: const Icon(Icons.auto_awesome_rounded, size: 15),
+                                  label: const Text('Ask AI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white54),
+                                  onPressed: () {
+                                    setState(() => _selectedPdfText = null);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
 
               // Bottom Reader & Navigation Controls
@@ -1010,6 +1132,13 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
             });
           }
         },
+        onTextSelectionChanged: (details) {
+          if (mounted) {
+            setState(() {
+              _selectedPdfText = details.selectedText;
+            });
+          }
+        },
         onPageChanged: (details) {
           if (mounted) {
             setState(() {
@@ -1033,6 +1162,13 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
               _pdfLoadError = details.description.isNotEmpty
                   ? details.description
                   : 'Failed to load PDF file. The file may be corrupt or encrypted.';
+            });
+          }
+        },
+        onTextSelectionChanged: (details) {
+          if (mounted) {
+            setState(() {
+              _selectedPdfText = details.selectedText;
             });
           }
         },

@@ -7,6 +7,7 @@ import 'package:study_vault/core/utils/permission_utils.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_provider.dart';
 import 'package:study_vault/features/vault/presentation/providers/vault_provider.dart';
 import 'package:study_vault/features/vault/presentation/widgets/create_folder_dialog.dart';
+import 'package:study_vault/features/study/presentation/widgets/lecture_audio_recorder_modal.dart';
 
 /// Modal bottom sheet allowing students to add study materials from anywhere in the app.
 /// Provides direct avenues for uploading files, scanning documents, creating notes, or importing photos.
@@ -312,6 +313,26 @@ class _AddMaterialSheetState extends ConsumerState<AddMaterialSheet> {
                 onTap: () {
                   Navigator.of(context).pop();
                   _showAddLinkDialog(context, uploadService);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Option 6.5: Record Lecture & Transcribe
+              _buildActionTile(
+                context: context,
+                icon: Icons.mic_rounded,
+                iconColor: const Color(0xFF8B5CF6),
+                iconBg: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                title: 'Record Lecture & Audio Note',
+                subtitle: 'AI transcribes lecture, distills notes, and creates flashcards',
+                badge: 'Gemini Audio',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  LectureAudioRecorderModal.show(
+                    context,
+                    subjectId: _selectedSubjectId,
+                    subjectName: destName,
+                  );
                 },
               ),
               const SizedBox(height: AppSpacing.sm),

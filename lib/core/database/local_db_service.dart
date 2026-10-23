@@ -973,6 +973,28 @@ class LocalDbService {
     return await db.query('flashcards', orderBy: 'created_at DESC');
   }
 
+  Future<List<Map<String, dynamic>>> getDueFlashcards({String? topic}) async {
+    final db = await database;
+    if (topic != null && topic.isNotEmpty) {
+      return await db.query(
+        'flashcards',
+        where: 'topic = ? AND (mastery_level < 2 OR last_reviewed IS NULL)',
+        whereArgs: [topic],
+        orderBy: 'mastery_level ASC, created_at DESC',
+      );
+    }
+    return await db.query(
+      'flashcards',
+      where: 'mastery_level < 2 OR last_reviewed IS NULL',
+      orderBy: 'mastery_level ASC, created_at DESC',
+    );
+  }
+
+  Future<void> saveMaterial(Map<String, dynamic> material) async {
+    final db = await database;
+    await db.insert('materials', material, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<void> saveFlashcards(List<Map<String, dynamic>> cards) async {
     final db = await database;
     final batch = db.batch();
