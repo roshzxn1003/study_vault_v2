@@ -207,8 +207,10 @@ class MainNavigationShell extends StatelessWidget {
   final Widget child;
   const MainNavigationShell({super.key, required this.child});
 
-  int _calculateSelectedIndex(BuildContext context) {
+  int? _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
+    // AIScreen has its own dedicated chat UI with floating bottom input; hide bottom nav bar to prevent overlap
+    if (location.startsWith('/ai')) return null;
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/library') ||
         location.startsWith('/vault') ||
@@ -222,7 +224,6 @@ class MainNavigationShell extends StatelessWidget {
         location.startsWith('/settings')) {
       return 4;
     }
-    if (location.startsWith('/ai')) return -1;
     return 0;
   }
 
@@ -253,7 +254,7 @@ class MainNavigationShell extends StatelessWidget {
     return AppScaffold(
       body: child,
       navigationIndex: selectedIndex,
-      onNavigationChanged: (index) => _onNavigationChanged(context, index),
+      onNavigationChanged: selectedIndex != null ? (index) => _onNavigationChanged(context, index) : null,
       onAddTap: () => AddMaterialSheet.show(context),
       onAiTap: () => context.go('/ai'),
     );

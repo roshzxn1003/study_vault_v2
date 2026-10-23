@@ -247,7 +247,7 @@ class AiResponse {
     required this.sources,
     required this.confidence,
     required this.usedContext,
-    this.modelUsed = 'gemini-1.5-flash',
+    this.modelUsed = 'gemini-3.5-flash-lite',
     this.finishReason,
   });
 }

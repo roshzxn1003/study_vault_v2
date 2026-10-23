@@ -539,6 +539,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _selectedModel,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -551,7 +552,11 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
               final tag = m['tag']!;
               return DropdownMenuItem<String>(
                 value: id,
-                child: Text('$name ($provider - $tag)', style: const TextStyle(fontSize: 13)),
+                child: Text(
+                  '$name ($provider - $tag)',
+                  style: const TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
               );
             }).toList(),
             onChanged: (val) {

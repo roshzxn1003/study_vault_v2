@@ -119,6 +119,11 @@ void main() {
       expect(find.text('AI Study Features'), findsOneWidget);
       expect(find.text('How to Get Free & Pro API Keys'), findsOneWidget);
       expect(find.text('Google Gemini API Key'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Anthropic Claude API Key'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Anthropic Claude API Key'), findsOneWidget);
     });
   });

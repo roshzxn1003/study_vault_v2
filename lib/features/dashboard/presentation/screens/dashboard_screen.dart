@@ -17,7 +17,6 @@ import '../widgets/ai_assistant_card.dart';
 import '../widgets/daily_due_cards_section.dart';
 import '../widgets/upcoming_academic_section.dart';
 import '../../../import/presentation/widgets/import_source_dialog.dart';
-import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
 
 /// Main Study Vault Dashboard.
 /// Personalizes the student experience around active workspace and academic context.
@@ -69,10 +68,6 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButtonLocation: const FloatingAboveNavLocation(),
-      floatingActionButton: const ContextualAiFloatingButton(
-        heroTag: 'dashboard_ai_floating_btn',
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primaryLight,

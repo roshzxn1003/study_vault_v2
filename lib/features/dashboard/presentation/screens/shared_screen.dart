@@ -17,7 +17,7 @@ import 'package:study_vault/features/sharing/presentation/screens/privacy_sharin
 /// Custom FAB location ensuring buttons in sub-tabs float comfortably above the bottom navigation bar.
 class FloatingAboveNavLocation extends FloatingActionButtonLocation {
   final double bottomClearance;
-  const FloatingAboveNavLocation({this.bottomClearance = 100.0});
+  const FloatingAboveNavLocation({this.bottomClearance = 124.0});
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {

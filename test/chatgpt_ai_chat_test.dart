@@ -142,7 +142,7 @@ void main() {
   });
 
   group('ChatGPT AI Chat — ChatNotifier State Management', () {
-    test('Initial ChatState has default model gemini-1.5-flash and ask mode', () {
+    test('Initial ChatState has default model gemini-3.5-flash-lite and ask mode', () {
       final container = ProviderContainer(
         overrides: [
           aiConversationRepositoryProvider.overrideWithValue(conversationRepo),
@@ -151,7 +151,7 @@ void main() {
       addTearDown(container.dispose);
 
       final state = container.read(chatProvider);
-      expect(state.activeModel, equals('gemini-1.5-flash'));
+      expect(state.activeModel, equals('gemini-3.5-flash-lite'));
       expect(state.currentMode, equals('ask'));
       expect(state.activeMaterialId, isNull);
       expect(state.messages.isEmpty, isTrue);
@@ -166,9 +166,9 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(chatProvider.notifier);
-      notifier.setModel('gemini-1.5-pro');
+      notifier.setModel('gemini-3.8-flash');
 
-      expect(container.read(chatProvider).activeModel, equals('gemini-1.5-pro'));
+      expect(container.read(chatProvider).activeModel, equals('gemini-3.8-flash'));
     });
 
     test('setMaterial and clearMaterial toggle document grounding context', () {
@@ -200,14 +200,14 @@ void main() {
 
       final notifier = container.read(chatProvider.notifier);
       notifier.setMaterial('mat_1', 'Notes.pdf');
-      notifier.setModel('gemini-1.5-pro');
+      notifier.setModel('gemini-3.8-flash');
 
       notifier.startNewChat();
 
       final state = container.read(chatProvider);
       expect(state.conversationId, isNull);
       expect(state.messages.isEmpty, isTrue);
-      expect(state.activeModel, equals('gemini-1.5-pro'));
+      expect(state.activeModel, equals('gemini-3.8-flash'));
       expect(state.activeMaterialId, equals('mat_1'));
     });
   });
@@ -253,7 +253,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Model picker in AppBar
-      expect(find.text('Gemini 1.5 Flash'), findsOneWidget);
+      expect(find.text('Gemini 3.5 Flash-Lite'), findsOneWidget);
 
       // Empty state greeting
       expect(find.text('What do you want to learn today?'), findsOneWidget);

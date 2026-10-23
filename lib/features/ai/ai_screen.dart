@@ -218,25 +218,25 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         'badge': 'Recommended',
       },
       {
-        'id': 'gemini-1.5-flash',
-        'title': 'Gemini 1.5 Flash',
-        'desc': 'Fast, lightweight & free. Ideal for everyday questions and lecture notes.',
+        'id': 'gemini-3.5-flash-lite',
+        'title': 'Gemini 3.5 Flash-Lite',
+        'desc': 'Fast, lightweight & verified. Ideal for everyday questions and lecture notes.',
         'icon': Icons.bolt_rounded,
-        'badge': 'Free & Fast',
+        'badge': 'Verified Fast',
       },
       {
-        'id': 'gemini-2.0-flash',
-        'title': 'Gemini 2.0 Flash',
-        'desc': 'Next-gen real-time responsiveness and latest multimodal reasoning.',
-        'icon': Icons.flash_on_rounded,
-        'badge': 'Ultra Fast',
-      },
-      {
-        'id': 'gemini-1.5-pro',
-        'title': 'Gemini 1.5 Pro',
-        'desc': 'Deep synthesis, 1M+ context window for huge textbooks and syllabi.',
+        'id': 'gemini-3.8-flash',
+        'title': 'Gemini 3.8 Flash',
+        'desc': 'Latest flagship reasoning model with built-in thought chains.',
         'icon': Icons.auto_awesome_rounded,
-        'badge': 'Deep Synthesis',
+        'badge': 'Deep Thinking',
+      },
+      {
+        'id': 'gemini-3.5-flash',
+        'title': 'Gemini 3.5 Flash',
+        'desc': 'High throughput multimodal study companion for complex documents.',
+        'icon': Icons.flash_on_rounded,
+        'badge': 'High Throughput',
       },
       {
         'id': 'claude-3-7-sonnet-20250219',
@@ -490,9 +490,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     final modelDisplayName = switch (chatState.activeModel) {
       'auto' => 'Auto (Gemini + Claude)',
-      'gemini-1.5-flash' => 'Gemini 1.5 Flash',
-      'gemini-2.0-flash' => 'Gemini 2.0 Flash',
-      'gemini-1.5-pro' => 'Gemini 1.5 Pro',
+      'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite',
+      'gemini-3.8-flash' => 'Gemini 3.8 Flash',
+      'gemini-3.5-flash' => 'Gemini 3.5 Flash',
       'claude-3-7-sonnet-20250219' => 'Claude 3.7 Sonnet',
       'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
       'claude-3-5-haiku-20241022' => 'Claude 3.5 Haiku',
@@ -501,26 +501,43 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     final modelIcon = switch (chatState.activeModel) {
       'auto' => Icons.psychology_rounded,
-      'gemini-2.0-flash' => Icons.flash_on_rounded,
-      'gemini-1.5-pro' => Icons.auto_awesome_rounded,
+      'gemini-3.5-flash-lite' => Icons.bolt_rounded,
+      'gemini-3.8-flash' => Icons.auto_awesome_rounded,
+      'gemini-3.5-flash' => Icons.flash_on_rounded,
       'claude-3-7-sonnet-20250219' => Icons.calculate_rounded,
       'claude-3-5-sonnet-20241022' => Icons.terminal_rounded,
       'claude-3-5-haiku-20241022' => Icons.speed_rounded,
       _ => Icons.bolt_rounded,
     };
 
+    final bool canGoBack = ModalRoute.of(context)?.canPop ?? false;
+
     return Scaffold(
       drawer: _buildHistoryDrawer(context, chatState, theme, isDark),
       appBar: AppBar(
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            tooltip: 'Chat History',
-            onPressed: () {
-              Scaffold.of(ctx).openDrawer();
-            },
-          ),
-        ),
+        leading: canGoBack
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back',
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                },
+              )
+            : Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu_rounded),
+                  tooltip: 'Chat History',
+                  onPressed: () {
+                    Scaffold.of(ctx).openDrawer();
+                  },
+                ),
+              ),
         centerTitle: true,
         title: GestureDetector(
           onTap: () => _showModelPicker(chatState.activeModel),
@@ -555,6 +572,14 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ),
         ),
         actions: [
+          if (canGoBack)
+            Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.history_rounded, size: 20),
+                tooltip: 'Chat History',
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
+            ),
           IconButton(
             key: const ValueKey('voice_study_mode_button'),
             icon: const Icon(Icons.headset_mic_rounded, size: 20),
@@ -832,12 +857,12 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: [
-              _suggestionChip('💡 Explain DBMS ACID properties'),
-              _suggestionChip('🔄 Deadlock Coffman conditions'),
-              _suggestionChip('🌐 Compare TCP vs UDP'),
-              _suggestionChip('📊 Summarize key exam topics'),
-              _suggestionChip('🎯 Quiz me on Scheduling Algorithms'),
-              _suggestionChip('📝 Generate 5 flashcards from notes'),
+              _suggestionChip('💡 Explain key concepts with analogies'),
+              _suggestionChip('📝 Summarize my uploaded notes'),
+              _suggestionChip('🎯 Generate a 5-question mastery quiz'),
+              _suggestionChip('🃏 Create active recall flashcards'),
+              _suggestionChip('🔍 Extract key definitions and formulas'),
+              _suggestionChip('🧠 Master concepts with Socratic questioning'),
             ],
           ),
         ],

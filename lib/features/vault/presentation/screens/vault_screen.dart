@@ -317,14 +317,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButtonLocation: const FloatingAboveNavLocation(),
-      floatingActionButton: ContextualAiFloatingButton(
-        heroTag: 'vault_ai_fab',
-        folderId: state.selectedFolderId,
-        folderName: currentFolderName,
-        initialQuery: currentFolderName != null
-            ? 'Help me study all materials in the folder: "$currentFolderName".'
-            : null,
-      ),
+      floatingActionButton: state.isBulkSelectionMode
+          ? null
+          : ContextualAiFloatingButton(
+              heroTag: 'vault_ai_fab',
+              folderId: state.selectedFolderId,
+              folderName: currentFolderName,
+              initialQuery: currentFolderName != null
+                  ? 'Help me study all materials in the folder: "$currentFolderName".'
+                  : null,
+            ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -567,12 +569,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               ],
             ),
 
-            // Bulk Action Bar (Overlay at bottom)
+            // Bulk Action Bar (Overlay safely above floating navigation bar on mobile)
             if (state.isBulkSelectionMode && state.selectedCount > 0)
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 0,
+                bottom: AppBreakpoints.isMobile(context)
+                    ? MediaQuery.of(context).padding.bottom + 88.0
+                    : AppSpacing.md,
                 child: BulkActionBar(
                   selectedCount: state.selectedCount,
                   isAllSelected: state.isAllSelected,

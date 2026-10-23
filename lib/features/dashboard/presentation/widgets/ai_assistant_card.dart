@@ -9,9 +9,9 @@ class AIAssistantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const examples = [
-      'Summarize my DBMS notes',
-      'Find Unit 3 questions',
-      'Explain this document',
+      'Summarize active document',
+      'Generate practice questions',
+      'Active recall flashcards',
     ];
 
     return Container(

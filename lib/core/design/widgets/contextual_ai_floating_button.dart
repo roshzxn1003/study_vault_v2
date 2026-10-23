@@ -6,7 +6,7 @@ import 'package:study_vault/core/design/tokens/tokens.dart';
 /// Custom FAB location ensuring buttons float safely above the floating glass bottom navigation bar.
 class FloatingAboveNavLocation extends FloatingActionButtonLocation {
   final double bottomClearance;
-  const FloatingAboveNavLocation({this.bottomClearance = 96.0});
+  const FloatingAboveNavLocation({this.bottomClearance = 124.0});
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {

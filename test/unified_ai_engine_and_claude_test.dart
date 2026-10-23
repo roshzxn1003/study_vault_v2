@@ -173,15 +173,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on the model selector pill in the AppBar (defaults to Gemini 1.5 Flash)
-      expect(find.text('Gemini 1.5 Flash'), findsOneWidget);
-      await tester.tap(find.text('Gemini 1.5 Flash'));
+      // Tap on the model selector pill in the AppBar (defaults to Gemini 3.5 Flash-Lite)
+      expect(find.text('Gemini 3.5 Flash-Lite'), findsOneWidget);
+      await tester.tap(find.text('Gemini 3.5 Flash-Lite'));
       await tester.pumpAndSettle();
 
       // Verify bottom sheet contents
       expect(find.text('Select AI Model'), findsOneWidget);
       expect(find.text('Auto-Router (Gemini + Claude)'), findsOneWidget);
-      expect(find.text('Gemini 2.0 Flash'), findsOneWidget);
+      expect(find.text('Gemini 3.8 Flash'), findsOneWidget);
 
       // Scroll to view Claude models
       await tester.scrollUntilVisible(

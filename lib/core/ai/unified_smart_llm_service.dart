@@ -60,7 +60,7 @@ class UnifiedSmartLlmService implements LlmService {
     // 3. Both providers available: apply intelligent task heuristics
     // A) Multimodal vision attachments or very large document context -> Gemini (1M context + native vision)
     if (request.attachments.isNotEmpty || (request.context?.length ?? 0) > 80000) {
-      return (provider: LlmProvider.gemini, model: 'gemini-1.5-flash');
+      return (provider: LlmProvider.gemini, model: AiConfig.primaryModel);
     }
 
     // B) Structured Quiz generation or Flashcard decks -> Claude Sonnet (precision structured JSON)
@@ -83,7 +83,7 @@ class UnifiedSmartLlmService implements LlmService {
       return (provider: LlmProvider.claude, model: AiConfig.claude37Sonnet);
     }
 
-    // D) Default: Gemini 1.5 Flash (Fast, free, responsive everyday study tutor)
+    // D) Default: Gemini Primary Model (Fast, responsive everyday study tutor)
     return (provider: LlmProvider.gemini, model: AiConfig.primaryModel);
   }
 

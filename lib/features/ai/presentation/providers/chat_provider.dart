@@ -76,7 +76,7 @@ class ChatState {
     this.errorMessage,
     this.lastUserPrompt,
     this.conversationId,
-    this.activeModel = 'gemini-1.5-flash',
+    this.activeModel = 'gemini-3.5-flash-lite',
     this.statusMessage,
     this.conversations = const [],
     this.isLoadingHistory = false,
