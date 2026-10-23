@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import '../../domain/models/models.dart';
 import 'material_action_sheet.dart';
+import 'material_preview_widget.dart';
 
 /// Clean academic material card for both list and grid view contexts.
+/// Features integrated material preview thumbnail for every material type.
 class MaterialCard extends StatelessWidget {
   final MaterialItem material;
   final bool isSelected;
@@ -185,28 +187,51 @@ class MaterialCard extends StatelessWidget {
 
             const SizedBox(height: AppSpacing.sm),
 
-            // Material Title (bold, wrapped safely)
-            Text(
-              material.title,
-              style: AppTypography.subtitle.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            const SizedBox(height: 3),
-
-            // Secondary metadata line: Type · Size · Location
-            Text(
-              '${material.type.label}${material.formattedFileSize.isNotEmpty ? ' · ${material.formattedFileSize}' : ''}${material.locationSubtitle.isNotEmpty ? ' · ${material.locationSubtitle}' : ''}',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // Material Content Row: Preview Thumbnail + Title & Metadata
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: MaterialPreviewWidget(
+                      material: material,
+                      isCompact: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Material Title (bold, wrapped safely)
+                      Text(
+                        material.title,
+                        style: AppTypography.subtitle.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      // Secondary metadata line: Type · Size · Location
+                      Text(
+                        '${material.type.label}${material.formattedFileSize.isNotEmpty ? ' · ${material.formattedFileSize}' : ''}${material.locationSubtitle.isNotEmpty ? ' · ${material.locationSubtitle}' : ''}',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
 
             // Labels Row

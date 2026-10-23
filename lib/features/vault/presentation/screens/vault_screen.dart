@@ -24,6 +24,7 @@ import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../dashboard/presentation/widgets/subject_card.dart';
 import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
+import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
 
 /// Primary central Vault library screen.
 /// Implements complete material, folder, label, search, filter, and bulk operations.
@@ -309,8 +310,21 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final state = ref.watch(vaultProvider);
     final notifier = ref.read(vaultProvider.notifier);
 
+    final currentFolderName = state.selectedFolderId != null
+        ? state.folders.where((f) => f.id == state.selectedFolderId).firstOrNull?.name
+        : null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButtonLocation: const FloatingAboveNavLocation(),
+      floatingActionButton: ContextualAiFloatingButton(
+        heroTag: 'vault_ai_fab',
+        folderId: state.selectedFolderId,
+        folderName: currentFolderName,
+        initialQuery: currentFolderName != null
+            ? 'Help me study all materials in the folder: "$currentFolderName".'
+            : null,
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -787,7 +801,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      mainAxisExtent: 180,
+                      mainAxisExtent: 195,
                       crossAxisSpacing: AppSpacing.md,
                       mainAxisSpacing: AppSpacing.md,
                     ),
@@ -846,7 +860,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: SizedBox(
-                            height: 160,
+                            height: 165,
                             child: MaterialCard(
                               material: material,
                               isSelected: isSel,

@@ -12,11 +12,72 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 /// proxy (e.g. Supabase Edge Functions / Firebase Genkit) that validates the user's JWT and
 /// attaches the API key server-side before invoking the Gemini API.
 class AiConfig {
+  // Intelligent Unified Model
+  static const String autoModel = 'auto';
+
   // Current supported official Google Gemini model IDs (Verified for 2025/2026)
   static const String primaryModel = 'gemini-1.5-flash';
   static const String fastModel = 'gemini-1.5-flash';
   static const String reasoningModel = 'gemini-1.5-pro';
   static const String embeddingModel = 'text-embedding-004';
+
+  // Anthropic Claude model IDs (Verified for 2025/2026)
+  static const String claude37Sonnet = 'claude-3-7-sonnet-20250219';
+  static const String claude35Sonnet = 'claude-3-5-sonnet-20241022';
+  static const String claude35Haiku = 'claude-3-5-haiku-20241022';
+
+  // Supported model registry across providers
+  static const List<Map<String, String>> supportedModels = [
+    {
+      'id': 'auto',
+      'name': 'Auto-Router (Gemini + Claude)',
+      'provider': 'Smart Engine',
+      'tag': 'Recommended',
+      'desc': 'Automatically selects Gemini for vision & large docs, and Claude for math, code & quizzes. With automatic failover.',
+    },
+    {
+      'id': 'gemini-1.5-flash',
+      'name': 'Gemini 1.5 Flash',
+      'provider': 'Google Gemini',
+      'tag': 'Fast & Free',
+      'desc': 'High speed, 1M context, multimodal study companion',
+    },
+    {
+      'id': 'gemini-2.0-flash',
+      'name': 'Gemini 2.0 Flash',
+      'provider': 'Google Gemini',
+      'tag': 'Next-Gen Ultra Fast',
+      'desc': 'Real-time responsiveness and latest multimodal reasoning',
+    },
+    {
+      'id': 'gemini-1.5-pro',
+      'name': 'Gemini 1.5 Pro',
+      'provider': 'Google Gemini',
+      'tag': 'Deep Synthesis',
+      'desc': 'Complex textbook reasoning and deep synthesis',
+    },
+    {
+      'id': 'claude-3-7-sonnet-20250219',
+      'name': 'Claude 3.7 Sonnet',
+      'provider': 'Anthropic Claude',
+      'tag': 'Hybrid Reasoning',
+      'desc': 'Advanced thinking for math proofs, logic, and deep analysis',
+    },
+    {
+      'id': 'claude-3-5-sonnet-20241022',
+      'name': 'Claude 3.5 Sonnet',
+      'provider': 'Anthropic Claude',
+      'tag': 'Code & Quizzes',
+      'desc': 'Gold standard coding syntax and structured flashcards',
+    },
+    {
+      'id': 'claude-3-5-haiku-20241022',
+      'name': 'Claude 3.5 Haiku',
+      'provider': 'Anthropic Claude',
+      'tag': 'High Speed',
+      'desc': 'Lightning fast answers, definitions, and quick study drill',
+    },
+  ];
 
   // Configurable fallback chain for recoverable provider outages
   static const List<String> fallbackModels = [
@@ -35,14 +96,19 @@ class AiConfig {
 
   // Preference Keys
   static const String _prefApiKey = 'gemini_api_key';
+  static const String _prefClaudeApiKey = 'claude_api_key';
   static const String _prefSelectedModel = 'gemini_selected_model';
   static const String _prefAiEnabled = 'ai_enabled';
   static const String _prefVaultContext = 'ai_vault_context_enabled';
   static const String _prefResponseStyle = 'ai_response_style';
   static const String _prefAiConsent = 'ai_consent_granted';
 
-  // Environment fallback via --dart-define=GEMINI_API_KEY=...
+  // Environment fallback via --dart-define=GEMINI_API_KEY=... / CLAUDE_API_KEY=...
   static const String envApiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+  static const String envClaudeApiKey = String.fromEnvironment('CLAUDE_API_KEY', defaultValue: '');
+
+  /// Determines whether a given model identifier belongs to Anthropic Claude.
+  static bool isClaudeModel(String modelId) => modelId.startsWith('claude-');
 
   /// Retrieves the active API key (from local storage or environment define).
   static Future<String> getApiKey() async {
@@ -62,6 +128,26 @@ class AiConfig {
   static Future<void> setApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefApiKey, key.trim());
+  }
+
+  /// Retrieves the active Anthropic Claude API key.
+  static Future<String> getClaudeApiKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedKey = prefs.getString(_prefClaudeApiKey);
+      if (savedKey != null && savedKey.trim().isNotEmpty) {
+        return savedKey.trim();
+      }
+    } catch (e) {
+      debugPrint('AiConfig: Failed to read Claude API key: $e');
+    }
+    return envClaudeApiKey.trim();
+  }
+
+  /// Sets or clears the active Anthropic Claude API key.
+  static Future<void> setClaudeApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefClaudeApiKey, key.trim());
   }
 
   /// Gets the currently selected LLM generation model.

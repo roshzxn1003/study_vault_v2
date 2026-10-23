@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/providers/database_providers.dart';
 import '../../core/services/file_action_service.dart';
 import '../ai/presentation/providers/chat_provider.dart';
+import '../../core/design/widgets/contextual_ai_floating_button.dart';
 
 final fileDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, id) async {
   final repo = ref.watch(fileRepositoryProvider);
@@ -344,6 +345,18 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
 
     return Scaffold(
       backgroundColor: _isDarkModeInvert ? const Color(0xFF0F172A) : Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: fileAsync.maybeWhen(
+        data: (file) => file != null
+            ? ContextualAiFloatingButton(
+                heroTag: 'file_view_ai_fab_${widget.id}',
+                materialId: widget.id,
+                materialTitle: file['name'] ?? 'Document',
+                initialQuery: 'Explain key concepts on page $_currentPageNumber of "${file['name'] ?? 'Document'}".',
+                bottomOffset: 16.0,
+              )
+            : null,
+        orElse: () => null,
+      ),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),

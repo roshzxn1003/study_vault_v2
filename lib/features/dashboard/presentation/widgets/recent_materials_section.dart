@@ -71,6 +71,32 @@ class RecentMaterialsSection extends StatelessWidget {
               ),
               itemBuilder: (context, index) {
                 final item = materials[index];
+                IconData iconData;
+                Color iconColor;
+                switch (item.type.toUpperCase()) {
+                  case 'NOTE':
+                    iconData = Icons.edit_note_rounded;
+                    iconColor = const Color(0xFFF59E0B);
+                    break;
+                  case 'IMAGE':
+                  case 'IMG':
+                    iconData = Icons.image_rounded;
+                    iconColor = const Color(0xFF10B981);
+                    break;
+                  case 'LINK':
+                  case 'URL':
+                    iconData = Icons.link_rounded;
+                    iconColor = const Color(0xFF8B5CF6);
+                    break;
+                  case 'PDF':
+                    iconData = Icons.picture_as_pdf_rounded;
+                    iconColor = const Color(0xFFEF4444);
+                    break;
+                  default:
+                    iconData = Icons.description_rounded;
+                    iconColor = const Color(0xFF3B82F6);
+                }
+
                 return InkWell(
                   onTap: () => context.push('/vault/material/${item.id}'),
                   borderRadius: AppRadius.card,
@@ -79,17 +105,15 @@ class RecentMaterialsSection extends StatelessWidget {
                     children: [
                       Container(
                         margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSecondary,
+                          color: iconColor.withValues(alpha: 0.12),
                           borderRadius: AppRadius.chip,
                         ),
                         child: Icon(
-                          item.type.toUpperCase() == 'NOTE'
-                              ? Icons.edit_note_rounded
-                              : Icons.picture_as_pdf_outlined,
+                          iconData,
                           size: 16,
-                          color: AppColors.primaryLight,
+                          color: iconColor,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),

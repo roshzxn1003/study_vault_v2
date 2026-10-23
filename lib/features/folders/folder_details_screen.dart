@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
+import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
 import '../../core/providers/database_providers.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -142,10 +143,24 @@ class _FolderDetailsScreenState extends ConsumerState<FolderDetailsScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddOptions(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Material'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          ContextualAiFloatingButton(
+            heroTag: 'folder_ai_fab_${widget.id}',
+            folderId: widget.id,
+            folderName: folderNameAsync.asData?.value ?? 'Folder',
+            initialQuery: 'Help me review the study materials in the "${folderNameAsync.asData?.value ?? 'Folder'}" folder.',
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'folder_add_material_fab_${widget.id}',
+            onPressed: () => _showAddOptions(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Material'),
+          ),
+        ],
       ),
     );
   }

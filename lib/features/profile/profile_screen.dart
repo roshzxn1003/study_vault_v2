@@ -76,7 +76,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Version 2.4.0 • Academic Edition', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+            Text('Version 1.0.0+1 • Academic Edition', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               'Your high-performance academic companion designed for university scholars. Offline-first local SQLite with cloud sync, contextual AI, and peer study groups.',
@@ -274,7 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           title: const Text('Academic Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text('$program • $period', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                           trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => context.push('/academic/profile'),
+                          onTap: () => context.push('/academic/settings'),
                         );
                       },
                     ),
@@ -284,7 +284,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       title: const Text('Manage Subjects', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: const Text('Courses, subject codes, and instructors'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () => context.push('/academic/settings'),
+                      onTap: () => context.push('/academic'),
                     ),
                     const Divider(height: 1, color: AppColors.borderSubtle),
                     ListTile(
@@ -365,7 +365,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         child: const Text('Dark Mode', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
-                      onTap: () {},
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: AppColors.surface,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (ctx) => SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      width: 36,
+                                      height: 4,
+                                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.border,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ),
+                                  const Text('Theme & Appearance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Study Vault defaults to an Obsidian Dark Theme optimized to reduce ocular fatigue during deep study and late-night revisions.',
+                                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: const Icon(Icons.check_circle_rounded, color: AppColors.primaryLight),
+                                    title: const Text('Obsidian Dark Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    subtitle: const Text('Active • Deep zinc with academic purple accents'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const Divider(height: 1, color: AppColors.borderSubtle),
                     ListTile(
@@ -431,7 +474,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ListTile(
                       leading: _buildTileIcon(Icons.info_outline_rounded, AppColors.textSecondary),
                       title: const Text('About Study Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text('v2.4.0 • Academic Productivity Suite'),
+                      subtitle: const Text('v1.0.0+1 • Academic Productivity Suite'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => _showAboutDialog(context),
                     ),

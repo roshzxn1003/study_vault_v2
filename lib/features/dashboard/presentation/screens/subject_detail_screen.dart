@@ -19,6 +19,7 @@ import 'package:study_vault/features/vault/presentation/widgets/move_dialog.dart
 import 'package:study_vault/features/vault/presentation/widgets/rename_dialog.dart';
 import 'package:study_vault/features/vault/presentation/widgets/sort_bottom_sheet.dart';
 import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
+import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
 
 /// Comprehensive Subject Material & Folder view screen.
 /// Implements Section 6 with hierarchical folder drill-down, nested breadcrumbs,
@@ -320,18 +321,30 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 20),
-        child: FloatingActionButton.extended(
-          heroTag: 'subject_add_material_fab',
-          onPressed: () => AddMaterialSheet.show(
-            context,
-            subjectId: widget.subjectId,
-            folderId: subState.currentFolderId,
-            destinationLabel: subjectName,
-          ),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Material'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ContextualAiFloatingButton(
+              heroTag: 'subject_ai_fab_${widget.subjectId}',
+              subject: subjectName,
+              initialQuery: 'Help me review the syllabus and key concepts in "$subjectName".',
+            ),
+            const SizedBox(height: 12),
+            FloatingActionButton.extended(
+              heroTag: 'subject_add_material_fab',
+              onPressed: () => AddMaterialSheet.show(
+                context,
+                subjectId: widget.subjectId,
+                folderId: subState.currentFolderId,
+                destinationLabel: subjectName,
+              ),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Material'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ],
         ),
       ),
       body: SafeArea(

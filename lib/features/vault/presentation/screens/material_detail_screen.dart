@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:study_vault/features/academic/presentation/providers/academic_workspace_provider.dart';
@@ -16,7 +14,9 @@ import '../../../sharing/presentation/widgets/share_material_dialog.dart';
 import '../../../sharing/presentation/widgets/share_to_group_dialog.dart';
 import '../../../sharing/presentation/screens/create_study_pack_screen.dart';
 import '../widgets/ai_material_side_panel.dart';
+import '../widgets/material_preview_widget.dart';
 import 'package:study_vault/core/services/file_action_service.dart';
+import 'package:study_vault/core/design/widgets/contextual_ai_floating_button.dart';
 
 /// Screen presenting comprehensive metadata, content preview, and actions for an academic material.
 class MaterialDetailScreen extends ConsumerStatefulWidget {
@@ -405,6 +405,13 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: ContextualAiFloatingButton(
+        heroTag: 'material_ai_fab_${material.id}',
+        materialId: material.id,
+        materialTitle: material.title,
+        initialQuery: 'Summarize the core concepts and exam insights in "${material.title}".',
+        bottomOffset: 16.0,
+      ),
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
@@ -820,227 +827,12 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
   /// Builds a prominent, interactive preview card for the document.
   Widget _buildDocumentPreview(MaterialItem material) {
     final previewHeight = (MediaQuery.of(context).size.width * 0.65).clamp(220.0, 360.0);
-    final filePath = material.filePath ?? material.storagePath ?? '';
-    final hasLocalFile = filePath.isNotEmpty && File(filePath).existsSync();
-    final remoteUrl = material.remoteUrl ?? '';
-    final hasRemoteUrl = remoteUrl.isNotEmpty;
 
-    Widget previewContent;
-
-    if (material.type == VaultMaterialType.pdf && (hasLocalFile || hasRemoteUrl)) {
-      previewContent = Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: hasLocalFile
-                  ? SfPdfViewer.file(
-                      File(filePath),
-                      canShowScrollHead: false,
-                      canShowScrollStatus: false,
-                      enableDoubleTapZooming: false,
-                    )
-                  : SfPdfViewer.network(
-                      remoteUrl,
-                      canShowScrollHead: false,
-                      canShowScrollStatus: false,
-                      enableDoubleTapZooming: false,
-                    ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 60,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    } else if (material.type == VaultMaterialType.image && (hasLocalFile || hasRemoteUrl)) {
-      previewContent = hasLocalFile
-          ? Image.file(
-              File(filePath),
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _buildFallbackPreview(material),
-            )
-          : Image.network(
-              remoteUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _buildFallbackPreview(material),
-            );
-    } else if (material.type == VaultMaterialType.note && material.content != null && material.content!.isNotEmpty) {
-      previewContent = Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.md),
-        color: AppColors.surfaceSecondary,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.edit_note_rounded, size: 18, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 6),
-                Text(
-                  'Note Preview',
-                  style: AppTypography.caption.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFF59E0B),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                material.content!,
-                style: AppTypography.body.copyWith(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 8,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      previewContent = _buildFallbackPreview(material);
-    }
-
-    return Container(
-      width: double.infinity,
+    return MaterialPreviewWidget(
+      material: material,
       height: previewHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: _handleOpenViewer,
-          child: Stack(
-            children: [
-              Positioned.fill(child: previewContent),
-              // Type badge top-left
-              Positioned(
-                left: 12,
-                top: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: material.type.color.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(material.type.icon, size: 12, color: Colors.white),
-                      const SizedBox(width: 4),
-                      Text(
-                        material.type.label,
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Open reader pill bottom-right
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.fullscreen_rounded, size: 16, color: Colors.white),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Tap to open reader',
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackPreview(MaterialItem material) {
-    return Container(
-      color: AppColors.surfaceSecondary,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: material.type.color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(material.type.icon, size: 30, color: material.type.color),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                material.title,
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${material.type.label} Document',
-              style: AppTypography.caption.copyWith(color: AppColors.textMuted),
-            ),
-          ],
-        ),
-      ),
+      showInteractiveOverlay: true,
+      onTap: _handleOpenViewer,
     );
   }
 

@@ -4,6 +4,8 @@ import 'package:study_vault/core/ai/hybrid_retriever.dart';
 import 'package:study_vault/core/ai/retriever.dart';
 import 'package:study_vault/core/ai/semantic_search_service.dart';
 import 'package:study_vault/core/ai/rag_retriever.dart';
+import 'package:study_vault/core/ai/claude_llm_service.dart';
+import 'package:study_vault/core/ai/unified_smart_llm_service.dart';
 import 'package:study_vault/core/ai/llm_service.dart';
 import 'package:study_vault/core/ai/ai_orchestrator.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
@@ -37,9 +39,24 @@ final ragRetrieverProvider = Provider<RagRetriever>((ref) {
   return RagRetriever(searchService);
 });
 
-/// Official Google Generative AI (Gemini) LLM provider with streaming and fallback.
-final llmServiceProvider = Provider<LlmService>((ref) {
+/// Official Google Generative AI (Gemini) LLM provider.
+final geminiLlmServiceProvider = Provider<GeminiLlmService>((ref) {
   return GeminiLlmService();
+});
+
+/// Official Anthropic Claude LLM provider.
+final claudeLlmServiceProvider = Provider<ClaudeLlmService>((ref) {
+  return ClaudeLlmService();
+});
+
+/// Central Unified Multi-Provider LLM service with Auto-Routing and Zero-Downtime Failover.
+final llmServiceProvider = Provider<LlmService>((ref) {
+  final gemini = ref.watch(geminiLlmServiceProvider);
+  final claude = ref.watch(claudeLlmServiceProvider);
+  return UnifiedSmartLlmService(
+    geminiService: gemini,
+    claudeService: claude,
+  );
 });
 
 /// Central AI Orchestrator with RAG, structured output, and streaming support.

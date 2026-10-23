@@ -117,11 +117,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final queryParams = state.uri.queryParameters;
               final extra = state.extra as Map<String, dynamic>?;
+              final folderName = queryParams['folderName'] ?? extra?['folderName'] as String?;
+              String? query = queryParams['query'] ?? extra?['query'] as String?;
+              if (query == null && folderName != null && folderName.trim().isNotEmpty) {
+                query = 'Help me review the study materials in the "$folderName" folder.';
+              }
               return AIScreen(
                 initialSubject: queryParams['subject'] ?? extra?['subject'] as String?,
                 initialMaterialId: queryParams['materialId'] ?? extra?['materialId'] as String?,
                 initialMaterialTitle: queryParams['materialTitle'] ?? extra?['materialTitle'] as String?,
                 initialMode: queryParams['mode'] ?? extra?['mode'] as String?,
+                initialQuery: query,
               );
             },
           ),
@@ -183,6 +189,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/progress', builder: (context, state) => const ProgressScreen()),
       GoRoute(path: '/gamification', redirect: (_, _) => '/progress'),
       GoRoute(path: '/academic/history', builder: (context, state) => const AcademicHistoryScreen()),
+      GoRoute(path: '/academic/profile', redirect: (_, _) => '/academic/settings'),
       GoRoute(path: '/academic/settings', builder: (context, state) => const AcademicSettingsScreen()),
       
       // Exam, Study & Flashcards

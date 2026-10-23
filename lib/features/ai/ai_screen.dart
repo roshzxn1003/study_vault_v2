@@ -20,6 +20,7 @@ class AIScreen extends ConsumerStatefulWidget {
   final String? initialMaterialId;
   final String? initialMaterialTitle;
   final String? initialMode;
+  final String? initialQuery;
 
   const AIScreen({
     super.key,
@@ -27,6 +28,7 @@ class AIScreen extends ConsumerStatefulWidget {
     this.initialMaterialId,
     this.initialMaterialTitle,
     this.initialMode,
+    this.initialQuery,
   });
 
   @override
@@ -56,6 +58,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       }
       if (widget.initialMode != null) {
         ref.read(chatProvider.notifier).setMode(widget.initialMode!);
+      }
+      if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
+        _sendQuery(widget.initialQuery!.trim());
       }
     });
   }
@@ -205,121 +210,178 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
     final models = [
       {
+        'id': 'auto',
+        'title': 'Auto-Router (Gemini + Claude)',
+        'desc': 'Smart task routing with automatic failover. Uses Gemini for vision & large docs, Claude for math, code & quizzes.',
+        'icon': Icons.psychology_rounded,
+        'badge': 'Recommended',
+      },
+      {
         'id': 'gemini-1.5-flash',
         'title': 'Gemini 1.5 Flash',
-        'desc': 'Fast, lightweight & responsive. Recommended for everyday study questions.',
+        'desc': 'Fast, lightweight & free. Ideal for everyday questions and lecture notes.',
         'icon': Icons.bolt_rounded,
-        'badge': 'Recommended',
+        'badge': 'Free & Fast',
+      },
+      {
+        'id': 'gemini-2.0-flash',
+        'title': 'Gemini 2.0 Flash',
+        'desc': 'Next-gen real-time responsiveness and latest multimodal reasoning.',
+        'icon': Icons.flash_on_rounded,
+        'badge': 'Ultra Fast',
       },
       {
         'id': 'gemini-1.5-pro',
         'title': 'Gemini 1.5 Pro',
-        'desc': 'Complex reasoning, deep academic analysis & multi-step problem solving.',
+        'desc': 'Deep synthesis, 1M+ context window for huge textbooks and syllabi.',
         'icon': Icons.auto_awesome_rounded,
-        'badge': 'Pro Reasoning',
+        'badge': 'Deep Synthesis',
+      },
+      {
+        'id': 'claude-3-7-sonnet-20250219',
+        'title': 'Claude 3.7 Sonnet',
+        'desc': 'Anthropic flagship with thinking budget for university math proofs & advanced logic.',
+        'icon': Icons.calculate_rounded,
+        'badge': 'Hybrid Reasoning',
+      },
+      {
+        'id': 'claude-3-5-sonnet-20241022',
+        'title': 'Claude 3.5 Sonnet',
+        'desc': 'Gold-standard code generation and zero-error quiz & flashcard extraction.',
+        'icon': Icons.terminal_rounded,
+        'badge': 'Code & Quizzes',
+      },
+      {
+        'id': 'claude-3-5-haiku-20241022',
+        'title': 'Claude 3.5 Haiku',
+        'desc': 'High-speed micro-tutor for rapid definitions and active recall drills.',
+        'icon': Icons.speed_rounded,
+        'badge': 'High Speed',
       },
     ];
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: isDark ? const Color(0xFF1E1E24) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.black12,
-                    borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: ListView(
+              controller: scrollController,
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  'Select Model',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select AI Model',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Gemini & Claude', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF8B5CF6))),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              ...models.map((m) {
-                final isSelected = currentModel == m['id'];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
+                const SizedBox(height: 10),
+                ...models.map((m) {
+                  final isSelected = currentModel == m['id'];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : (isDark ? Colors.white12 : Colors.black12),
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Material(
                       color: isSelected
-                          ? theme.colorScheme.primary
-                          : (isDark ? Colors.white12 : Colors.black12),
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Material(
-                    color: isSelected
-                        ? theme.colorScheme.primary.withValues(alpha: 0.08)
-                        : (isDark ? const Color(0xFF282830) : const Color(0xFFF9FAFB)),
-                    borderRadius: BorderRadius.circular(14),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isSelected
-                          ? theme.colorScheme.primary
-                          : (isDark ? Colors.white10 : Colors.black12),
-                      foregroundColor: isSelected ? Colors.white : theme.colorScheme.primary,
-                      child: Icon(m['icon'] as IconData, size: 20),
-                    ),
-                    title: Row(
-                      children: [
-                        Text(
-                          m['title'] as String,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? theme.colorScheme.primary : null,
-                          ),
+                          ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                          : (isDark ? const Color(0xFF282830) : const Color(0xFFF9FAFB)),
+                      borderRadius: BorderRadius.circular(14),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isSelected
+                              ? theme.colorScheme.primary
+                              : (isDark ? Colors.white10 : Colors.black12),
+                          foregroundColor: isSelected ? Colors.white : theme.colorScheme.primary,
+                          child: Icon(m['icon'] as IconData, size: 20),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            m['badge'] as String,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.primary,
+                        title: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                m['title'] as String,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? theme.colorScheme.primary : null,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                m['badge'] as String,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                        subtitle: Text(m['desc'] as String, style: const TextStyle(fontSize: 12)),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                            : null,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          ref.read(chatProvider.notifier).setModel(m['id'] as String);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
                     ),
-                    subtitle: Text(m['desc'] as String, style: const TextStyle(fontSize: 12)),
-                    trailing: isSelected
-                        ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
-                        : null,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      ref.read(chatProvider.notifier).setModel(m['id'] as String);
-                      Navigator.of(ctx).pop();
-                    },
-                  ),
-                ),
-              );
-              }),
-            ],
+                  );
+                }),
+              ],
+            ),
           ),
         ),
       ),
@@ -425,9 +487,26 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final modelDisplayName = chatState.activeModel.contains('pro')
-        ? 'Gemini 1.5 Pro'
-        : 'Gemini 1.5 Flash';
+    final modelDisplayName = switch (chatState.activeModel) {
+      'auto' => 'Auto (Gemini + Claude)',
+      'gemini-1.5-flash' => 'Gemini 1.5 Flash',
+      'gemini-2.0-flash' => 'Gemini 2.0 Flash',
+      'gemini-1.5-pro' => 'Gemini 1.5 Pro',
+      'claude-3-7-sonnet-20250219' => 'Claude 3.7 Sonnet',
+      'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
+      'claude-3-5-haiku-20241022' => 'Claude 3.5 Haiku',
+      _ => chatState.activeModel,
+    };
+
+    final modelIcon = switch (chatState.activeModel) {
+      'auto' => Icons.psychology_rounded,
+      'gemini-2.0-flash' => Icons.flash_on_rounded,
+      'gemini-1.5-pro' => Icons.auto_awesome_rounded,
+      'claude-3-7-sonnet-20250219' => Icons.calculate_rounded,
+      'claude-3-5-sonnet-20241022' => Icons.terminal_rounded,
+      'claude-3-5-haiku-20241022' => Icons.speed_rounded,
+      _ => Icons.bolt_rounded,
+    };
 
     return Scaffold(
       drawer: _buildHistoryDrawer(context, chatState, theme, isDark),
@@ -457,9 +536,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  chatState.activeModel.contains('pro')
-                      ? Icons.auto_awesome_rounded
-                      : Icons.bolt_rounded,
+                  modelIcon,
                   size: 16,
                   color: theme.colorScheme.primary,
                 ),
@@ -541,6 +618,10 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                 ],
               ),
             ),
+
+          // Quick Action Shortcut Pills (when chatting)
+          if (chatState.messages.isNotEmpty && !chatState.isGenerating)
+            _buildQuickActionShortcuts(chatState, theme, isDark),
 
           // Modern Signature Floating Input Area
           _buildChatGPTInputArea(chatState, theme, isDark),
@@ -756,6 +837,38 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       label: Text(label, style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary)),
       onPressed: () => _sendQuery(label),
+    );
+  }
+
+  Widget _buildQuickActionShortcuts(ChatState chatState, ThemeData theme, bool isDark) {
+    final shortcuts = [
+      {'label': '📝 Summarize', 'query': 'Summarize key takeaways and core formulas from this material.'},
+      {'label': '🎯 Practice Quiz', 'query': 'Generate a 5-question practice quiz testing my understanding of this topic.'},
+      {'label': '💡 Key Pitfalls', 'query': 'What are common exam traps and misconceptions for this topic?'},
+      {'label': '🃏 Flashcards', 'query': 'Create 5 active recall flashcards with question on front and answer on back.'},
+      {'label': '🔍 Step-by-Step', 'query': 'Explain this step-by-step with a clear practical analogy.'},
+    ];
+
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: shortcuts.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (ctx, idx) {
+          final s = shortcuts[idx];
+          return ActionChip(
+            backgroundColor: AppColors.surfaceElevated,
+            side: const BorderSide(color: AppColors.cardBorder),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            label: Text(s['label']!, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            onPressed: () => _sendQuery(s['query']!),
+          );
+        },
+      ),
     );
   }
 
