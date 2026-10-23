@@ -11,6 +11,7 @@ import 'package:study_vault/features/ai/data/services/chat_export_service.dart';
 import 'package:study_vault/features/ai/presentation/providers/chat_provider.dart';
 import 'package:study_vault/features/ai/presentation/widgets/material_attachment_dialog.dart';
 import 'package:study_vault/features/ai/presentation/widgets/streaming_message.dart';
+import 'package:study_vault/features/ai/presentation/widgets/voice_study_modal.dart';
 
 /// Modern ChatGPT-style AI Study Assistant screen.
 /// Includes model selector pill, conversation history drawer,
@@ -554,6 +555,20 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            key: const ValueKey('voice_study_mode_button'),
+            icon: const Icon(Icons.headset_mic_rounded, size: 20),
+            tooltip: 'Hands-Free Voice Study Mode',
+            onPressed: () {
+              VoiceStudyModal.show(
+                context,
+                initialContext: chatState.activeMaterialTitle != null
+                    ? 'Material: ${chatState.activeMaterialTitle}'
+                    : null,
+                topicOrSubject: chatState.activeSubject,
+              );
+            },
+          ),
           IconButton(
             key: const ValueKey('export_chat_button'),
             icon: const Icon(Icons.bookmark_add_outlined, size: 20),

@@ -1,6 +1,6 @@
 name: study_vault
 description: "Study Vault - Intelligent Academic Study Companion powered by Google Gemini and Offline-First Local Vault."
-version: 1.0.0+1
+version: 1.3.0+1
 
 
 environment:

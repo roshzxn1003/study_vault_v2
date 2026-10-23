@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
+import 'package:study_vault/core/services/spaced_repetition_service.dart';
+import 'package:study_vault/core/services/flashcard_export_service.dart';
 
 class FlashcardScreen extends ConsumerStatefulWidget {
   final String topic;
@@ -103,22 +105,27 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     }
   }
 
-  void _markCard(bool mastered) {
+  void _rateCard(FlashcardRating rating) {
+    final result = SpacedRepetitionService.calculateNextReview(
+      rating: rating,
+      currentRepetitions: rating == FlashcardRating.hard ? 0 : 1,
+    );
+
     if (widget.persistProgress) {
       if (_cards.isNotEmpty && _currentIndex < _cards.length) {
         final card = _cards[_currentIndex];
         final cardId = card['id'];
         if (cardId != null && cardId.isNotEmpty) {
-          LocalDbService.instance.updateFlashcardMastery(cardId, mastered ? 1 : 0);
+          LocalDbService.instance.updateFlashcardMastery(cardId, result.masteryLevel);
         }
       }
       LocalDbService.instance.recordStudyAction('flashcard_review');
     }
 
-    if (mastered) {
-      _masteredCount++;
-    } else {
+    if (rating == FlashcardRating.hard) {
       _reviewCount++;
+    } else {
+      _masteredCount++;
     }
 
     if (_currentIndex < _cards.length - 1) {
@@ -130,6 +137,8 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
       setState(() => _isCompleted = true);
     }
   }
+
+
 
   void _restartDeck() {
     setState(() {
@@ -262,6 +271,18 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
         title: Text("Flashcards • $topicName"),
         actions: [
           IconButton(
+            key: const ValueKey('export_flashcards_button'),
+            icon: const Icon(Icons.ios_share_rounded),
+            tooltip: 'Export Deck (Anki / Quizlet / Markdown)',
+            onPressed: () {
+              FlashcardExportService.showExportDialog(
+                context,
+                topic: topicName,
+                cards: _cards,
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Restart Deck',
             onPressed: _restartDeck,
@@ -376,34 +397,72 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Action Buttons
+            // Spaced Repetition 3-Tier Action Buttons
             Row(
               children: [
+                // Hard (1d)
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
+                    key: const ValueKey('flashcard_hard_button'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.rose,
                       side: const BorderSide(color: AppColors.rose),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: () => _markCard(false),
-                    icon: const Icon(Icons.close),
-                    label: const Text("Need Review", style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () => _rateCard(FlashcardRating.hard),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("Hard", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        SizedBox(height: 2),
+                        Text("1d", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 8),
+                // Good (3d)
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: OutlinedButton(
+                    key: const ValueKey('flashcard_good_button'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.amber,
+                      side: const BorderSide(color: AppColors.amber),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: () => _rateCard(FlashcardRating.good),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("Good", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        SizedBox(height: 2),
+                        Text("3d", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Easy / I Knew It! (7d)
+                Expanded(
+                  child: ElevatedButton(
+                    key: const ValueKey('flashcard_easy_button'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.emerald,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: () => _markCard(true),
-                    icon: const Icon(Icons.check),
-                    label: const Text("I Knew It!", style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () => _rateCard(FlashcardRating.easy),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("I Knew It!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        SizedBox(height: 2),
+                        Text("Easy (7d)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
                   ),
                 ),
               ],

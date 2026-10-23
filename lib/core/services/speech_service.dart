@@ -5,11 +5,17 @@ class SpeechService {
   final SpeechToText _speech = SpeechToText();
   bool _isAvailable = false;
 
-  Future<bool> init() async {
+  Future<bool> init({Function(String status)? onStatus, Function(String error)? onError}) async {
     try {
       _isAvailable = await _speech.initialize(
-        onError: (val) => debugPrint('Speech recognition error: ${val.errorMsg}'),
-        onStatus: (val) => debugPrint('Speech status: $val'),
+        onError: (val) {
+          debugPrint('Speech recognition error: ${val.errorMsg}');
+          onError?.call(val.errorMsg);
+        },
+        onStatus: (val) {
+          debugPrint('Speech status: $val');
+          onStatus?.call(val);
+        },
       );
     } catch (e) {
       _isAvailable = false;
@@ -28,6 +34,21 @@ class SpeechService {
     );
   }
 
+  void startContinuousListening({
+    required Function(String recognizedWords, bool isFinal) onResult,
+    Function(double soundLevel)? onSoundLevel,
+  }) async {
+    await _speech.listen(
+      onResult: (result) => onResult(result.recognizedWords, result.finalResult),
+      onSoundLevelChange: onSoundLevel,
+      listenOptions: SpeechListenOptions(
+        listenMode: ListenMode.dictation,
+        cancelOnError: false,
+        partialResults: true,
+      ),
+    );
+  }
+
   void stopListening() async {
     await _speech.stop();
   }
@@ -35,3 +56,4 @@ class SpeechService {
   bool get isAvailable => _isAvailable;
   bool get isListening => _speech.isListening;
 }
+
