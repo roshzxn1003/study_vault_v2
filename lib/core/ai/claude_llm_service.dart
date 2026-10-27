@@ -206,8 +206,11 @@ class ClaudeLlmService implements LlmService {
   Future<List<Map<String, dynamic>>> _buildClaudeMessages(AiRequest request) async {
     final messages = <Map<String, dynamic>>[];
 
-    // Add prior conversation history
-    for (final msg in request.conversationHistory) {
+    // Add prior conversation history (keep most recent 8 messages)
+    final recentHistory = request.conversationHistory.length > 8
+        ? request.conversationHistory.sublist(request.conversationHistory.length - 8)
+        : request.conversationHistory;
+    for (final msg in recentHistory) {
       messages.add({
         'role': msg.role == 'assistant' ? 'assistant' : 'user',
         'content': msg.content,

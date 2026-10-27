@@ -483,19 +483,7 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
               });
             },
           ),
-          // Jump to page
-          IconButton(
-            icon: const Icon(Icons.my_location_outlined),
-            tooltip: 'Jump to Page',
-            onPressed: _showJumpToPageDialog,
-          ),
-          // Dark Mode / Contrast Toggle
-          IconButton(
-            icon: Icon(_isDarkModeInvert ? Icons.light_mode : Icons.dark_mode_outlined),
-            tooltip: 'Invert Reading Contrast',
-            onPressed: () => setState(() => _isDarkModeInvert = !_isDarkModeInvert),
-          ),
-          // More options (Open with, Share, Download, Delete)
+          // Consolidated Actions Menu (Mobile-Optimized)
           fileAsync.when(
              data: (file) {
               if (file == null) return const SizedBox.shrink();
@@ -507,9 +495,15 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
 
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
-                tooltip: 'More actions',
+                tooltip: 'Viewer options',
                 onSelected: (val) {
                   switch (val) {
+                    case 'jump_to_page':
+                      _showJumpToPageDialog();
+                      break;
+                    case 'toggle_contrast':
+                      setState(() => _isDarkModeInvert = !_isDarkModeInvert);
+                      break;
                     case 'zoom_in':
                       _zoomIn();
                       break;
@@ -534,6 +528,27 @@ class _FileViewScreenState extends ConsumerState<FileViewScreen> {
                   }
                 },
                 itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'jump_to_page',
+                    child: Row(
+                      children: [
+                        Icon(Icons.my_location_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Jump to Page'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle_contrast',
+                    child: Row(
+                      children: [
+                        Icon(_isDarkModeInvert ? Icons.light_mode_outlined : Icons.dark_mode_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text(_isDarkModeInvert ? 'Standard Contrast' : 'Invert Contrast'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'zoom_in',
                     child: Row(

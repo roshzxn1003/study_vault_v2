@@ -237,20 +237,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       }
 
                       return ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 120),
                         itemCount: filtered.length,
                         separatorBuilder: (context, index) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = filtered[index];
-                          final String type = item.containsKey('content') ? 'Note' : (item.containsKey('storage_path') ? 'PDF' : 'Folder');
+                          final isChunk = item['type'] == 'document_chunk';
+                          final String type = isChunk
+                              ? 'Page ${item['page_number']} Match'
+                              : (item.containsKey('content') ? 'Note' : (item.containsKey('storage_path') ? 'PDF' : 'Folder'));
                           final String name = item['title'] ?? item['name'] ?? 'Untitled';
                           
-                          final IconData icon = type == 'Note'
-                              ? Icons.note_alt_outlined
-                              : (type == 'PDF' ? Icons.picture_as_pdf_outlined : Icons.folder_outlined);
-                          final Color color = type == 'Note'
-                              ? AppColors.primary
-                              : (type == 'PDF' ? AppColors.cyan : AppColors.amber);
+                          final IconData icon = isChunk
+                              ? Icons.find_in_page_rounded
+                              : (type == 'Note'
+                                  ? Icons.note_alt_outlined
+                                  : (type == 'PDF' ? Icons.picture_as_pdf_outlined : Icons.folder_outlined));
+                          final Color color = isChunk
+                              ? const Color(0xFF6366F1)
+                              : (type == 'Note'
+                                  ? AppColors.primary
+                                  : (type == 'PDF' ? AppColors.cyan : AppColors.amber));
 
                           return Container(
                             decoration: BoxDecoration(
@@ -263,7 +270,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               clipBehavior: Clip.antiAlias,
                               child: ListTile(
                                 onTap: () {
-                                  if (item.containsKey('original_file_name') || (item.containsKey('type') && item['type'] != null)) {
+                                  if (isChunk) {
+                                    final matId = item['material_id'] ?? item['id'];
+                                    final pageNum = item['page_number'] ?? 1;
+                                    final qParam = Uri.encodeComponent(item['query'] ?? _query);
+                                    context.push('/files/$matId?page=$pageNum&highlight=$qParam');
+                                  } else if (item.containsKey('original_file_name') || (item.containsKey('type') && item['type'] != null)) {
                                     context.push('/vault/material/${item['id']}');
                                   } else if (type == 'Note') {
                                     context.push('/notes/${item['id']}');
@@ -278,7 +290,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   child: Icon(icon, color: color, size: 20),
                                 ),
                                 title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
-                                subtitle: Text(type, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                                subtitle: isChunk
+                                    ? Text(
+                                        'Page ${item['page_number']} • ${item['snippet']}',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.9), fontSize: 11, height: 1.3),
+                                      )
+                                    : Text(type, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
                                 trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
                               ),
                             ),

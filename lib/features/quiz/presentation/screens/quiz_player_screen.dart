@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
+import 'package:study_vault/features/progress/presentation/providers/progress_provider.dart';
 
 class QuizPlayerScreen extends ConsumerStatefulWidget {
   final String topic;
@@ -69,9 +71,11 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
       if (questions.isNotEmpty) {
         if (widget.persistProgress) {
           try {
+            final user = Supabase.instance.client.auth.currentUser;
+            final userId = user?.id ?? 'guest';
             await LocalDbService.instance.saveAiQuiz(
               id: 'quiz_${DateTime.now().millisecondsSinceEpoch}',
-              userId: 'guest',
+              userId: userId,
               title: widget.topic,
               questionsJson: jsonEncode(questions),
             );
@@ -114,9 +118,25 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
       });
     } else {
       setState(() => _isFinished = true);
-      if (widget.persistProgress) {
+      if (widget.persistProgress && _questions.isNotEmpty) {
         try {
-          LocalDbService.instance.recordStudyAction('quiz_complete');
+          int correctCount = 0;
+          for (int i = 0; i < _questions.length; i++) {
+            final q = _questions[i];
+            final correctIdx = q['correctIndex'] ?? q['correct_index'] ?? 0;
+            if (i < _userAnswers.length && _userAnswers[i] == correctIdx) {
+              correctCount++;
+            }
+          }
+          final user = Supabase.instance.client.auth.currentUser;
+          final userId = user?.id ?? 'guest';
+          LocalDbService.instance.recordQuizResult(
+            topic: widget.topic,
+            totalQuestions: _questions.length,
+            correctAnswers: correctCount,
+            userId: userId,
+          );
+          ref.invalidate(topicProgressProvider);
         } catch (_) {}
       }
     }
@@ -192,7 +212,7 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
       appBar: AppBar(
         title: Text("Quiz • $topicName"),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,74 +259,75 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Options List
-            Expanded(
-              child: ListView.separated(
-                itemCount: (q['options'] as List).length,
-                separatorBuilder: (ctx, i) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final optionText = q['options'][index] as String;
-                  final isSelected = _selectedOption == index;
-                  final isCorrect = index == correctIdx;
+            // Options List (rendered smoothly inline without nested scroll pinching)
+            ...List.generate((q['options'] as List).length, (index) {
+              final optionText = q['options'][index] as String;
+              final isSelected = _selectedOption == index;
+              final isCorrect = index == correctIdx;
 
+              Color borderColor = AppColors.cardBorder;
+              Color bgColor = AppColors.surfaceElevated;
 
-                  Color borderColor = AppColors.cardBorder;
-                  Color bgColor = AppColors.surfaceElevated;
+              if (_isAnswerSubmitted) {
+                if (isCorrect) {
+                  borderColor = AppColors.emerald;
+                  bgColor = AppColors.emerald.withValues(alpha: 0.15);
+                } else if (isSelected && !isCorrect) {
+                  borderColor = AppColors.rose;
+                  bgColor = AppColors.rose.withValues(alpha: 0.15);
+                }
+              } else if (isSelected) {
+                borderColor = AppColors.primary;
+                bgColor = AppColors.primary.withValues(alpha: 0.1);
+              }
 
-                  if (_isAnswerSubmitted) {
-                    if (isCorrect) {
-                      borderColor = AppColors.emerald;
-                      bgColor = AppColors.emerald.withValues(alpha: 0.15);
-                    } else if (isSelected && !isCorrect) {
-                      borderColor = AppColors.rose;
-                      bgColor = AppColors.rose.withValues(alpha: 0.15);
-                    }
-                  } else if (isSelected) {
-                    borderColor = AppColors.primary;
-                    bgColor = AppColors.primary.withValues(alpha: 0.1);
-                  }
-
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: _isAnswerSubmitted ? null : () => _submitAnswer(index),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor, width: 1.5),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: borderColor.withValues(alpha: 0.2),
-                            child: Text(
-                              String.fromCharCode(65 + index),
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: borderColor == AppColors.cardBorder ? AppColors.textPrimary : borderColor),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(
-                              optionText,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                            ),
-                          ),
-                          if (_isAnswerSubmitted && isCorrect)
-                            const Icon(Icons.check_circle, color: AppColors.emerald, size: 20),
-                          if (_isAnswerSubmitted && isSelected && !isCorrect)
-                            const Icon(Icons.cancel, color: AppColors.rose, size: 20),
-                        ],
-                      ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _isAnswerSubmitted ? null : () => _submitAnswer(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderColor, width: 1.5),
                     ),
-                  );
-                },
-              ),
-            ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: borderColor.withValues(alpha: 0.2),
+                          child: Text(
+                            String.fromCharCode(65 + index),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: borderColor == AppColors.cardBorder ? AppColors.textPrimary : borderColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            optionText,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          ),
+                        ),
+                        if (_isAnswerSubmitted && isCorrect)
+                          const Icon(Icons.check_circle, color: AppColors.emerald, size: 20),
+                        if (_isAnswerSubmitted && isSelected && !isCorrect)
+                          const Icon(Icons.cancel, color: AppColors.rose, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
 
             // Explanation & Next Button
             if (_isAnswerSubmitted) ...[
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -328,7 +349,7 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -341,6 +362,7 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 32),
           ],
         ),
       ),

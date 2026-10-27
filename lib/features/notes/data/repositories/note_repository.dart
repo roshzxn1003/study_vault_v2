@@ -6,18 +6,35 @@ import 'package:study_vault/core/services/connectivity_service.dart';
 import 'package:uuid/uuid.dart';
 
 class NoteRepository {
-  final SupabaseClient _supabase = Supabase.instance.client;
-  final LocalDbService _localDb = LocalDbService.instance;
-  final ConnectivityService _connectivity = ConnectivityService();
+  final SupabaseClient? _injectedClient;
+  final LocalDbService _localDb;
+  final ConnectivityService _connectivity;
+
+  NoteRepository({
+    SupabaseClient? supabaseClient,
+    LocalDbService? localDb,
+    ConnectivityService? connectivity,
+  })  : _injectedClient = supabaseClient,
+        _localDb = localDb ?? LocalDbService.instance,
+        _connectivity = connectivity ?? ConnectivityService();
+
+  SupabaseClient? get _supabase {
+    if (_injectedClient != null) return _injectedClient;
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<List<Map<String, dynamic>>> getNotes({String? folderId}) async {
     final db = await _localDb.database;
 
     // Try remote fetch if online and authenticated
     try {
-      final user = _supabase.auth.currentUser;
-      if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
-        var query = _supabase.from('notes').select().eq('user_id', user.id);
+      final user = _supabase?.auth.currentUser;
+      if (_supabase != null && user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
+        var query = _supabase!.from('notes').select().eq('user_id', user.id);
         if (folderId != null) query = query.eq('folder_id', folderId);
         final remoteNotes = await query.order('updated_at');
 
@@ -40,10 +57,43 @@ class NoteRepository {
     final results = await db.query('notes', where: 'id = ?', whereArgs: [id]);
     if (results.isNotEmpty) return results.first;
 
+    // Fallback: Check unified materials table (Phase 6 Architecture)
     try {
-      final user = _supabase.auth.currentUser;
-      if (user != null) {
-        return await _supabase.from('notes').select().eq('id', id).single();
+      final matResults = await db.query('materials', where: 'id = ?', whereArgs: [id]);
+      if (matResults.isNotEmpty) {
+        final mat = matResults.first;
+        return {
+          'id': mat['id'],
+          'title': mat['title'] ?? 'Untitled Note',
+          'content': mat['content'] ?? mat['description'] ?? '',
+          'folder_id': mat['folder_id'],
+          'user_id': mat['user_id'],
+          'created_at': mat['created_at'],
+          'updated_at': mat['updated_at'],
+        };
+      }
+    } catch (e) {
+      debugPrint('Local materials fallback note query: $e');
+    }
+
+    try {
+      final client = _supabase;
+      final user = client?.auth.currentUser;
+      if (client != null && user != null) {
+        final note = await client.from('notes').select().eq('id', id).maybeSingle();
+        if (note != null) return note;
+        final mat = await client.from('materials').select().eq('id', id).maybeSingle();
+        if (mat != null) {
+          return {
+            'id': mat['id'],
+            'title': mat['title'] ?? 'Untitled Note',
+            'content': mat['content'] ?? mat['description'] ?? '',
+            'folder_id': mat['folder_id'],
+            'user_id': mat['user_id'],
+            'created_at': mat['created_at'],
+            'updated_at': mat['updated_at'],
+          };
+        }
       }
     } catch (e) {
       debugPrint('Error getting note by id: $e');
@@ -56,7 +106,8 @@ class NoteRepository {
     required String content,
     String? folderId,
   }) async {
-    final user = _supabase.auth.currentUser;
+    final client = _supabase;
+    final user = client?.auth.currentUser;
     final userId = user?.id ?? 'guest';
     final noteId = const Uuid().v4();
     final now = DateTime.now().toIso8601String();
@@ -75,9 +126,9 @@ class NoteRepository {
     final db = await _localDb.database;
     await db.insert('notes', noteData);
 
-    if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
+    if (client != null && user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
       try {
-        await _supabase.from('notes').insert(noteData);
+        await client.from('notes').insert(noteData);
         await db.update('notes', {'sync_status': 'synced'}, where: 'id = ?', whereArgs: [noteId]);
       } catch (e) {
         debugPrint('Immediate note sync failed: $e');
@@ -97,10 +148,11 @@ class NoteRepository {
 
     await db.update('notes', updates, where: 'id = ?', whereArgs: [id]);
 
-    final user = _supabase.auth.currentUser;
-    if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
+    final client = _supabase;
+    final user = client?.auth.currentUser;
+    if (client != null && user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
       try {
-        await _supabase.from('notes').update(updates).eq('id', id);
+        await client.from('notes').update(updates).eq('id', id);
         await db.update('notes', {'sync_status': 'synced'}, where: 'id = ?', whereArgs: [id]);
       } catch (e) {
         debugPrint('Note sync update failed: $e');
@@ -112,10 +164,11 @@ class NoteRepository {
     final db = await _localDb.database;
     await db.delete('notes', where: 'id = ?', whereArgs: [id]);
 
-    final user = _supabase.auth.currentUser;
-    if (user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
+    final client = _supabase;
+    final user = client?.auth.currentUser;
+    if (client != null && user != null && await _connectivity.checkStatus() == NetworkStatus.online) {
       try {
-        await _supabase.from('notes').delete().eq('id', id);
+        await client.from('notes').delete().eq('id', id);
       } catch (e) {
         debugPrint('Note delete sync failed: $e');
       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
@@ -66,13 +67,15 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
       final cards = await llm.generateFlashcardDeck(topic: widget.topic);
       if (cards.isNotEmpty) {
         final now = DateTime.now().toIso8601String();
+        final user = Supabase.instance.client.auth.currentUser;
+        final userId = user?.id ?? 'guest';
         final dbCards = cards.asMap().entries.map((entry) {
           final idx = entry.key;
           final c = entry.value;
           final cardId = 'card_${DateTime.now().millisecondsSinceEpoch}_$idx';
           return {
             'id': cardId,
-            'user_id': 'guest',
+            'user_id': userId,
             'topic': widget.topic,
             'front': c['front'] ?? '',
             'back': c['back'] ?? '',
@@ -374,15 +377,23 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
                           const Icon(Icons.touch_app, color: Colors.white60, size: 20),
                         ],
                       ),
-                      Center(
-                        child: Text(
-                          _isFlipped ? (card['back'] ?? '') : (card['front'] ?? ''),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: _isFlipped ? 17 : 22,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.5,
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                _isFlipped ? (card['back'] ?? '') : (card['front'] ?? ''),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: _isFlipped ? 17 : 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),

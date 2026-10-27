@@ -38,7 +38,29 @@ final topicProgressProvider = FutureProvider<List<TopicStat>>((ref) async {
     }
   }
 
-  // 2. Query local SQLite flashcards/study data
+  // 2. Query local SQLite topic_progress table
+  try {
+    final db = await LocalDbService.instance.database;
+    final uid = user?.id ?? 'guest';
+    final rows = await db.query(
+      'topic_progress',
+      where: 'user_id = ? OR user_id = "guest"',
+      whereArgs: [uid],
+      orderBy: 'updated_at DESC',
+    );
+    if (rows.isNotEmpty) {
+      return rows.map((r) => TopicStat(
+        topic: r['topic'] as String? ?? 'General',
+        attempts: (r['attempts'] as num?)?.toInt() ?? 0,
+        correct: (r['correct'] as num?)?.toInt() ?? 0,
+        incorrect: (r['incorrect'] as num?)?.toInt() ?? 0,
+      )).toList();
+    }
+  } catch (e) {
+    debugPrint('Local topic_progress query note: $e');
+  }
+
+  // 3. Fallback: Query local SQLite flashcards/study data
   try {
     final db = await LocalDbService.instance.database;
     final rows = await db.rawQuery('''

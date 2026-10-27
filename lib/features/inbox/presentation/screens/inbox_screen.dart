@@ -242,11 +242,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                       RefreshIndicator(
                         onRefresh: () => notifier.loadInbox(),
                         child: ListView(
-                          padding: const EdgeInsets.only(
+                          padding: EdgeInsets.only(
                             left: AppSpacing.md,
                             right: AppSpacing.md,
                             top: AppSpacing.sm,
-                            bottom: 100,
+                            bottom: state.isBulkMode ? 170 : 110,
                           ),
                           children: [
                             // Section header
@@ -305,12 +305,12 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         ),
                       ),
 
-                      // Floating Bulk Action Bar
+                      // Floating Bulk Action Bar (elevated safely above floating bottom nav)
                       if (state.isBulkMode)
                         Positioned(
                           left: AppSpacing.md,
                           right: AppSpacing.md,
-                          bottom: AppSpacing.md,
+                          bottom: MediaQuery.of(context).padding.bottom + 84.0,
                           child: _buildBulkActionBar(state),
                         ),
                     ],

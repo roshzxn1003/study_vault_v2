@@ -61,47 +61,58 @@ class BulkActionBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          TextButton(
-            onPressed: onSelectAll,
-            child: Text(
-              isAllSelected ? 'Deselect All' : 'Select All',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.primaryLight,
-                fontWeight: FontWeight.w600,
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: onSelectAll,
+                    child: Text(
+                      isAllSelected ? 'Deselect All' : 'Select All',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.primaryLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (onShare != null)
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, color: AppColors.primaryLight, size: 20),
+                      onPressed: onShare,
+                      tooltip: 'Share selected with student',
+                    ),
+                  if (onCreatePack != null)
+                    IconButton(
+                      icon: const Icon(Icons.folder_zip_outlined, color: Color(0xFF8B5CF6), size: 20),
+                      onPressed: onCreatePack,
+                      tooltip: 'Create Study Pack',
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.drive_file_move_outlined, color: AppColors.textPrimary, size: 20),
+                    onPressed: onMove,
+                    tooltip: 'Move selected',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.label_outline_rounded, color: AppColors.textPrimary, size: 20),
+                    onPressed: onLabel,
+                    tooltip: 'Add labels',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined, color: AppColors.textPrimary, size: 20),
+                    onPressed: onArchive,
+                    tooltip: 'Archive selected',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                    onPressed: onDelete,
+                    tooltip: 'Delete selected',
+                  ),
+                ],
               ),
             ),
-          ),
-          if (onShare != null)
-            IconButton(
-              icon: const Icon(Icons.share_outlined, color: AppColors.primaryLight, size: 20),
-              onPressed: onShare,
-              tooltip: 'Share selected with student',
-            ),
-          if (onCreatePack != null)
-            IconButton(
-              icon: const Icon(Icons.folder_zip_outlined, color: Color(0xFF8B5CF6), size: 20),
-              onPressed: onCreatePack,
-              tooltip: 'Create Study Pack',
-            ),
-          IconButton(
-            icon: const Icon(Icons.drive_file_move_outlined, color: AppColors.textPrimary, size: 20),
-            onPressed: onMove,
-            tooltip: 'Move selected',
-          ),
-          IconButton(
-            icon: const Icon(Icons.label_outline_rounded, color: AppColors.textPrimary, size: 20),
-            onPressed: onLabel,
-            tooltip: 'Add labels',
-          ),
-          IconButton(
-            icon: const Icon(Icons.archive_outlined, color: AppColors.textPrimary, size: 20),
-            onPressed: onArchive,
-            tooltip: 'Archive selected',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-            onPressed: onDelete,
-            tooltip: 'Delete selected',
           ),
         ],
       ),

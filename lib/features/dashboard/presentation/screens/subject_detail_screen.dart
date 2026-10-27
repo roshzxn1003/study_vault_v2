@@ -751,12 +751,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               ),
             ),
 
-            // Bulk Action Bar Overlay
+            // Bulk Action Bar Overlay (Safe Area Aware)
             if (subState.isBulkSelectionMode && subState.selectedCount > 0)
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 0,
+                bottom: MediaQuery.of(context).padding.bottom + AppSpacing.xs,
                 child: BulkActionBar(
                   selectedCount: subState.selectedCount,
                   isAllSelected: subState.materials.isNotEmpty && subState.selectedCount == subState.materials.length,

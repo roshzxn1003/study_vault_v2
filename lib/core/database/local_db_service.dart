@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalDbService {
   static final LocalDbService _instance = LocalDbService._internal();
@@ -120,6 +121,19 @@ class LocalDbService {
         updated_at TEXT
       )
     ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS topic_progress (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        attempts INTEGER DEFAULT 0,
+        correct INTEGER DEFAULT 0,
+        incorrect INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, topic)
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_topic_progress_user ON topic_progress(user_id, topic)');
 
     // Quick Scratchpad / Sticky Notes
     await db.execute('''
@@ -492,6 +506,19 @@ class LocalDbService {
       )
     ''');
     await db.execute('''
+      CREATE TABLE IF NOT EXISTS topic_progress (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        attempts INTEGER DEFAULT 0,
+        correct INTEGER DEFAULT 0,
+        incorrect INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, topic)
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_topic_progress_user ON topic_progress(user_id, topic)');
+    await db.execute('''
       CREATE TABLE IF NOT EXISTS scratchpad (
         id TEXT PRIMARY KEY,
         title TEXT,
@@ -807,6 +834,7 @@ class LocalDbService {
         'files',
         'flashcards',
         'personal_topics',
+        'topic_progress',
         'outbox_operations',
       ];
 
@@ -962,6 +990,64 @@ class LocalDbService {
       VALUES ('total_study_actions', 1, ?)
       ON CONFLICT(key) DO UPDATE SET value_int = value_int + 1, updated_at = ?
     ''', [now, now]);
+  }
+
+  /// Records a completed quiz attempt with topic, total questions, and correct answers.
+  /// Updates local study stats, action counters, and topic mastery.
+  Future<void> recordQuizResult({
+    required String topic,
+    required int totalQuestions,
+    required int correctAnswers,
+    String? userId,
+  }) async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    final uid = userId ?? 'guest';
+    final incorrect = (totalQuestions - correctAnswers).clamp(0, totalQuestions);
+
+    // 1. Record general study action
+    await recordStudyAction('quiz_complete');
+
+    // 2. Insert or update topic progress in local database
+    await db.rawInsert('''
+      INSERT INTO topic_progress (id, user_id, topic, attempts, correct, incorrect, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, topic) DO UPDATE SET
+        attempts = attempts + ?,
+        correct = correct + ?,
+        incorrect = incorrect + ?,
+        updated_at = ?
+    ''', [
+      'tp_${DateTime.now().millisecondsSinceEpoch}_${topic.hashCode}',
+      uid,
+      topic,
+      totalQuestions,
+      correctAnswers,
+      incorrect,
+      now,
+      totalQuestions,
+      correctAnswers,
+      incorrect,
+      now,
+    ]);
+
+    // 3. Sync to Supabase topic_progress if authenticated and online
+    try {
+      final supabase = Supabase.instance.client;
+      final authUser = supabase.auth.currentUser;
+      if (authUser != null && authUser.id == uid) {
+        await supabase.from('topic_progress').upsert({
+          'user_id': uid,
+          'topic': topic,
+          'attempts': totalQuestions,
+          'correct': correctAnswers,
+          'incorrect': incorrect,
+          'updated_at': now,
+        }, onConflict: 'user_id,topic');
+      }
+    } catch (e) {
+      debugPrint('Remote topic_progress sync skipped/note: $e');
+    }
   }
 
   // --- FLASHCARDS ---

@@ -349,6 +349,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       final orchestrator = ref.read(aiOrchestratorProvider);
+      final priorHistory = state.messages
+          .where((m) => !m.isPartial && m.content.isNotEmpty && m.id != userMsg.id)
+          .toList();
+      final recentHistory = priorHistory.length > 6
+          ? priorHistory.sublist(priorHistory.length - 6)
+          : priorHistory;
+
       final stream = orchestrator.askStream(
         AiRequest(
           mode: mode,
@@ -361,7 +368,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
           materialTitle: state.activeMaterialTitle,
           modelOverride: state.activeModel,
           isStrictGrounded: state.activeMaterialId != null,
-          conversationHistory: state.messages.take(6).map((m) => AiChatMessage(
+          conversationHistory: recentHistory.map((m) => AiChatMessage(
                 role: m.role,
                 content: m.content,
               )).toList(),

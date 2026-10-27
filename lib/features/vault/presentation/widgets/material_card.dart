@@ -77,67 +77,77 @@ class MaterialCard extends StatelessWidget {
             // Top Row: Type badge + Selection Checkbox / Favorite + Context menu
             Row(
               children: [
-                // Type Icon Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: type.color.withValues(alpha: 0.12),
-                    borderRadius: AppRadius.chip,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(type.icon, size: 14, color: type.color),
-                      const SizedBox(width: 4),
-                      Text(
-                        type.label,
-                        style: AppTypography.caption.copyWith(
-                          color: type.color,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Type Icon Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: type.color.withValues(alpha: 0.12),
+                            borderRadius: AppRadius.chip,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(type.icon, size: 14, color: type.color),
+                              const SizedBox(width: 4),
+                              Text(
+                                type.label,
+                                style: AppTypography.caption.copyWith(
+                                  color: type.color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        if (material.formattedFileSize.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            material.formattedFileSize,
+                            style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        // Subtle Privacy Indicator
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSecondary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                material.source?.startsWith('Shared') == true
+                                    ? Icons.group_outlined
+                                    : Icons.lock_outline_rounded,
+                                size: 10,
+                                color: AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                if (material.formattedFileSize.isNotEmpty) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    material.formattedFileSize,
-                    style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
-                  ),
-                ],
-                const SizedBox(width: AppSpacing.xs),
-                // Subtle Privacy Indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        material.source?.startsWith('Shared') == true
-                            ? Icons.group_outlined
-                            : Icons.lock_outline_rounded,
-                        size: 10,
-                        color: AppColors.textMuted,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
 
                 // Bulk Selection Checkbox
                 if (isSelectionMode)

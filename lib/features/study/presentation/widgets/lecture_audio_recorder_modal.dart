@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
@@ -189,10 +190,12 @@ Generate a structured study guide with:
     final id = 'lecture_${DateTime.now().millisecondsSinceEpoch}';
 
     final now = DateTime.now().toIso8601String();
+    final user = Supabase.instance.client.auth.currentUser;
+    final userId = user?.id ?? 'guest';
     await LocalDbService.instance.saveMaterial({
       'id': id,
       'title': title,
-      'user_id': 'guest',
+      'user_id': userId,
       'subject_id': widget.subjectId ?? '',
       'content': _generatedNotes,
       'type': 'markdown',

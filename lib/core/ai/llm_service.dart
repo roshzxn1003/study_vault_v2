@@ -268,7 +268,10 @@ class GeminiLlmService implements LlmService {
 
     if (request.conversationHistory.isNotEmpty) {
       buffer.writeln('### Recent Conversation:');
-      for (final msg in request.conversationHistory.take(6)) {
+      final recent = request.conversationHistory.length > 6
+          ? request.conversationHistory.sublist(request.conversationHistory.length - 6)
+          : request.conversationHistory;
+      for (final msg in recent) {
         buffer.writeln('${msg.isUser ? "Student" : "AI"}: ${msg.content}');
       }
       buffer.writeln();
