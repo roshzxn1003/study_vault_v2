@@ -110,7 +110,13 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> with Sing
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/shared');
+            }
+          },
         ),
         title: Text(
           widget.group.name,

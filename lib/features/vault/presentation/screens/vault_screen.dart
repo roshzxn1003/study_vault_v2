@@ -645,7 +645,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         builder: (context, constraints) {
           final isLarge = constraints.maxWidth >= 600;
           return Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: isLarge ? 3 : 2,
@@ -658,7 +658,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 final item = subjects[index];
                 return SubjectCard(
                   subjectWithCount: item,
-                  onTap: () => context.push('/subjects/${item.subject.id}'),
+                  onTap: () => context.push('/subject/${item.subject.id}'),
                 );
               },
             ),

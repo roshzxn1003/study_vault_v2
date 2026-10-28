@@ -79,7 +79,13 @@ class _AcademicSettingsScreenState extends ConsumerState<AcademicSettingsScreen>
         title: 'Academic Settings',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/academic');
+            }
+          },
         ),
       ),
       body: SingleChildScrollView(

@@ -44,6 +44,19 @@ class _FolderDetailsScreenState extends ConsumerState<FolderDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/library');
+            }
+          },
+        ),
         title: folderNameAsync.when(
           data: (name) => Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
           loading: () => const Text("Folder Contents"),

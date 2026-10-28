@@ -91,7 +91,13 @@ class _PrivacySharingSettingsScreenState extends ConsumerState<PrivacySharingSet
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/profile');
+            }
+          },
         ),
         title: Text('Privacy & Sharing', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
       ),

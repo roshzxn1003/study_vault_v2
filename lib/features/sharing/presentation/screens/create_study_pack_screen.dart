@@ -108,7 +108,13 @@ class _CreateStudyPackScreenState extends ConsumerState<CreateStudyPackScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/shared');
+            }
+          },
         ),
         title: Text('Create Study Pack', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
       ),

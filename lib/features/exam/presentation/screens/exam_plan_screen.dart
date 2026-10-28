@@ -120,7 +120,22 @@ class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text("AI Study Plan")),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Back',
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+          ),
+          title: const Text("AI Study Plan"),
+        ),
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -129,7 +144,22 @@ class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
 
     if (_days.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text("AI Study Plan")),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Back',
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+          ),
+          title: const Text("AI Study Plan"),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -179,6 +209,19 @@ class _ExamPlanScreenState extends ConsumerState<ExamPlanScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         title: const Text("AI Study Plan"),
         actions: [
           IconButton(

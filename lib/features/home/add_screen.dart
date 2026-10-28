@@ -663,7 +663,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                 shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
               ),
               onPressed: () {
-                context.go('/vault/material/$_createdMaterialId');
+                context.go('/material/$_createdMaterialId');
               },
             ),
           ),

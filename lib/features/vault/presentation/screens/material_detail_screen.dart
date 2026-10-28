@@ -392,7 +392,13 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-            onPressed: () => context.pop(),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/library');
+              }
+            },
           ),
         ),
         body: const Center(
@@ -417,7 +423,13 @@ class _MaterialDetailScreenState extends ConsumerState<MaterialDetailScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/library');
+            }
+          },
         ),
         title: Text(
           material.title,

@@ -366,8 +366,8 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
             icon: Icons.send_outlined,
             title: 'Shared by me',
             description: 'You haven\'t shared any materials yet. Open any material in your Vault to share with classmates.',
-            actionText: 'Go to Vault',
-            onAction: () => context.go('/vault'),
+            actionText: 'Go to Library',
+            onAction: () => context.go('/library'),
           ),
         ),
       );

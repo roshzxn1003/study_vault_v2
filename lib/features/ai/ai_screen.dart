@@ -518,7 +518,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         leading: canGoBack
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
-                tooltip: 'Back',
+                tooltip: 'Back to Study Space',
                 onPressed: () {
                   if (Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
@@ -533,9 +533,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                 builder: (ctx) => IconButton(
                   icon: const Icon(Icons.menu_rounded),
                   tooltip: 'Chat History',
-                  onPressed: () {
-                    Scaffold.of(ctx).openDrawer();
-                  },
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
                 ),
               ),
         centerTitle: true,
@@ -579,6 +577,12 @@ class _AIScreenState extends ConsumerState<AIScreen> {
                 tooltip: 'Chat History',
                 onPressed: () => Scaffold.of(ctx).openDrawer(),
               ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 20),
+              tooltip: 'Return to Dashboard',
+              onPressed: () => context.go('/home'),
             ),
           IconButton(
             key: const ValueKey('voice_study_mode_button'),

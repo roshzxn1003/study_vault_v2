@@ -18,7 +18,13 @@ class ProgressScreen extends ConsumerWidget {
         title: 'Study Analytics & Mastery',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/profile');
+            }
+          },
         ),
       ),
       body: SingleChildScrollView(

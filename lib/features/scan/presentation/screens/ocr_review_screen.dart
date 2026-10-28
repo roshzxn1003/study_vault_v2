@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/providers/database_providers.dart';
 import 'package:study_vault/features/scan/presentation/providers/scan_provider.dart';
 
@@ -74,6 +75,19 @@ class _OCRReviewScreenState extends ConsumerState<OCRReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/scan');
+            }
+          },
+        ),
         title: const Text('Review Extracted Notes'),
       ),
       body: Padding(

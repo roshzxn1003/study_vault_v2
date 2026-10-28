@@ -80,7 +80,13 @@ class _StudyPackDetailScreenState extends ConsumerState<StudyPackDetailScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/shared');
+            }
+          },
         ),
         title: Text('Study Pack', style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.bold)),
         actions: [

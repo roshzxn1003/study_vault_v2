@@ -22,7 +22,22 @@ class StudyTopicScreen extends ConsumerWidget {
     final bool hasStarted = matchingStat != null && matchingStat.attempts > 0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(topic)),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+        title: Text(topic),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         child: Column(

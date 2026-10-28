@@ -149,6 +149,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/subjects/:id',
+        redirect: (context, state) => '/subject/${state.pathParameters['id']}',
+      ),
+      GoRoute(
         path: '/library/material/:id',
         builder: (context, state) => MaterialDetailScreen(
           materialId: state.pathParameters['id']!,
@@ -192,13 +196,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/academic/profile', redirect: (_, _) => '/academic/settings'),
       GoRoute(path: '/academic/settings', builder: (context, state) => const AcademicSettingsScreen()),
       
-      // Exam, Study & Flashcards
+      // Exam, Study & Flashcards (specific nested topic routes first)
       GoRoute(path: '/exam/setup', builder: (context, state) => const ExamSetupScreen()),
       GoRoute(path: '/exam/plan', builder: (context, state) => const ExamPlanScreen()),
-      GoRoute(path: '/study/:topic', builder: (context, state) => StudyTopicScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
       GoRoute(path: '/study/learn/:topic', builder: (context, state) => StudyTutorScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
       GoRoute(path: '/study/quiz/:topic', builder: (context, state) => QuizPlayerScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
       GoRoute(path: '/study/flashcards/:topic', builder: (context, state) => FlashcardScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
+      GoRoute(path: '/study/:topic', builder: (context, state) => StudyTopicScreen(topic: Uri.decodeComponent(state.pathParameters['topic']!))),
     ],
   );
 });
@@ -209,8 +213,9 @@ class MainNavigationShell extends StatelessWidget {
 
   int? _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    // AIScreen has its own dedicated chat UI with floating bottom input; hide bottom nav bar to prevent overlap
+    // AIScreen and SearchScreen have dedicated full-viewport layouts; hide bottom nav bar to prevent overlap
     if (location.startsWith('/ai')) return null;
+    if (location.startsWith('/search')) return null;
     if (location.startsWith('/home')) return 0;
     if (location.startsWith('/library') ||
         location.startsWith('/vault') ||

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/database_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../folders/presentation/providers/folders_provider.dart';
@@ -82,6 +83,19 @@ class _CreateNoteScreenState extends ConsumerState<CreateNoteScreen> with Single
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/library');
+            }
+          },
+        ),
         title: const Text("Create Note"),
         bottom: TabBar(
           controller: _tabController,

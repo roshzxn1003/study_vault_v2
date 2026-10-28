@@ -20,7 +20,13 @@ class AcademicHistoryScreen extends ConsumerWidget {
         title: 'Academic History & Archive',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/academic');
+            }
+          },
         ),
       ),
       body: state.history.isEmpty
@@ -29,7 +35,13 @@ class AcademicHistoryScreen extends ConsumerWidget {
               title: 'No academic history yet',
               description: 'Your previous semesters and classes will appear here as you progress.',
               actionText: 'Return to Workspace',
-              onAction: () => context.pop(),
+              onAction: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/academic');
+                }
+              },
             )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120),

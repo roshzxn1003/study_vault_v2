@@ -95,7 +95,22 @@ class _ExamSetupScreenState extends ConsumerState<ExamSetupScreen> {
     final daysUntil = _selectedDate.difference(DateTime.now()).inDays + 1;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Exam Prep Setup")),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+        title: const Text("Exam Prep Setup"),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(22, 22, 22, 120),
         child: Column(
