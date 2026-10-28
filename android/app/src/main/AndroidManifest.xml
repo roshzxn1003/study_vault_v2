@@ -48,14 +48,16 @@
                 <data
                     android:scheme="io.supabase.studyvault"
                     android:host="login-callback" />
+                <data
+                    android:scheme="studyvault"
+                    android:host="login-callback" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="studyvault"
-                    android:host="login-callback" />
+                <data android:scheme="io.supabase.studyvault" />
+                <data android:scheme="studyvault" />
             </intent-filter>
 
             <!-- Phase 7: Android System Share Target (Single Item: Text / Link / PDF / Images / Docs) -->

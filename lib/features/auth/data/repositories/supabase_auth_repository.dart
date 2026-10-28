@@ -73,10 +73,11 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> signInWithGoogle({String? redirectTo}) async {
     final effectiveRedirectTo = redirectTo ??
-        (kIsWeb ? null : 'io.supabase.studyvault://login-callback/');
+        (kIsWeb ? null : 'io.supabase.studyvault://login-callback');
     await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: effectiveRedirectTo,
+      authScreenLaunchMode: LaunchMode.externalApplication,
     );
   }
 }
