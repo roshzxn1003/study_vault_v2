@@ -519,3 +519,31 @@ CREATE POLICY "Add pack items" ON public.study_pack_items FOR INSERT WITH CHECK 
 ALTER TABLE public.share_notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users own notifications" ON public.share_notifications;
 CREATE POLICY "Users own notifications" ON public.share_notifications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================
+-- 5. STORAGE BUCKET & STORAGE POLICIES
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('study_materials', 'study_materials', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public access to study_materials" ON storage.objects;
+CREATE POLICY "Public access to study_materials" ON storage.objects
+    FOR SELECT TO public
+    USING (bucket_id = 'study_materials');
+
+DROP POLICY IF EXISTS "Authenticated users upload study_materials" ON storage.objects;
+CREATE POLICY "Authenticated users upload study_materials" ON storage.objects
+    FOR INSERT TO authenticated
+    WITH CHECK (bucket_id = 'study_materials');
+
+DROP POLICY IF EXISTS "Authenticated users update own study_materials" ON storage.objects;
+CREATE POLICY "Authenticated users update own study_materials" ON storage.objects
+    FOR UPDATE TO authenticated
+    USING (bucket_id = 'study_materials');
+
+DROP POLICY IF EXISTS "Authenticated users delete own study_materials" ON storage.objects;
+CREATE POLICY "Authenticated users delete own study_materials" ON storage.objects
+    FOR DELETE TO authenticated
+    USING (bucket_id = 'study_materials');
+
