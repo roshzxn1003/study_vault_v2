@@ -9,6 +9,7 @@ import 'package:study_vault/features/auth/presentation/widgets/auth_text_field.d
 import 'package:study_vault/features/auth/presentation/widgets/auth_button.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_divider.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_error_banner.dart';
+import 'package:study_vault/features/auth/presentation/widgets/google_logo_icon.dart';
 import 'package:study_vault/features/onboarding/presentation/providers/onboarding_provider.dart';
 
 /// Clean, academic login screen with inline validation and responsive layout.
@@ -64,11 +65,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final success =
         await ref.read(authControllerProvider.notifier).signInWithGoogle();
     if (success && mounted) {
-      final onboardingState = ref.read(onboardingProvider);
-      if (onboardingState.isLoaded && !onboardingState.hasCompletedOnboarding) {
-        context.go('/onboarding');
-      } else {
-        context.go('/home');
+      final user = ref.read(authControllerProvider);
+      if (user.isAuthenticated) {
+        final onboardingState = ref.read(onboardingProvider);
+        if (onboardingState.isLoaded && !onboardingState.hasCompletedOnboarding) {
+          context.go('/onboarding');
+        } else {
+          context.go('/home');
+        }
       }
     }
   }
@@ -188,11 +192,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 isSecondary: true,
                 text: 'Continue with Google',
                 isLoading: authState.isLoading,
-                icon: const Icon(
-                  Icons.g_mobiledata_rounded,
-                  size: 24,
-                  color: AppColors.textPrimary,
-                ),
+                icon: const GoogleLogo(size: 20),
                 onPressed: authState.isLoading ? null : _handleGoogleSignIn,
               ),
 

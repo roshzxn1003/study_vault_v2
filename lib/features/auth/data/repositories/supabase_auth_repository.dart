@@ -1,9 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/features/auth/domain/repositories/auth_repository.dart';
 import 'package:study_vault/features/auth/domain/entities/auth_user.dart' as entity;
 
 class SupabaseAuthRepository implements AuthRepository {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient? _client;
+
+  SupabaseAuthRepository([this._client]);
+
+  SupabaseClient get _supabase {
+    final client = _client;
+    if (client != null) return client;
+    return Supabase.instance.client;
+  }
 
   @override
   Future<void> signUp({
@@ -63,9 +72,11 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signInWithGoogle({String? redirectTo}) async {
+    final effectiveRedirectTo = redirectTo ??
+        (kIsWeb ? null : 'io.supabase.studyvault://login-callback/');
     await _supabase.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: redirectTo ?? 'io.supabase.studyvault://login-callback/',
+      redirectTo: effectiveRedirectTo,
     );
   }
 }

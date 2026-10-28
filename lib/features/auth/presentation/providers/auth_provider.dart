@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -49,9 +50,47 @@ class AuthControllerState {
 class AuthController extends StateNotifier<AuthControllerState> {
   final AuthRepository _repository;
   final Ref? _ref;
+  StreamSubscription<dynamic>? _supabaseAuthSubscription;
 
   AuthController(this._repository, [this._ref]) : super(const AuthControllerState()) {
     _checkCurrentUser();
+    _listenToAuthChanges();
+  }
+
+  void _listenToAuthChanges() {
+    try {
+      _supabaseAuthSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+        final session = data.session;
+        if (session != null) {
+          final userId = session.user.id;
+          try {
+            await LocalDbService.instance.migrateUserData('guest', userId);
+          } catch (e) {
+            debugPrint('[AuthController] OAuth guest migration note: $e');
+          }
+          if (state.status != AuthStatus.authenticated || state.userId != userId) {
+            state = AuthControllerState(
+              status: AuthStatus.authenticated,
+              userId: userId,
+              successMessage: 'Signed in successfully',
+            );
+            _triggerBackgroundSync();
+          }
+        } else if (data.event == AuthChangeEvent.signedOut) {
+          if (state.status != AuthStatus.unauthenticated) {
+            state = const AuthControllerState(status: AuthStatus.unauthenticated);
+          }
+        }
+      });
+    } catch (_) {
+      // Supabase may not be initialized in some mock test environments
+    }
+  }
+
+  @override
+  void dispose() {
+    _supabaseAuthSubscription?.cancel();
+    super.dispose();
   }
 
   void _triggerBackgroundSync() {
@@ -79,6 +118,12 @@ class AuthController extends StateNotifier<AuthControllerState> {
           successMessage: 'Signed in successfully',
         );
         _triggerBackgroundSync();
+      } else {
+        // On mobile devices, OAuth redirects to an external browser tab.
+        // We revert loading status to unauthenticated so the UI button does not freeze
+        // if the user navigates back to the app without signing in.
+        // When the user authenticates, the incoming deep link triggers _listenToAuthChanges.
+        state = const AuthControllerState(status: AuthStatus.unauthenticated);
       }
       return true;
     } on AuthException catch (e) {

@@ -9,6 +9,7 @@ import 'package:study_vault/features/auth/presentation/widgets/auth_text_field.d
 import 'package:study_vault/features/auth/presentation/widgets/auth_button.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_error_banner.dart';
 import 'package:study_vault/features/auth/presentation/widgets/auth_divider.dart';
+import 'package:study_vault/features/auth/presentation/widgets/google_logo_icon.dart';
 
 /// Clean, academic sign-up screen with inline validation and responsive layout.
 class SignupScreen extends ConsumerStatefulWidget {
@@ -76,7 +77,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final success =
         await ref.read(authControllerProvider.notifier).signInWithGoogle();
     if (success && mounted) {
-      context.go('/onboarding');
+      final user = ref.read(authControllerProvider);
+      if (user.isAuthenticated) {
+        context.go('/onboarding');
+      }
     }
   }
 
@@ -263,11 +267,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 isSecondary: true,
                 text: 'Continue with Google',
                 isLoading: authState.isLoading,
-                icon: const Icon(
-                  Icons.g_mobiledata_rounded,
-                  size: 24,
-                  color: AppColors.textPrimary,
-                ),
+                icon: const GoogleLogo(size: 20),
                 onPressed: authState.isLoading ? null : _handleGoogleSignIn,
               ),
 
