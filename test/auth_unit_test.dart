@@ -42,6 +42,12 @@ class FakeAuthRepository implements AuthRepository {
     if (shouldFail) throw Exception(failMessage);
     _currentUser = AuthUser(id: 'google-user-id', email: 'google@vault.edu', fullName: 'Google User');
   }
+
+  @override
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {
+    if (shouldFail) throw Exception(failMessage);
+    _currentUser = AuthUser(id: 'google-user-id', email: 'google@vault.edu', fullName: 'Google User');
+  }
 }
 
 void main() {

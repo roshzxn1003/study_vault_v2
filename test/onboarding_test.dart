@@ -47,6 +47,9 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> signInWithGoogle({String? redirectTo}) async {}
+
+  @override
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {}
 }
 
 void main() {

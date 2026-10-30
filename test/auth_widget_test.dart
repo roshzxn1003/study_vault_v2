@@ -27,6 +27,8 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> resetPassword({required String email}) async {}
   @override
   Future<void> signInWithGoogle({String? redirectTo}) async {}
+  @override
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {}
 }
 
 Widget createTestApp(Widget child) {

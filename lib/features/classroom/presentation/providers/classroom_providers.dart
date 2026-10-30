@@ -1,7 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/repositories/classroom_repository.dart';
 import '../../domain/models/models.dart';
+
+class CurrentUserProfile {
+  final String id;
+  final String name;
+  final String? email;
+
+  const CurrentUserProfile({required this.id, required this.name, this.email});
+}
+
+final currentUserProfileProvider = Provider<CurrentUserProfile>((ref) {
+  try {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final name = (user.userMetadata?['full_name'] as String?)?.trim();
+      final displayName = (name != null && name.isNotEmpty)
+          ? name
+          : (user.email?.split('@').first ?? 'Student');
+      return CurrentUserProfile(
+        id: user.id,
+        name: displayName,
+        email: user.email,
+      );
+    }
+  } catch (_) {}
+  return const CurrentUserProfile(
+    id: 'guest',
+    name: 'Student (Guest)',
+    email: 'guest@studyvault.local',
+  );
+});
 
 final classroomRepositoryProvider = Provider<ClassroomRepository>((ref) {
   return ClassroomRepository();

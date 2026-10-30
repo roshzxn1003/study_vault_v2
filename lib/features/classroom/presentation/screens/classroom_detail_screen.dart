@@ -767,10 +767,11 @@ class _ClassroomDetailScreenState extends ConsumerState<ClassroomDetailScreen>
               final text = textCtrl.text.trim();
               if (text.isEmpty) return;
 
+              final userProfile = ref.read(currentUserProfileProvider);
               Navigator.pop(dialogCtx);
               await ref.read(classroomDetailProvider(widget.classroomId).notifier).postAnnouncement(
-                    authorId: 'user-current',
-                    authorName: 'You (Instructor)',
+                    authorId: userProfile.id,
+                    authorName: userProfile.name,
                     content: text,
                   );
             },

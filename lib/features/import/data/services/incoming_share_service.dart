@@ -22,6 +22,7 @@ class IncomingShareService {
 
   /// Initializes listening for runtime intents (e.g. app already in memory / onNewIntent).
   void initIntentListener() {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onNewSharedData') {
         try {
@@ -39,6 +40,7 @@ class IncomingShareService {
 
   /// Checks for shared content when the app was launched cold from the Android share sheet.
   Future<List<ImportItem>?> getInitialSharedItems() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return null;
     try {
       final result = await _channel.invokeMethod('getInitialSharedData');
       if (result != null && result is Map) {

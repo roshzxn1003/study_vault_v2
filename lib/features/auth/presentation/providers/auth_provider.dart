@@ -141,6 +141,51 @@ class AuthController extends StateNotifier<AuthControllerState> {
     }
   }
 
+  void signInAsGuest() {
+    _ref?.read(guestModeProvider.notifier).state = true;
+    state = const AuthControllerState(
+      status: AuthStatus.authenticated,
+      userId: 'guest',
+      successMessage: 'Operating in Offline Vault mode',
+    );
+  }
+
+  Future<bool> completeAuthFromUrlOrCode(String urlOrCode) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _repository.exchangeCodeOrUrl(urlOrCode);
+      final user = _repository.getCurrentUser();
+      if (user != null) {
+        try {
+          await LocalDbService.instance.migrateUserData('guest', user.id);
+        } catch (e) {
+          debugPrint('Auth migrate guest data on manual exchange: $e');
+        }
+        state = AuthControllerState(
+          status: AuthStatus.authenticated,
+          userId: user.id,
+          successMessage: 'Signed in successfully',
+        );
+        _triggerBackgroundSync();
+        return true;
+      }
+      state = const AuthControllerState(status: AuthStatus.unauthenticated);
+      return false;
+    } on AuthException catch (e) {
+      state = AuthControllerState(
+        status: AuthStatus.error,
+        errorMessage: _mapAuthException(e),
+      );
+      return false;
+    } catch (e) {
+      state = AuthControllerState(
+        status: AuthStatus.error,
+        errorMessage: _mapGenericError(e),
+      );
+      return false;
+    }
+  }
+
   void _checkCurrentUser() {
     try {
       final user = _repository.getCurrentUser();

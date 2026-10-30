@@ -347,11 +347,12 @@ class _ClassroomListScreenState extends ConsumerState<ClassroomListScreen> {
 
               final messenger = ScaffoldMessenger.of(context);
               final router = GoRouter.of(context);
+              final userProfile = ref.read(currentUserProfileProvider);
               Navigator.pop(dialogCtx);
               final joined = await ref.read(classroomListProvider.notifier).joinClassroomWithCode(
                     code: code,
-                    studentId: 'user-current',
-                    studentName: 'Student User',
+                    studentId: userProfile.id,
+                    studentName: userProfile.name,
                   );
 
               if (!mounted) return;
@@ -454,14 +455,15 @@ class _ClassroomListScreenState extends ConsumerState<ClassroomListScreen> {
 
               final messenger = ScaffoldMessenger.of(context);
               final router = GoRouter.of(context);
+              final userProfile = ref.read(currentUserProfileProvider);
               Navigator.pop(dialogCtx);
               final created = await ref.read(classroomListProvider.notifier).createClassroom(
                     name: name,
                     section: sectionCtrl.text.trim().isEmpty ? null : sectionCtrl.text.trim(),
                     subject: subjectCtrl.text.trim().isEmpty ? null : subjectCtrl.text.trim(),
                     room: roomCtrl.text.trim().isEmpty ? null : roomCtrl.text.trim(),
-                    creatorId: 'user-current',
-                    creatorName: 'Instructor (You)',
+                    creatorId: userProfile.id,
+                    creatorName: userProfile.name,
                   );
 
               if (!mounted) return;

@@ -48,7 +48,10 @@ class LocalDbService {
     try {
       await db.execute(sql);
     } catch (e) {
-      debugPrint('LocalDB schema update note: $e (query: $sql)');
+      final msg = e.toString().toLowerCase();
+      if (!msg.contains('duplicate column name')) {
+        debugPrint('LocalDB schema update note: $e (query: $sql)');
+      }
     }
   }
 

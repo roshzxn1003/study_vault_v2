@@ -41,6 +41,9 @@ class MockGoogleAuthRepository implements AuthRepository {
 
   @override
   Future<void> resetPassword({required String email}) async {}
+
+  @override
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {}
 }
 
 void main() {

@@ -7,4 +7,5 @@ abstract class AuthRepository {
   Future<void> resetPassword({required String email});
   AuthUser? getCurrentUser();
   Future<void> signInWithGoogle({String? redirectTo});
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {}
 }

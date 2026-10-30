@@ -84,8 +84,9 @@ class _AssignmentDetailScreenState extends ConsumerState<AssignmentDetailScreen>
           ),
         );
 
+        final userProfile = ref.watch(currentUserProfileProvider);
         final mySubmission = state.submissions.cast<ClassroomSubmission?>().firstWhere(
-              (s) => s?.itemId == widget.itemId && s?.studentId == 'user-current',
+              (s) => s?.itemId == widget.itemId && s?.studentId == userProfile.id,
               orElse: () => null,
             );
 
@@ -494,12 +495,13 @@ class _AssignmentDetailScreenState extends ConsumerState<AssignmentDetailScreen>
 
                                     setState(() => _isSubmitting = true);
                                     final messenger = ScaffoldMessenger.of(context);
+                                    final userProfile = ref.read(currentUserProfileProvider);
                                     final success = await ref
                                         .read(classroomDetailProvider(widget.classroomId).notifier)
                                         .submitAssignment(
                                           itemId: item.id,
-                                          studentId: 'user-current',
-                                          studentName: 'Student User',
+                                          studentId: userProfile.id,
+                                          studentName: userProfile.name,
                                           content: content,
                                         );
                                     if (mounted) {

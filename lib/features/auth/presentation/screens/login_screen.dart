@@ -77,6 +77,69 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showPasteLinkDialog(BuildContext context) {
+    final linkController = TextEditingController();
+    final router = GoRouter.maybeOf(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: Text(
+          'Complete Sign-In',
+          style: AppTypography.title.copyWith(color: AppColors.textPrimary),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'If your browser opened with a redirect URL or authorization code, paste it below to finish signing in:',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+            ),
+            AppSpacing.v16,
+            TextField(
+              controller: linkController,
+              decoration: const InputDecoration(
+                hintText: 'http://localhost:... or code',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final text = linkController.text.trim();
+              if (text.isEmpty) return;
+              Navigator.of(ctx).pop();
+              final success = await ref
+                  .read(authControllerProvider.notifier)
+                  .completeAuthFromUrlOrCode(text);
+              if (success && mounted) {
+                final onboardingState = ref.read(onboardingProvider);
+                if (onboardingState.isLoaded && !onboardingState.hasCompletedOnboarding) {
+                  router?.go('/onboarding');
+                } else {
+                  router?.go('/home');
+                }
+              }
+            },
+            child: const Text('Complete Sign-In'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -196,7 +259,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: authState.isLoading ? null : _handleGoogleSignIn,
               ),
 
-              AppSpacing.v24,
+              AppSpacing.v12,
+
+              // Continue as Guest (Offline Vault)
+              OutlinedButton.icon(
+                key: const ValueKey('continue_as_guest_button'),
+                icon: const Icon(Icons.bolt_rounded, size: 20, color: AppColors.accent),
+                label: Text(
+                  'Continue as Guest (Offline Vault)',
+                  style: AppTypography.button.copyWith(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: AppColors.surface,
+                  side: const BorderSide(color: AppColors.border, width: 1.2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: authState.isLoading
+                    ? null
+                    : () {
+                        ref.read(authControllerProvider.notifier).signInAsGuest();
+                        final router = GoRouter.maybeOf(context);
+                        if (router != null) {
+                          router.go('/home');
+                        }
+                      },
+              ),
+
+              AppSpacing.v8,
+
+              // Fallback redirect helper
+              Center(
+                child: TextButton(
+                  onPressed: authState.isLoading ? null : () => _showPasteLinkDialog(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                  child: Text(
+                    'Redirect not working? Enter sign-in link',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.textMuted,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+
+              AppSpacing.v16,
 
               // Switch to Sign Up
               Wrap(

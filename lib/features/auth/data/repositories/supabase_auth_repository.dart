@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:study_vault/core/services/desktop_oauth_service.dart';
 import 'package:study_vault/features/auth/domain/repositories/auth_repository.dart';
 import 'package:study_vault/features/auth/domain/entities/auth_user.dart' as entity;
 
@@ -72,6 +74,23 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signInWithGoogle({String? redirectTo}) async {
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+      final listenerFuture = DesktopOAuthService.instance.listenForAuthCode();
+      final effectiveRedirect = redirectTo ?? DesktopOAuthService.instance.redirectUrl;
+
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: effectiveRedirect,
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+
+      final authCode = await listenerFuture;
+      if (authCode != null && authCode.isNotEmpty) {
+        await exchangeCodeOrUrl(authCode);
+      }
+      return;
+    }
+
     final effectiveRedirectTo = redirectTo ??
         (kIsWeb ? null : 'io.supabase.studyvault://login-callback');
     await _supabase.auth.signInWithOAuth(
@@ -79,5 +98,30 @@ class SupabaseAuthRepository implements AuthRepository {
       redirectTo: effectiveRedirectTo,
       authScreenLaunchMode: LaunchMode.externalApplication,
     );
+  }
+
+  @override
+  Future<void> exchangeCodeOrUrl(String urlOrCode) async {
+    final trimmed = urlOrCode.trim();
+    if (trimmed.isEmpty) return;
+
+    if (trimmed.contains('://') || trimmed.contains('?') || trimmed.contains('#')) {
+      try {
+        final uri = Uri.parse(trimmed);
+        final code = uri.queryParameters['code'];
+        if (code != null && code.isNotEmpty) {
+          await _supabase.auth.exchangeCodeForSession(code);
+          return;
+        }
+        // If hash fragment or token parameters
+        await _supabase.auth.getSessionFromUrl(uri);
+        return;
+      } catch (e) {
+        debugPrint('[SupabaseAuthRepository] URI parse exchange fallback: $e');
+      }
+    }
+
+    // Direct auth code
+    await _supabase.auth.exchangeCodeForSession(trimmed);
   }
 }
