@@ -117,13 +117,15 @@ class GeminiLlmService implements LlmService {
 
     Object? lastError;
 
+    final activeTemp = request.temperature ?? await AiConfig.getTemperature();
+
     for (final modelName in candidateModels) {
       if (cancelToken?.isCancelled == true) return;
 
       try {
         final contents = await _buildContentList(request);
         final generationConfig = GenerationConfig(
-          temperature: request.temperature ?? AiConfig.defaultTemperature,
+          temperature: activeTemp,
           maxOutputTokens: request.maxTokens ?? AiConfig.defaultMaxTokens,
           responseMimeType: request.outputFormat == AiOutputFormat.json ? 'application/json' : null,
         );
@@ -195,11 +197,13 @@ class GeminiLlmService implements LlmService {
 
     Object? lastError;
 
+    final activeTemp = request.temperature ?? await AiConfig.getTemperature();
+
     for (final modelName in candidateModels) {
       try {
         final contents = await _buildContentList(request);
         final generationConfig = GenerationConfig(
-          temperature: request.temperature ?? AiConfig.defaultTemperature,
+          temperature: activeTemp,
           maxOutputTokens: request.maxTokens ?? AiConfig.defaultMaxTokens,
           responseMimeType: request.outputFormat == AiOutputFormat.json ? 'application/json' : null,
         );

@@ -24,6 +24,11 @@ class CrashMonitoringService {
 
     final originalOnError = FlutterError.onError;
     FlutterError.onError = (FlutterErrorDetails details) {
+      final errStr = details.exception.toString();
+      // Ignore known upstream Syncfusion PDF viewer bug invoking AndroidDeviceInfo on Linux desktop
+      if (errStr.contains("has no instance method 'cast'") && (errStr.contains('LTS') || errStr.contains('Linux'))) {
+        return;
+      }
       recordError(
         details.exception,
         details.stack,
@@ -36,6 +41,11 @@ class CrashMonitoringService {
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
+      final errStr = error.toString();
+      // Ignore known upstream Syncfusion PDF viewer bug invoking AndroidDeviceInfo on Linux desktop
+      if (errStr.contains("has no instance method 'cast'") && (errStr.contains('LTS') || errStr.contains('Linux'))) {
+        return true;
+      }
       recordError(error, stack, fatal: true);
       return true;
     };

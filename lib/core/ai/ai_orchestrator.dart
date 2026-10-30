@@ -79,7 +79,7 @@ class AiOrchestrator {
     }
 
     // Step 2: Build mode-specific prompt using PromptEngine
-    final systemPrompt = _buildSystemPromptForMode(request.mode, contextText, sources.isNotEmpty);
+    final systemPrompt = await _buildSystemPromptForMode(request.mode, contextText, sources.isNotEmpty);
     final enrichedRequest = request.copyWith(
       context: contextText,
       systemInstruction: systemPrompt,
@@ -150,7 +150,7 @@ class AiOrchestrator {
       }
     }
 
-    final systemPrompt = _buildSystemPromptForMode(request.mode, contextText, sources.isNotEmpty);
+    final systemPrompt = await _buildSystemPromptForMode(request.mode, contextText, sources.isNotEmpty);
     final enrichedRequest = request.copyWith(
       context: contextText,
       systemInstruction: systemPrompt,
@@ -427,25 +427,11 @@ class AiOrchestrator {
     return 'guest';
   }
 
-  String _buildSystemPromptForMode(AiMode mode, String context, bool hasGroundedSources) {
-    if (mode == AiMode.tutor) {
-      return AiConfig.socraticTutorInstruction;
-    }
-    if (mode == AiMode.documentQa || hasGroundedSources) {
-      return '''
-You are Study Vault AI, an elite academic assistant and subject specialist.
-Answer the student's question clearly, accurately, and professionally, grounded in their Study Vault materials.
-
-GROUNDING RULES:
-1. Rely primarily on the provided Grounded Vault Context below.
-2. When referencing concepts from the notes or materials, cite the source document and page number as indicated in the context headers (e.g., [Doc: <Title>, Page <N>]).
-3. If the answer cannot be determined or supported by the provided notes/materials, state clearly:
-   "I couldn't find this in your Study Vault materials."
-   Then, provide an answer based on general academic knowledge, making sure to explicitly prefix it with "General Academic Explanation:".
-4. Never fabricate citations or page numbers.
-''';
-    }
-    return AiConfig.academicSystemInstruction;
+  Future<String> _buildSystemPromptForMode(AiMode mode, String context, bool hasGroundedSources) async {
+    return AiConfig.getAcademicSystemPrompt(
+      isSocratic: mode == AiMode.tutor,
+      isGrounded: mode == AiMode.documentQa || hasGroundedSources,
+    );
   }
 
   List<QuizQuestion> _parseQuizJsonSafely(String raw, String defaultDifficulty) {

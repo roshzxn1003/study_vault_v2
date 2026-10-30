@@ -118,10 +118,16 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: context.canPop()
+        leading: (GoRouter.maybeOf(context)?.canPop() ?? (Navigator.maybeOf(context)?.canPop() ?? false))
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  if (GoRouter.maybeOf(context)?.canPop() ?? false) {
+                    context.pop();
+                  } else if (Navigator.maybeOf(context)?.canPop() ?? false) {
+                    Navigator.of(context).pop();
+                  }
+                },
               )
             : null,
         title: Text(

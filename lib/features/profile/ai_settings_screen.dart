@@ -5,9 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:study_vault/core/ai/ai_config.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 
-/// Comprehensive AI Intelligence & Privacy Settings Screen.
+/// Comprehensive AI Intelligence, Research Rigor & Privacy Settings Screen.
 /// Manages model selection (Gemini & Claude), API credentials, key acquisition guides,
-/// RAG access permissions, and pedagogical response style.
+/// academic research depth, temperature determinism, Socratic hinting, and device optimization.
 class AiSettingsScreen extends ConsumerStatefulWidget {
   const AiSettingsScreen({super.key});
 
@@ -21,13 +21,22 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
   bool _isAiEnabled = true;
   bool _isVaultContextEnabled = true;
   String _selectedModel = AiConfig.primaryModel;
-  String _preferredStyle = 'socratic';
   bool _obscureKey = true;
   bool _obscureClaudeKey = true;
   bool _isTestingKey = false;
   bool _keyValidated = false;
   bool _claudeKeySaved = false;
   bool _isLoading = true;
+
+  // Professional Research & Academic Rigor State
+  String _researchDepth = 'balanced';
+  double _temperature = 0.4;
+  String _academicLevel = 'undergraduate';
+  bool _citationFootnotes = true;
+  bool _socraticMode = true;
+  String _tokenBudget = 'standard';
+  bool _batterySaver = false;
+  bool _streamResponses = true;
 
   @override
   void initState() {
@@ -42,7 +51,16 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     final model = await AiConfig.getSelectedModel();
     final enabled = await AiConfig.isAiEnabled();
     final vaultContext = await AiConfig.isVaultContextEnabled();
-    final style = await AiConfig.getPreferredResponseStyle();
+
+    // Research options
+    final depth = await AiConfig.getResearchDepth();
+    final temp = await AiConfig.getTemperature();
+    final level = await AiConfig.getAcademicLevel();
+    final citations = await AiConfig.isCitationFootnotesEnabled();
+    final socratic = await AiConfig.isSocraticModeEnabled();
+    final budget = await AiConfig.getTokenBudget();
+    final batterySaver = await AiConfig.isBatterySaverEnabled();
+    final streamResponses = await AiConfig.isStreamResponsesEnabled();
 
     if (mounted) {
       setState(() {
@@ -51,9 +69,18 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
         _selectedModel = model;
         _isAiEnabled = enabled;
         _isVaultContextEnabled = vaultContext;
-        _preferredStyle = style;
         _keyValidated = key.isNotEmpty;
         _claudeKeySaved = claudeKey.isNotEmpty;
+
+        _researchDepth = depth;
+        _temperature = temp;
+        _academicLevel = level;
+        _citationFootnotes = citations;
+        _socraticMode = socratic;
+        _tokenBudget = budget;
+        _batterySaver = batterySaver;
+        _streamResponses = streamResponses;
+
         _isLoading = false;
       });
     }
@@ -69,9 +96,44 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     await AiConfig.setVaultContextEnabled(val);
   }
 
-  Future<void> _savePreferredStyle(String style) async {
-    setState(() => _preferredStyle = style);
-    await AiConfig.setPreferredResponseStyle(style);
+  Future<void> _saveResearchDepth(String depth) async {
+    setState(() => _researchDepth = depth);
+    await AiConfig.setResearchDepth(depth);
+  }
+
+  Future<void> _saveTemperature(double temp) async {
+    setState(() => _temperature = temp);
+    await AiConfig.setTemperature(temp);
+  }
+
+  Future<void> _saveAcademicLevel(String level) async {
+    setState(() => _academicLevel = level);
+    await AiConfig.setAcademicLevel(level);
+  }
+
+  Future<void> _saveCitationFootnotes(bool val) async {
+    setState(() => _citationFootnotes = val);
+    await AiConfig.setCitationFootnotesEnabled(val);
+  }
+
+  Future<void> _saveSocraticMode(bool val) async {
+    setState(() => _socraticMode = val);
+    await AiConfig.setSocraticModeEnabled(val);
+  }
+
+  Future<void> _saveTokenBudget(String budget) async {
+    setState(() => _tokenBudget = budget);
+    await AiConfig.setTokenBudget(budget);
+  }
+
+  Future<void> _saveBatterySaver(bool val) async {
+    setState(() => _batterySaver = val);
+    await AiConfig.setBatterySaverEnabled(val);
+  }
+
+  Future<void> _saveStreamResponses(bool val) async {
+    setState(() => _streamResponses = val);
+    await AiConfig.setStreamResponsesEnabled(val);
   }
 
   Future<void> _saveAndTestApiKey() async {
@@ -101,8 +163,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isValid
-              ? '✨ Connected to Google Gemini successfully ($_selectedModel)!'
-              : '⚠️ Key saved, but verification failed. Please verify API Studio permissions.'),
+              ? 'Connected to Google Gemini successfully ($_selectedModel)!'
+              : 'Key saved, but verification failed. Please verify API Studio permissions.'),
           backgroundColor: isValid ? AppColors.emerald : AppColors.amber,
         ),
       );
@@ -117,7 +179,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(key.isNotEmpty
-              ? '✨ Anthropic Claude API key saved securely on device!'
+              ? 'Anthropic Claude API key saved securely on device!'
               : 'Claude API key cleared.'),
           backgroundColor: key.isNotEmpty ? AppColors.emerald : AppColors.amber,
         ),
@@ -162,196 +224,154 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back to Profile',
           onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else if (context.canPop()) {
+            if (GoRouter.maybeOf(context)?.canPop() ?? false) {
               context.pop();
-            } else {
+            } else if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (GoRouter.maybeOf(context) != null) {
               context.go('/profile');
             }
           },
         ),
         title: const Text('AI & Privacy Settings'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          // Master AI Enabled Switch
-          Card(
-            color: AppColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.cardBorder),
-            ),
-            child: SwitchListTile(
-              secondary: CircleAvatar(
-                backgroundColor: _isAiEnabled
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : AppColors.surfaceVariant,
-                child: Icon(
-                  Icons.psychology_outlined,
-                  color: _isAiEnabled ? AppColors.primaryLight : AppColors.textMuted,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 880),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 120),
+            children: [
+              // ===================================================================
+              // 1. MASTER AI STATUS
+              // ===================================================================
+              Card(
+                color: AppColors.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppColors.cardBorder),
                 ),
-              ),
-              title: const Text(
-                'AI Study Features',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              subtitle: const Text(
-                'Enable Socratic tutoring, document Q&A, smart summaries, and quizzes.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-              ),
-              value: _isAiEnabled,
-              onChanged: _saveAiEnabled,
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // 🔑 Interactive Guide: How to Get Free & Pro API Keys
-          _buildApiKeyGuideCard(context),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Google Gemini API Configuration Card
-          _buildGeminiConfigCard(context),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Anthropic Claude API Configuration Card
-          _buildClaudeConfigCard(context),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Vault Context Privacy Permission (RAG)
-          Card(
-            color: AppColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.cardBorder),
-            ),
-            child: SwitchListTile(
-              secondary: CircleAvatar(
-                backgroundColor: _isVaultContextEnabled
-                    ? AppColors.emerald.withValues(alpha: 0.12)
-                    : AppColors.surfaceVariant,
-                child: Icon(
-                  Icons.shield_outlined,
-                  color: _isVaultContextEnabled ? AppColors.emerald : AppColors.textMuted,
-                ),
-              ),
-              title: const Text(
-                'Personal Vault Grounding (RAG)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              subtitle: const Text(
-                'Allow AI to retrieve relevant snippets from your notes to generate page-cited answers.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-              ),
-              value: _isVaultContextEnabled,
-              onChanged: _isAiEnabled ? _saveVaultContext : null,
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Response Pedagogy Style
-          Card(
-            color: AppColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.cardBorder),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.school_outlined, size: 18, color: AppColors.primaryLight),
-                      SizedBox(width: 8),
-                      Text(
-                        'Preferred Teaching Style',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Choose how the AI assistant formats explanations and answers.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  RadioGroup<String>(
-                    groupValue: _preferredStyle,
-                    onChanged: (v) {
-                      if (v != null) _savePreferredStyle(v);
-                    },
-                    child: Column(
-                      children: [
-                        RadioListTile<String>(
-                          title: const Text('Socratic Tutor (Recommended)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                          subtitle: const Text('5-step sequence: Intuition, Formal rules, Real-world analogy, Exam pitfalls, Active recall.', style: TextStyle(fontSize: 12)),
-                          value: 'socratic',
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        RadioListTile<String>(
-                          title: const Text('Concise & Direct', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                          subtitle: const Text('Bullet-point answers focused directly on facts and equations for fast revision.', style: TextStyle(fontSize: 12)),
-                          value: 'concise',
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        RadioListTile<String>(
-                          title: const Text('Exhaustive & Technical', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                          subtitle: const Text('Deep architectural breakdowns, full mathematical proofs, and system trade-offs.', style: TextStyle(fontSize: 12)),
-                          value: 'detailed',
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ],
+                child: SwitchListTile(
+                  secondary: CircleAvatar(
+                    backgroundColor: _isAiEnabled
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : AppColors.surfaceVariant,
+                    child: Icon(
+                      Icons.psychology_outlined,
+                      color: _isAiEnabled ? AppColors.primaryLight : AppColors.textMuted,
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Privacy Architecture Notice
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.textSecondary),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Privacy Commitment: Your notes and PDFs are parsed locally on your device. Only small, relevant text snippets are sent to Gemini or Claude when answering specific study queries. Your private notes are never used for model training.',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.4),
+                  title: const Text(
+                    'AI Study Features',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
+                  subtitle: const Text(
+                    'Powers scholarly research, Socratic tutoring, document Q&A, and exam synthesis.',
+                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                  ),
+                  value: _isAiEnabled,
+                  onChanged: _saveAiEnabled,
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // ===================================================================
+              // 2. MODEL & API KEYS ORCHESTRATION
+              // ===================================================================
+              _buildSectionHeader('MODEL ORCHESTRATION & CREDENTIALS'),
+              _buildApiKeyGuideCard(context),
+              const SizedBox(height: AppSpacing.sm),
+              _buildGeminiConfigCard(context),
+              const SizedBox(height: AppSpacing.sm),
+              _buildClaudeConfigCard(context),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ===================================================================
+              // 3. RESEARCH RIGOR & ACADEMIC PERSONA
+              // ===================================================================
+              _buildSectionHeader('RESEARCH RIGOR & ACADEMIC SYNTHESIS'),
+              _buildResearchRigorCard(context),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ===================================================================
+              // 4. REASONING TEMPERATURE & PEDAGOGICAL CONTROL
+              // ===================================================================
+              _buildSectionHeader('REASONING & PEDAGOGICAL CONTROL'),
+              _buildReasoningAndSocraticCard(context),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ===================================================================
+              // 5. VAULT GROUNDING, CITATIONS & TOKEN BUDGET
+              // ===================================================================
+              _buildSectionHeader('VAULT GROUNDING & CITATION EVIDENCE'),
+              _buildGroundingAndCitationsCard(context),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ===================================================================
+              // 6. LOW-END MOBILE & PERFORMANCE TUNING
+              // ===================================================================
+              _buildSectionHeader('DEVICE OPTIMIZATION & PERFORMANCE'),
+              _buildPerformanceAndMobileCard(context),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // Privacy Architecture Notice
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.shield_rounded, size: 18, color: AppColors.emerald),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Privacy Commitment: Your documents and notes are parsed and indexed locally on your device. Only relevant, contextual snippets are sent to Gemini or Claude when you request answers. Your private vault is never used for training foundation models.',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.45),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 40),
-        ],
+        ),
       ),
     );
   }
 
-  /// Builds the interactive step-by-step API Key Acquisition Guide Card.
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: AppColors.textMuted,
+        ),
+      ),
+    );
+  }
+
+  /// Interactive step-by-step API Key Acquisition Guide Card.
   Widget _buildApiKeyGuideCard(BuildContext context) {
     return Card(
       color: AppColors.surface,
@@ -418,7 +438,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                           '1. Visit Google AI Studio with your Google account.\n'
                           '2. Click "Get API Key" or "Create API Key in new project".\n'
                           '3. Copy the string starting with "AIzaSy...".\n'
-                          '4. Paste below and tap "Save & Verify Key".',
+                          '4. Paste below and tap "Save & Verify Gemini Key".',
                           style: TextStyle(fontSize: 12, height: 1.45, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 10),
@@ -493,7 +513,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     );
   }
 
-  /// Builds the Google Gemini configuration card.
+  /// Google Gemini configuration card.
   Widget _buildGeminiConfigCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -606,7 +626,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     );
   }
 
-  /// Builds the Anthropic Claude configuration card.
+  /// Anthropic Claude configuration card.
   Widget _buildClaudeConfigCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -675,6 +695,372 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Research Rigor and Academic Persona Card.
+  Widget _buildResearchRigorCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.biotech_rounded, size: 20, color: AppColors.primaryLight),
+              SizedBox(width: 8),
+              Text(
+                'Academic Depth & Synthesis Rigor',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Select how thoroughly the AI unpacks research papers, course materials, and technical proofs.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 14),
+
+          // Research Depth Segmented Control
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment<String>(
+                value: 'summary',
+                label: Text('Quick Summary', style: TextStyle(fontSize: 12)),
+                icon: Icon(Icons.flash_on_rounded, size: 16),
+              ),
+              ButtonSegment<String>(
+                value: 'balanced',
+                label: Text('Balanced', style: TextStyle(fontSize: 12)),
+                icon: Icon(Icons.balance_rounded, size: 16),
+              ),
+              ButtonSegment<String>(
+                value: 'deep',
+                label: Text('Deep Scholarly', style: TextStyle(fontSize: 12)),
+                icon: Icon(Icons.school_rounded, size: 16),
+              ),
+            ],
+            selected: {_researchDepth},
+            onSelectionChanged: (set) {
+              if (set.isNotEmpty) _saveResearchDepth(set.first);
+            },
+          ),
+          const SizedBox(height: 10),
+          Text(
+            switch (_researchDepth) {
+              'summary' => '⚡ Concise summaries: Core formulas, bullet definitions, minimal token usage.',
+              'deep' => '🎓 Exhaustive scholarly rigor: Full theoretical proofs, methodology nuances, and counter-perspectives.',
+              _ => '⚖️ Balanced Academic: Structured headings, mental models, code snippets, and key takeaways.',
+            },
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+          ),
+
+          const SizedBox(height: 18),
+          const Divider(color: AppColors.cardBorder),
+          const SizedBox(height: 12),
+
+          const Text(
+            'Target Academic Persona',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _academicLevel,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'high_school',
+                child: Text('High School / AP & Foundation Prep', style: TextStyle(fontSize: 13)),
+              ),
+              DropdownMenuItem(
+                value: 'undergraduate',
+                child: Text('Undergraduate University (Default)', style: TextStyle(fontSize: 13)),
+              ),
+              DropdownMenuItem(
+                value: 'postgraduate',
+                child: Text('Postgraduate / Master\'s Research Depth', style: TextStyle(fontSize: 13)),
+              ),
+              DropdownMenuItem(
+                value: 'expert',
+                child: Text('Doctoral / Subject Matter Specialist', style: TextStyle(fontSize: 13)),
+              ),
+            ],
+            onChanged: (val) {
+              if (val != null) _saveAcademicLevel(val);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reasoning Temperature & Socratic Hinting Card.
+  Widget _buildReasoningAndSocraticCard(BuildContext context) {
+    final tempLabel = _temperature < 0.25
+        ? 'Deterministic & Precise (Formulas, Proofs, Code)'
+        : (_temperature <= 0.55
+            ? 'Balanced Academic (Coursework & Explanations)'
+            : 'Exploratory & Brainstorming (Analogies & Thesis Topics)');
+
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 20, color: AppColors.primaryLight),
+                    SizedBox(width: 8),
+                    Text(
+                      'Reasoning Temperature',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Text(
+                    _temperature.toStringAsFixed(2),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryLight),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Active Mode: $tempLabel',
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            Slider(
+              value: _temperature,
+              min: 0.0,
+              max: 1.0,
+              divisions: 20,
+              activeColor: AppColors.primaryLight,
+              onChanged: _saveTemperature,
+            ),
+
+            const Divider(color: AppColors.cardBorder),
+
+            // Socratic Hinting Switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: CircleAvatar(
+                backgroundColor: _socraticMode
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : AppColors.surfaceVariant,
+                child: Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: _socraticMode ? AppColors.primaryLight : AppColors.textMuted,
+                ),
+              ),
+              title: const Text(
+                'Socratic Hinting & Active Recall',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Guides you with incremental hints, questions, and conceptual scaffolds rather than revealing raw answers immediately.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              value: _socraticMode,
+              onChanged: _saveSocraticMode,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Vault Grounding, Citations & Token Budget Card.
+  Widget _buildGroundingAndCitationsCard(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Vault Context Switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: CircleAvatar(
+                backgroundColor: _isVaultContextEnabled
+                    ? AppColors.emerald.withValues(alpha: 0.12)
+                    : AppColors.surfaceVariant,
+                child: Icon(
+                  Icons.storage_rounded,
+                  color: _isVaultContextEnabled ? AppColors.emerald : AppColors.textMuted,
+                ),
+              ),
+              title: const Text(
+                'Personal Vault Grounding (RAG)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Allow AI to search through your imported documents, class notes, and textbook PDFs.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              value: _isVaultContextEnabled,
+              onChanged: _isAiEnabled ? _saveVaultContext : null,
+            ),
+
+            const Divider(color: AppColors.cardBorder),
+
+            // Citation Footnotes Switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: CircleAvatar(
+                backgroundColor: _citationFootnotes
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : AppColors.surfaceVariant,
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  color: _citationFootnotes ? AppColors.primaryLight : AppColors.textMuted,
+                ),
+              ),
+              title: const Text(
+                'Mandatory Citation Footnotes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Strictly cite source filenames and page numbers [Doc: <Title>, Page: <N>] in generated answers.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              value: _citationFootnotes,
+              onChanged: _isAiEnabled ? _saveCitationFootnotes : null,
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(color: AppColors.cardBorder),
+            const SizedBox(height: 8),
+
+            const Text(
+              'Retrieval Context Window Budget',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment<String>(
+                  value: 'lite',
+                  label: Text('Lite (300 tok)', style: TextStyle(fontSize: 11.5)),
+                ),
+                ButtonSegment<String>(
+                  value: 'standard',
+                  label: Text('Standard (600 tok)', style: TextStyle(fontSize: 11.5)),
+                ),
+                ButtonSegment<String>(
+                  value: 'deep',
+                  label: Text('Deep (1200 tok)', style: TextStyle(fontSize: 11.5)),
+                ),
+              ],
+              selected: {_tokenBudget},
+              onSelectionChanged: (set) {
+                if (set.isNotEmpty) _saveTokenBudget(set.first);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Device Optimization and Performance Card.
+  Widget _buildPerformanceAndMobileCard(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.cardBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Stream Responses Switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: CircleAvatar(
+                backgroundColor: _streamResponses
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : AppColors.surfaceVariant,
+                child: Icon(
+                  Icons.stream_rounded,
+                  color: _streamResponses ? AppColors.primaryLight : AppColors.textMuted,
+                ),
+              ),
+              title: const Text(
+                'Real-Time Token Streaming',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Render thoughts and sentences word-by-word as generated by Gemini and Claude.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              value: _streamResponses,
+              onChanged: _saveStreamResponses,
+            ),
+
+            const Divider(color: AppColors.cardBorder),
+
+            // Mobile Battery & Memory Saver Switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: CircleAvatar(
+                backgroundColor: _batterySaver
+                    ? AppColors.amber.withValues(alpha: 0.12)
+                    : AppColors.surfaceVariant,
+                child: Icon(
+                  Icons.battery_saver_rounded,
+                  color: _batterySaver ? AppColors.amber : AppColors.textMuted,
+                ),
+              ),
+              title: const Text(
+                'Mobile Battery & Memory Saver',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Throttles background vectorization and lowers UI frame rates to prevent battery drain on budget devices.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              value: _batterySaver,
+              onChanged: _saveBatterySaver,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -47,10 +47,12 @@ class ClaudeLlmService implements LlmService {
 
     final messages = await _buildClaudeMessages(request);
 
+    final activeTemp = request.temperature ?? await AiConfig.getTemperature();
+
     final payload = {
       'model': modelName,
       'max_tokens': request.maxTokens ?? AiConfig.defaultMaxTokens,
-      'temperature': request.temperature ?? AiConfig.defaultTemperature,
+      'temperature': activeTemp,
       'system': systemPrompt,
       'messages': messages,
       'stream': true,
@@ -161,10 +163,12 @@ class ClaudeLlmService implements LlmService {
 
     final messages = await _buildClaudeMessages(request);
 
+    final activeTemp = request.temperature ?? await AiConfig.getTemperature();
+
     final payload = {
       'model': modelName,
       'max_tokens': request.maxTokens ?? AiConfig.defaultMaxTokens,
-      'temperature': request.temperature ?? AiConfig.defaultTemperature,
+      'temperature': activeTemp,
       'system': systemPrompt,
       'messages': messages,
       'stream': false,

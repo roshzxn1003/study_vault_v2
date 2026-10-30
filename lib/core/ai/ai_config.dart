@@ -89,7 +89,7 @@ class AiConfig {
   // Generation Defaults
   static const Duration timeout = Duration(seconds: 30);
   static const int maxRetries = 3;
-  static const double defaultTemperature = 0.7;
+  static const double defaultTemperature = 0.4;
   static const int defaultMaxTokens = 2048;
   static const int defaultTopK = 40;
   static const int contextWindowTokens = 3000;
@@ -102,6 +102,16 @@ class AiConfig {
   static const String _prefVaultContext = 'ai_vault_context_enabled';
   static const String _prefResponseStyle = 'ai_response_style';
   static const String _prefAiConsent = 'ai_consent_granted';
+
+  // Extended Research & Academic Rigor Keys
+  static const String _prefResearchDepth = 'ai_research_depth'; // 'summary', 'balanced', 'deep'
+  static const String _prefTemperature = 'ai_temperature'; // double: 0.0 - 1.0
+  static const String _prefAcademicLevel = 'ai_academic_level'; // 'high_school', 'undergraduate', 'postgraduate', 'expert'
+  static const String _prefCitationFootnotes = 'ai_citation_footnotes'; // bool
+  static const String _prefSocraticMode = 'ai_socratic_mode'; // bool
+  static const String _prefTokenBudget = 'ai_token_budget'; // 'lite', 'standard', 'deep'
+  static const String _prefBatterySaver = 'ai_battery_saver'; // bool
+  static const String _prefStreamResponses = 'ai_stream_responses'; // bool
 
   // Environment fallback via --dart-define=GEMINI_API_KEY=... / CLAUDE_API_KEY=...
   static const String envApiKey = String.fromEnvironment(
@@ -253,6 +263,181 @@ class AiConfig {
   static Future<void> setUserConsented(bool consented) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefAiConsent, consented);
+  }
+
+  /// Gets the research rigor depth ('summary', 'balanced', 'deep').
+  static Future<String> getResearchDepth() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefResearchDepth) ?? 'balanced';
+    } catch (e) {
+      debugPrint('AiConfig: Error getting research depth: $e');
+      return 'balanced';
+    }
+  }
+
+  /// Sets the research rigor depth.
+  static Future<void> setResearchDepth(String depth) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefResearchDepth, depth);
+  }
+
+  /// Gets the reasoning temperature (0.0 to 1.0).
+  static Future<double> getTemperature() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getDouble(_prefTemperature) ?? defaultTemperature;
+    } catch (e) {
+      debugPrint('AiConfig: Error getting temperature: $e');
+      return defaultTemperature;
+    }
+  }
+
+  /// Sets the reasoning temperature.
+  static Future<void> setTemperature(double temp) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_prefTemperature, temp.clamp(0.0, 1.0));
+  }
+
+  /// Gets the target academic audience level ('high_school', 'undergraduate', 'postgraduate', 'expert').
+  static Future<String> getAcademicLevel() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefAcademicLevel) ?? 'undergraduate';
+    } catch (e) {
+      debugPrint('AiConfig: Error getting academic level: $e');
+      return 'undergraduate';
+    }
+  }
+
+  /// Sets the target academic audience level.
+  static Future<void> setAcademicLevel(String level) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefAcademicLevel, level);
+  }
+
+  /// Checks whether citation footnotes & source citations are enforced in responses.
+  static Future<bool> isCitationFootnotesEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefCitationFootnotes) ?? true;
+    } catch (e) {
+      debugPrint('AiConfig: Error checking citation footnotes: $e');
+      return true;
+    }
+  }
+
+  /// Sets whether citation footnotes are enabled.
+  static Future<void> setCitationFootnotesEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefCitationFootnotes, enabled);
+  }
+
+  /// Checks if Socratic pedagogy mode is enabled (guiding with hints vs direct answers).
+  static Future<bool> isSocraticModeEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefSocraticMode) ?? true;
+    } catch (e) {
+      debugPrint('AiConfig: Error checking socratic mode: $e');
+      return true;
+    }
+  }
+
+  /// Sets Socratic pedagogy mode.
+  static Future<void> setSocraticModeEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefSocraticMode, enabled);
+  }
+
+  /// Gets the token context budget ('lite', 'standard', 'deep').
+  static Future<String> getTokenBudget() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefTokenBudget) ?? 'standard';
+    } catch (e) {
+      debugPrint('AiConfig: Error getting token budget: $e');
+      return 'standard';
+    }
+  }
+
+  /// Sets the token context budget.
+  static Future<void> setTokenBudget(String budget) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefTokenBudget, budget);
+  }
+
+  /// Checks if mobile battery & data saver is enabled.
+  static Future<bool> isBatterySaverEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefBatterySaver) ?? false;
+    } catch (e) {
+      debugPrint('AiConfig: Error checking battery saver: $e');
+      return false;
+    }
+  }
+
+  /// Sets mobile battery & data saver.
+  static Future<void> setBatterySaverEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefBatterySaver, enabled);
+  }
+
+  /// Checks if real-time token streaming is enabled.
+  static Future<bool> isStreamResponsesEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_prefStreamResponses) ?? true;
+    } catch (e) {
+      debugPrint('AiConfig: Error checking stream responses: $e');
+      return true;
+    }
+  }
+
+  /// Sets real-time token streaming.
+  static Future<void> setStreamResponsesEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefStreamResponses, enabled);
+  }
+
+  /// Builds a fully grounded academic system prompt customized with active rigor,
+  /// target academic persona, and citation directives.
+  static Future<String> getAcademicSystemPrompt({
+    bool isSocratic = false,
+    bool isGrounded = false,
+  }) async {
+    final depth = await getResearchDepth();
+    final level = await getAcademicLevel();
+    final citations = await isCitationFootnotesEnabled();
+    final socratic = isSocratic || (await isSocraticModeEnabled());
+
+    final levelLabel = switch (level) {
+      'high_school' => 'High School & Introductory Exam Preparation',
+      'postgraduate' => 'Postgraduate & Master\'s Level Depth',
+      'expert' => 'Doctoral & Professional Research Rigor',
+      _ => 'Undergraduate University Level',
+    };
+
+    final depthDirective = switch (depth) {
+      'summary' => 'FORMATTING DIRECTIVE: Provide concise, high-impact bulleted summaries with key formulas and core definitions. Keep output direct and succinct.',
+      'deep' => 'FORMATTING DIRECTIVE: Provide an exhaustive, scholarly breakdown. Include formal proofs/derivations where applicable, theoretical nuances, architectural trade-offs, and critical counterarguments.',
+      _ => 'FORMATTING DIRECTIVE: Provide a balanced academic explanation. Blend intuitive mental models with formal definitions, structured tables, and key takeaways.',
+    };
+
+    final citationDirective = citations
+        ? 'CITATION DIRECTIVE: When citing notes or documents, include explicit citations in bracket format [Doc: <Title>, Page: <N>]. Never fabricate citations.'
+        : '';
+
+    final baseInstruction = socratic ? socraticTutorInstruction : academicSystemInstruction;
+
+    return '''
+$baseInstruction
+
+TARGET AUDIENCE & ACADEMIC PERSONA: $levelLabel
+$depthDirective
+$citationDirective
+'''.trim();
   }
 
   /// Validates a candidate Gemini API key by making a lightweight test call.
