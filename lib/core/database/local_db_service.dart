@@ -36,7 +36,7 @@ class LocalDbService {
     String path = _customPath ?? join(await getDatabasesPath(), 'study_vault_local.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: _onOpen,
@@ -255,6 +255,10 @@ class LocalDbService {
 
     if (oldVersion < 5) {
       await _createPhase11Tables(db);
+    }
+
+    if (oldVersion < 6) {
+      await _createClassroomTables(db);
     }
   }
 
@@ -478,6 +482,263 @@ class LocalDbService {
         created_at TEXT NOT NULL
       )
     ''');
+  }
+
+  Future<void> _createClassroomTables(Database db) async {
+    // 1. Classrooms
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classrooms (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        section TEXT,
+        subject TEXT,
+        room TEXT,
+        code TEXT NOT NULL UNIQUE,
+        description TEXT,
+        banner_theme TEXT DEFAULT 'indigo',
+        creator_id TEXT NOT NULL,
+        creator_name TEXT NOT NULL,
+        creator_avatar TEXT,
+        academic_subject_id TEXT,
+        student_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_classrooms_code ON classrooms(code)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_classrooms_creator ON classrooms(creator_id)');
+
+    // 2. Classroom Topics (Syllabus modules)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classroom_topics (
+        id TEXT PRIMARY KEY,
+        classroom_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        order_index INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_classroom_topics_class ON classroom_topics(classroom_id)');
+
+    // 3. Classroom Items (Assignments, Materials, Quizzes, Questions)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classroom_items (
+        id TEXT PRIMARY KEY,
+        classroom_id TEXT NOT NULL,
+        topic_id TEXT,
+        type TEXT NOT NULL DEFAULT 'assignment',
+        title TEXT NOT NULL,
+        description TEXT,
+        due_date TEXT,
+        max_points INTEGER DEFAULT 100,
+        rubric_json TEXT,
+        attachment_ids TEXT,
+        creator_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_classroom_items_class ON classroom_items(classroom_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_classroom_items_topic ON classroom_items(topic_id)');
+
+    // 4. Classroom Submissions (Turn-in, AI review, teacher grade)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classroom_submissions (
+        id TEXT PRIMARY KEY,
+        classroom_id TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        student_id TEXT NOT NULL,
+        student_name TEXT NOT NULL,
+        student_email TEXT,
+        status TEXT NOT NULL DEFAULT 'assigned',
+        submitted_at TEXT,
+        content TEXT,
+        attached_material_ids TEXT,
+        grade REAL,
+        teacher_feedback TEXT,
+        ai_suggested_score REAL,
+        ai_feedback_draft TEXT,
+        rubric_scores_json TEXT,
+        graded_at TEXT,
+        UNIQUE(classroom_id, item_id, student_id)
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_submissions_item ON classroom_submissions(item_id)');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_submissions_student ON classroom_submissions(student_id)');
+
+    // 5. Classroom Stream Announcements
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classroom_announcements (
+        id TEXT PRIMARY KEY,
+        classroom_id TEXT NOT NULL,
+        author_id TEXT NOT NULL,
+        author_name TEXT NOT NULL,
+        author_role TEXT DEFAULT 'teacher',
+        content TEXT NOT NULL,
+        is_pinned INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_announcements_class ON classroom_announcements(classroom_id)');
+
+    // 6. Classroom Members (Roster)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS classroom_members (
+        id TEXT PRIMARY KEY,
+        classroom_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'student',
+        name TEXT NOT NULL,
+        email TEXT,
+        joined_at TEXT NOT NULL,
+        UNIQUE(classroom_id, user_id)
+      )
+    ''');
+    await _safeExecute(db, 'CREATE INDEX IF NOT EXISTS idx_members_class_user ON classroom_members(classroom_id, user_id)');
+
+    // Seed realistic sample classrooms if empty
+    await _seedClassroomsIfEmpty(db);
+  }
+
+  Future<void> _seedClassroomsIfEmpty(Database db) async {
+    try {
+      final existing = await db.query('classrooms', limit: 1);
+      if (existing.isNotEmpty) return;
+
+      final now = DateTime.now();
+      final nowStr = now.toIso8601String();
+      final dueDate1 = now.add(const Duration(days: 3)).toIso8601String();
+
+      // Class 1: Distributed Systems & Cloud Computing
+      await db.insert('classrooms', {
+        'id': 'class-ds-401',
+        'name': 'Distributed Systems & Cloud Computing',
+        'section': 'CS-401 • Fall 2026',
+        'subject': 'Computer Science',
+        'room': 'Hall 3B',
+        'code': 'SV-DIST',
+        'description': 'Advanced course covering consensus algorithms (Paxos, Raft), replication, distributed transactions, and cloud-native architecture.',
+        'banner_theme': 'indigo',
+        'creator_id': 'prof-sarah-lin',
+        'creator_name': 'Dr. Sarah Lin (Prof)',
+        'creator_avatar': null,
+        'academic_subject_id': null,
+        'student_count': 42,
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Class 2: Machine Learning Foundations
+      await db.insert('classrooms', {
+        'id': 'class-ml-502',
+        'name': 'Machine Learning Foundations',
+        'section': 'CS-502 • Morning Batch',
+        'subject': 'Artificial Intelligence',
+        'room': 'Lab 102',
+        'code': 'SV-ML01',
+        'description': 'Theoretical foundations of statistical machine learning, loss optimization, neural networks, and generative models.',
+        'banner_theme': 'emerald',
+        'creator_id': 'prof-alan-rivera',
+        'creator_name': 'Prof. Alan Rivera',
+        'creator_avatar': null,
+        'academic_subject_id': null,
+        'student_count': 38,
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Topics for Class 1
+      await db.insert('classroom_topics', {
+        'id': 'topic-ds-1',
+        'classroom_id': 'class-ds-401',
+        'title': 'Module 1: Consensus & Leader Election',
+        'order_index': 0,
+        'created_at': nowStr,
+      });
+      await db.insert('classroom_topics', {
+        'id': 'topic-ds-2',
+        'classroom_id': 'class-ds-401',
+        'title': 'Module 2: Cloud Storage & Sharding',
+        'order_index': 1,
+        'created_at': nowStr,
+      });
+
+      // Items for Class 1
+      await db.insert('classroom_items', {
+        'id': 'item-ds-assign-1',
+        'classroom_id': 'class-ds-401',
+        'topic_id': 'topic-ds-1',
+        'type': 'assignment',
+        'title': 'Assignment 1: Raft Consensus Algorithm Implementation',
+        'description': 'Implement the state machine replication and leader election protocol based on the Raft paper. Ensure term transitions, heartbeat broadcasts, and log consistency checks are correctly implemented.',
+        'due_date': dueDate1,
+        'max_points': 100,
+        'rubric_json': '[{"title":"Leader Election","description":"Correct randomized timeout and election term increment","max_points":30},{"title":"Log Replication","description":"AppendEntries RPC handling and commitIndex update","max_points":40},{"title":"Safety & Split-Brain Prevention","description":"Majority quorum verification and persistence","max_points":30}]',
+        'attachment_ids': '[]',
+        'creator_id': 'prof-sarah-lin',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('classroom_items', {
+        'id': 'item-ds-mat-1',
+        'classroom_id': 'class-ds-401',
+        'topic_id': 'topic-ds-1',
+        'type': 'material',
+        'title': 'Reference Reading: In Search of an Understandable Consensus Algorithm (Ongaro & Ousterhout)',
+        'description': 'The original Stanford Raft consensus paper. Please read Sections 1 through 5 before attempting Assignment 1.',
+        'due_date': null,
+        'max_points': 0,
+        'rubric_json': '[]',
+        'attachment_ids': '[]',
+        'creator_id': 'prof-sarah-lin',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Announcement for Class 1
+      await db.insert('classroom_announcements', {
+        'id': 'ann-ds-1',
+        'classroom_id': 'class-ds-401',
+        'author_id': 'prof-sarah-lin',
+        'author_name': 'Dr. Sarah Lin (Prof)',
+        'author_role': 'teacher',
+        'content': 'Welcome everyone to Distributed Systems & Cloud Computing! Assignment 1 on the Raft Consensus Algorithm is now live in the Classwork tab. Feel free to use the AI Socratic Tutor if you need hints on log replication.',
+        'is_pinned': 1,
+        'created_at': nowStr,
+      });
+
+      // Member rosters
+      await db.insert('classroom_members', {
+        'id': 'mem-ds-1',
+        'classroom_id': 'class-ds-401',
+        'user_id': 'prof-sarah-lin',
+        'role': 'teacher',
+        'name': 'Dr. Sarah Lin',
+        'email': 'sarah.lin@university.edu',
+        'joined_at': nowStr,
+      });
+      await db.insert('classroom_members', {
+        'id': 'mem-ds-2',
+        'classroom_id': 'class-ds-401',
+        'user_id': 'student-alex',
+        'role': 'student',
+        'name': 'Alex Johnson',
+        'email': 'alex.j@student.edu',
+        'joined_at': nowStr,
+      });
+      await db.insert('classroom_members', {
+        'id': 'mem-ds-3',
+        'classroom_id': 'class-ds-401',
+        'user_id': 'student-elena',
+        'role': 'student',
+        'name': 'Elena Rostova',
+        'email': 'elena.r@student.edu',
+        'joined_at': nowStr,
+      });
+    } catch (e) {
+      debugPrint('Classroom seeding note: $e');
+    }
   }
 
   Future<void> _onOpen(Database db) async {
@@ -768,6 +1029,9 @@ class LocalDbService {
 
     // Ensure Phase 11 AI & RAG tables exist
     await _createPhase11Tables(db);
+
+    // Ensure Google Classroom tables exist and are seeded
+    await _createClassroomTables(db);
 
     // Clean up any legacy preseeded items if they exist
     try {
@@ -1231,6 +1495,193 @@ class LocalDbService {
       await txn.delete('ai_messages');
       await txn.delete('ai_study_plans');
       await txn.delete('ai_quizzes');
+      await txn.delete('classrooms');
+      await txn.delete('classroom_topics');
+      await txn.delete('classroom_items');
+      await txn.delete('classroom_submissions');
+      await txn.delete('classroom_announcements');
+      await txn.delete('classroom_members');
     });
+  }
+
+  // ==========================================
+  // GOOGLE CLASSROOM OPERATIONS
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getClassrooms({String? userId}) async {
+    final db = await database;
+    if (userId != null && userId.isNotEmpty) {
+      // Find classes created by user OR where user is a member
+      return await db.rawQuery('''
+        SELECT DISTINCT c.* FROM classrooms c
+        LEFT JOIN classroom_members m ON c.id = m.classroom_id
+        WHERE c.creator_id = ? OR m.user_id = ?
+        ORDER BY c.created_at DESC
+      ''', [userId, userId]);
+    }
+    return await db.query('classrooms', orderBy: 'created_at DESC');
+  }
+
+  Future<Map<String, dynamic>?> getClassroomById(String id) async {
+    final db = await database;
+    final res = await db.query('classrooms', where: 'id = ?', whereArgs: [id], limit: 1);
+    return res.isNotEmpty ? res.first : null;
+  }
+
+  Future<Map<String, dynamic>?> getClassroomByCode(String code) async {
+    final db = await database;
+    final res = await db.query(
+      'classrooms',
+      where: 'UPPER(code) = ?',
+      whereArgs: [code.trim().toUpperCase()],
+      limit: 1,
+    );
+    return res.isNotEmpty ? res.first : null;
+  }
+
+  Future<void> insertClassroom(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classrooms', data, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateClassroom(String id, Map<String, dynamic> data) async {
+    final db = await database;
+    await db.update('classrooms', data, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteClassroom(String id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('classrooms', where: 'id = ?', whereArgs: [id]);
+      await txn.delete('classroom_topics', where: 'classroom_id = ?', whereArgs: [id]);
+      await txn.delete('classroom_items', where: 'classroom_id = ?', whereArgs: [id]);
+      await txn.delete('classroom_submissions', where: 'classroom_id = ?', whereArgs: [id]);
+      await txn.delete('classroom_announcements', where: 'classroom_id = ?', whereArgs: [id]);
+      await txn.delete('classroom_members', where: 'classroom_id = ?', whereArgs: [id]);
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomMembers(String classroomId) async {
+    final db = await database;
+    return await db.query(
+      'classroom_members',
+      where: 'classroom_id = ?',
+      whereArgs: [classroomId],
+      orderBy: 'role ASC, name ASC',
+    );
+  }
+
+  Future<void> insertClassroomMember(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classroom_members', data, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomTopics(String classroomId) async {
+    final db = await database;
+    return await db.query(
+      'classroom_topics',
+      where: 'classroom_id = ?',
+      whereArgs: [classroomId],
+      orderBy: 'order_index ASC',
+    );
+  }
+
+  Future<void> insertClassroomTopic(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classroom_topics', data, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomItems(
+    String classroomId, {
+    String? topicId,
+    String? type,
+  }) async {
+    final db = await database;
+    String where = 'classroom_id = ?';
+    List<dynamic> whereArgs = [classroomId];
+
+    if (topicId != null) {
+      where += ' AND topic_id = ?';
+      whereArgs.add(topicId);
+    }
+    if (type != null) {
+      where += ' AND type = ?';
+      whereArgs.add(type);
+    }
+
+    return await db.query(
+      'classroom_items',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<Map<String, dynamic>?> getClassroomItemById(String id) async {
+    final db = await database;
+    final res = await db.query('classroom_items', where: 'id = ?', whereArgs: [id], limit: 1);
+    return res.isNotEmpty ? res.first : null;
+  }
+
+  Future<void> insertClassroomItem(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classroom_items', data, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> updateClassroomItem(String id, Map<String, dynamic> data) async {
+    final db = await database;
+    await db.update('classroom_items', data, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomSubmissions(
+    String classroomId, {
+    String? itemId,
+    String? studentId,
+  }) async {
+    final db = await database;
+    String where = 'classroom_id = ?';
+    List<dynamic> whereArgs = [classroomId];
+
+    if (itemId != null) {
+      where += ' AND item_id = ?';
+      whereArgs.add(itemId);
+    }
+    if (studentId != null) {
+      where += ' AND student_id = ?';
+      whereArgs.add(studentId);
+    }
+
+    return await db.query(
+      'classroom_submissions',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: 'submitted_at DESC',
+    );
+  }
+
+  Future<Map<String, dynamic>?> getSubmissionById(String id) async {
+    final db = await database;
+    final res = await db.query('classroom_submissions', where: 'id = ?', whereArgs: [id], limit: 1);
+    return res.isNotEmpty ? res.first : null;
+  }
+
+  Future<void> insertOrUpdateSubmission(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classroom_submissions', data, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomAnnouncements(String classroomId) async {
+    final db = await database;
+    return await db.query(
+      'classroom_announcements',
+      where: 'classroom_id = ?',
+      whereArgs: [classroomId],
+      orderBy: 'is_pinned DESC, created_at DESC',
+    );
+  }
+
+  Future<void> insertClassroomAnnouncement(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert('classroom_announcements', data, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 }

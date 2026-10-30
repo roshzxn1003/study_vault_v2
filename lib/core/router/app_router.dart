@@ -46,6 +46,9 @@ import '../../features/onboarding/presentation/providers/onboarding_provider.dar
 import '../../features/privacy/presentation/screens/privacy_center_screen.dart';
 import '../../features/sync/presentation/screens/storage_sync_screen.dart';
 import '../../features/profile/storage_management_screen.dart';
+import '../../features/classroom/presentation/screens/classroom_list_screen.dart';
+import '../../features/classroom/presentation/screens/classroom_detail_screen.dart';
+import '../../features/classroom/presentation/screens/assignment_detail_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -192,6 +195,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (context, state) => const AccountSettingsScreen()),
       GoRoute(path: '/settings/storage-sync', builder: (context, state) => const StorageSyncScreen()),
       GoRoute(path: '/profile/storage', builder: (context, state) => const StorageManagementScreen()),
+      GoRoute(path: '/classrooms', builder: (context, state) => const ClassroomListScreen()),
+      GoRoute(
+        path: '/classroom/:id',
+        builder: (context, state) => ClassroomDetailScreen(
+          classroomId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/classroom/:id/assignment/:itemId',
+        builder: (context, state) => AssignmentDetailScreen(
+          classroomId: state.pathParameters['id']!,
+          itemId: state.pathParameters['itemId']!,
+        ),
+      ),
       GoRoute(path: '/progress', builder: (context, state) => const ProgressScreen()),
       GoRoute(path: '/gamification', redirect: (_, _) => '/progress'),
       GoRoute(path: '/academic/history', builder: (context, state) => const AcademicHistoryScreen()),

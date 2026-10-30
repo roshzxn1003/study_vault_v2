@@ -16,6 +16,7 @@ import '../widgets/continue_learning_card.dart';
 import '../widgets/ai_assistant_card.dart';
 import '../widgets/daily_due_cards_section.dart';
 import '../widgets/upcoming_academic_section.dart';
+import '../widgets/dashboard_classrooms_card.dart';
 import '../../../import/presentation/widgets/import_source_dialog.dart';
 
 /// Main Study Vault Dashboard.
@@ -127,6 +128,11 @@ class DashboardScreen extends ConsumerWidget {
                       isPersonalLearning: state.isPersonalLearning,
                       onAddSubject: () => _handleAddSubject(context, ref, state.isPersonalLearning),
                     ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 4.5 Classrooms Suite
+                    const DashboardClassroomsCard(),
 
                     const SizedBox(height: AppSpacing.lg),
 

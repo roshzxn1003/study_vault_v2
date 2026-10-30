@@ -130,6 +130,11 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.school_outlined, color: AppColors.primary),
+            tooltip: 'Classrooms',
+            onPressed: () => context.push('/classrooms'),
+          ),
+          IconButton(
             icon: const Icon(Icons.person_search_rounded, color: AppColors.textPrimary),
             tooltip: 'Search Students',
             onPressed: () => StudentSearchSheet.show(context),

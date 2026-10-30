@@ -101,6 +101,14 @@ class AppTypography {
         color: AppColors.destructive,
       );
 
+  // Convenience aliases for standard typography scales
+  static TextStyle get titleLarge => headline;
+  static TextStyle get titleMedium => title;
+  static TextStyle get titleSmall => subtitle;
+  static TextStyle get bodyLarge => body;
+  static TextStyle get bodyMedium => body;
+  static TextStyle get labelSmall => caption;
+
   // Helper extension for quickly coloring tokens
   static TextStyle withColor(TextStyle style, Color color) =>
       style.copyWith(color: color);
