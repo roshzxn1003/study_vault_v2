@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:study_vault/core/services/storage_manager_service.dart';
 import 'package:study_vault/features/vault/domain/models/models.dart';
 
 /// Service responsible for local filesystem storage, hashing, and type detection.
@@ -12,17 +12,7 @@ class ImportStorageService {
 
   /// Gets the directory where study materials are permanently preserved.
   Future<Directory> getMaterialsDirectory() async {
-    Directory baseDir;
-    try {
-      baseDir = await getApplicationDocumentsDirectory();
-    } catch (_) {
-      baseDir = Directory(p.join(Directory.systemTemp.path, 'study_vault_test_docs'));
-    }
-    final materialsDir = Directory(p.join(baseDir.path, 'study_materials'));
-    if (!await materialsDir.exists()) {
-      await materialsDir.create(recursive: true);
-    }
-    return materialsDir;
+    return StorageManagerService.instance.getDocumentsDirectory();
   }
 
   /// Sanitizes an incoming filename against path traversal and forbidden characters.

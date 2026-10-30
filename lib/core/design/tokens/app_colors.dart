@@ -13,16 +13,17 @@ class AppColors {
   static const Color surfaceElevated = Color(0xFF27272A);
   static const Color surfaceVariant = Color(0xFF2E2E33);
 
-  // Dark Theme Borders
+  // Dark Theme Borders (Crisp & High-Contrast)
   static const Color border = Color(0xFF27272A);
   static const Color borderSubtle = Color(0xFF1E1E22);
   static const Color borderHover = Color(0xFF3F3F46);
   static const Color borderFocus = Color(0xFF6366F1);
+  static const Color cardOutline = Color(0xFF32323A);
 
   // Dark Theme Typography Colors
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFFA1A1AA);
-  static const Color textMuted = Color(0xFF71717A);
+  static const Color textMuted = Color(0xFF8E8EA0);
 
   // Restrained Primary Accent (Indigo)
   static const Color primary = Color(0xFF6366F1);
@@ -47,13 +48,13 @@ class AppColors {
   static const Color info = Color(0xFF3B82F6);
   static const Color infoSubtle = Color(0x1F3B82F6);
 
-  // Restrained Academic File Type Indicators
-  static const Color filePdf = Color(0xFFEF4444);
-  static const Color fileNote = Color(0xFF6366F1);
-  static const Color fileFolder = Color(0xFFF59E0B);
-  static const Color fileImage = Color(0xFF06B6D4);
-  static const Color fileAudio = Color(0xFF8B5CF6);
-  static const Color fileGeneric = Color(0xFF71717A);
+  // Vibrant Academic File Type Indicators (High-Vibrancy for Instant Recognition)
+  static const Color filePdf = Color(0xFFF87171);
+  static const Color fileNote = Color(0xFF818CF8);
+  static const Color fileFolder = Color(0xFFFBBF24);
+  static const Color fileImage = Color(0xFF22D3EE);
+  static const Color fileAudio = Color(0xFFA78BFA);
+  static const Color fileGeneric = Color(0xFFA1A1AA);
 
   // Light Theme Preparation
   static const Color lightBackground = Color(0xFFF8FAFC);

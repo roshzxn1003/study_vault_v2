@@ -172,27 +172,27 @@ class DashboardAcademicHeader extends ConsumerWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      // Subtle Cloud Sync Status Pill
+                      // Clear High-Contrast Cloud Sync Status Pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: syncColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          color: syncColor.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: syncColor.withValues(alpha: 0.25),
-                            width: 0.8,
+                            color: syncColor.withValues(alpha: 0.4),
+                            width: 1.0,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(syncIcon, size: 11, color: syncColor),
-                            const SizedBox(width: 3),
+                            Icon(syncIcon, size: 13, color: syncColor),
+                            const SizedBox(width: 4),
                             Text(
                               syncLabel,
                               style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                                 color: syncColor,
                               ),
                             ),

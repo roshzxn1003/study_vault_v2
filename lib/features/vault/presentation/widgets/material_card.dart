@@ -74,7 +74,7 @@ class MaterialCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Row: Type badge + Selection Checkbox / Favorite + Context menu
+            // Top Row: Type badge + File size + Privacy badge + Actions
             Row(
               children: [
                 Expanded(
@@ -84,12 +84,13 @@ class MaterialCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Type Icon Badge
+                        // Type Icon Badge (high contrast)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: type.color.withValues(alpha: 0.12),
+                            color: type.color.withValues(alpha: 0.15),
                             borderRadius: AppRadius.chip,
+                            border: Border.all(color: type.color.withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -100,7 +101,7 @@ class MaterialCard extends StatelessWidget {
                                 type.label,
                                 style: AppTypography.caption.copyWith(
                                   color: type.color,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: 11,
                                 ),
                               ),
@@ -111,16 +112,21 @@ class MaterialCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             material.formattedFileSize,
-                            style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                         const SizedBox(width: 4),
-                        // Subtle Privacy Indicator
+                        // Subtle Privacy Indicator (always present: Private vs Shared)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceSecondary,
                             borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -130,15 +136,19 @@ class MaterialCard extends StatelessWidget {
                                     ? Icons.group_outlined
                                     : Icons.lock_outline_rounded,
                                 size: 10,
-                                color: AppColors.textMuted,
+                                color: material.source?.startsWith('Shared') == true
+                                    ? AppColors.emerald
+                                    : AppColors.textSecondary,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 material.source?.startsWith('Shared') == true ? 'Shared' : 'Private',
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textMuted,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: material.source?.startsWith('Shared') == true
+                                      ? AppColors.emerald
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -162,7 +172,7 @@ class MaterialCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       material.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                      color: material.isFavorite ? const Color(0xFFF59E0B) : AppColors.textMuted,
+                      color: material.isFavorite ? const Color(0xFFFBBF24) : AppColors.textMuted,
                       size: 20,
                     ),
                     onPressed: onToggleFavorite,
@@ -173,7 +183,7 @@ class MaterialCard extends StatelessWidget {
 
                   // Context Menu replaced with responsive Action Sheet
                   IconButton(
-                    icon: const Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textMuted),
+                    icon: const Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textSecondary),
                     tooltip: 'Material actions',
                     visualDensity: VisualDensity.compact,
                     splashRadius: 18,

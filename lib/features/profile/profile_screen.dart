@@ -335,6 +335,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const Divider(height: 1, color: AppColors.borderSubtle),
                     ListTile(
+                      leading: _buildTileIcon(Icons.folder_special_rounded, AppColors.fileNote),
+                      title: const Text('Storage & File Manager', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text('Inspect local documents, clean cache & free RAM'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => context.push('/profile/storage'),
+                    ),
+                    const Divider(height: 1, color: AppColors.borderSubtle),
+                    ListTile(
                       leading: _buildTileIcon(Icons.shield_outlined, AppColors.emerald),
                       title: const Text('Privacy & Sharing Preferences', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: const Text('Student search visibility, QR and invites'),

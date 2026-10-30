@@ -9,10 +9,12 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/config/supabase_config.dart';
 import 'core/services/monitoring_service.dart';
+import 'core/services/memory_manager_service.dart';
 import 'features/import/presentation/providers/import_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MemoryManagerService.instance.init();
   CrashMonitoringService.instance.init();
 
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {

@@ -394,14 +394,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                           label: Text(tab.label),
                           selected: isSelected,
                           onSelected: (_) => notifier.setTab(tab),
-                          selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                          selectedColor: AppColors.primary,
                           backgroundColor: AppColors.surface,
                           side: isSelected
                               ? const BorderSide(color: AppColors.primaryLight, width: 1.5)
-                              : BorderSide(color: AppColors.border),
+                              : const BorderSide(color: AppColors.border, width: 1.2),
                           labelStyle: AppTypography.caption.copyWith(
-                            color: isSelected ? AppColors.primaryLight : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 12,
                           ),
                         ),
                       );

@@ -6,6 +6,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:study_vault/core/services/storage_manager_service.dart';
 import 'package:study_vault/core/theme/app_colors.dart';
 
 /// Service handling external Android system actions for study materials:
@@ -39,14 +40,9 @@ class FileActionService {
     }
 
     try {
-      Directory baseDir;
-      try {
-        baseDir = await getApplicationDocumentsDirectory();
-      } catch (_) {
-        baseDir = await getTemporaryDirectory();
-      }
+      final cacheDir = await StorageManagerService.instance.getCacheDirectory();
       final sanitized = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final cacheFile = File('${baseDir.path}/study_materials/$sanitized');
+      final cacheFile = File('${cacheDir.path}/$sanitized');
       if (cacheFile.existsSync() && cacheFile.lengthSync() > 0) {
         return cacheFile;
       }

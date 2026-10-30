@@ -208,12 +208,16 @@ class StreamingMessageWidget extends ConsumerWidget {
             vertical: 11,
           ),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2E2F38) : const Color(0xFFE9ECEF),
+            color: isDark ? const Color(0xFF312E81) : const Color(0xFFE0E7FF),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
               bottomLeft: Radius.circular(20),
               bottomRight: Radius.circular(6),
+            ),
+            border: Border.all(
+              color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE),
+              width: 1.0,
             ),
           ),
           child: Column(

@@ -28,6 +28,7 @@ class DashboardQuickActions extends ConsumerWidget {
           _ActionButton(
             icon: Icons.add_rounded,
             label: 'Add Material',
+            accentColor: AppColors.primary,
             onTap: () => AddMaterialSheet.show(context),
             isPrimary: true,
           ),
@@ -37,6 +38,7 @@ class DashboardQuickActions extends ConsumerWidget {
           _ActionButton(
             icon: Icons.create_new_folder_outlined,
             label: 'New Folder',
+            accentColor: AppColors.fileFolder,
             onTap: () async {
               final name = await CreateFolderDialog.show(context: context);
               if (name != null && name.trim().isNotEmpty) {
@@ -57,7 +59,8 @@ class DashboardQuickActions extends ConsumerWidget {
           // 3. Scan (Camera OCR)
           _ActionButton(
             icon: Icons.document_scanner_outlined,
-            label: 'Scan',
+            label: 'Scan Note',
+            accentColor: AppColors.emerald,
             onTap: () => context.push('/scan'),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -66,6 +69,7 @@ class DashboardQuickActions extends ConsumerWidget {
           _ActionButton(
             icon: Icons.edit_note_rounded,
             label: 'Create Note',
+            accentColor: AppColors.fileNote,
             onTap: () => context.push('/notes/create'),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -74,6 +78,7 @@ class DashboardQuickActions extends ConsumerWidget {
           _ActionButton(
             icon: Icons.auto_stories_outlined,
             label: isPersonalLearning ? 'Add Topic' : 'Add Subject',
+            accentColor: AppColors.fileImage,
             onTap: onAddSubject,
           ),
         ],
@@ -87,12 +92,14 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isPrimary;
+  final Color accentColor;
 
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.isPrimary = false,
+    this.accentColor = AppColors.primary,
   });
 
   @override
@@ -103,35 +110,53 @@ class _ActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.button,
         child: Container(
+          constraints: const BoxConstraints(minHeight: 42),
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+            horizontal: 14,
+            vertical: 9,
           ),
           decoration: BoxDecoration(
             color: isPrimary
-                ? AppColors.primary.withValues(alpha: 0.15)
+                ? AppColors.primary
                 : AppColors.surface,
             borderRadius: AppRadius.button,
             border: Border.all(
               color: isPrimary
-                  ? AppColors.primary.withValues(alpha: 0.4)
-                  : AppColors.cardBorder,
+                  ? AppColors.primaryLight
+                  : AppColors.border,
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isPrimary ? AppColors.primaryLight : AppColors.textSecondary,
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isPrimary
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : accentColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: isPrimary ? Colors.white : accentColor,
+                ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Text(
                 label,
                 style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isPrimary ? AppColors.primaryLight : AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: isPrimary ? Colors.white : AppColors.textPrimary,
                   fontSize: 13,
                 ),
               ),
