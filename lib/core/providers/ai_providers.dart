@@ -5,6 +5,7 @@ import 'package:study_vault/core/ai/retriever.dart';
 import 'package:study_vault/core/ai/semantic_search_service.dart';
 import 'package:study_vault/core/ai/rag_retriever.dart';
 import 'package:study_vault/core/ai/claude_llm_service.dart';
+import 'package:study_vault/core/ai/open_source_llm_service.dart';
 import 'package:study_vault/core/ai/unified_smart_llm_service.dart';
 import 'package:study_vault/core/ai/llm_service.dart';
 import 'package:study_vault/core/ai/ai_orchestrator.dart';
@@ -49,13 +50,20 @@ final claudeLlmServiceProvider = Provider<ClaudeLlmService>((ref) {
   return ClaudeLlmService();
 });
 
+/// Open-Source & Mobile LLM provider (Ollama local LAN node, Groq/OpenRouter, and On-Device Edge Synthesizer).
+final openSourceLlmServiceProvider = Provider<OpenSourceLlmService>((ref) {
+  return OpenSourceLlmService();
+});
+
 /// Central Unified Multi-Provider LLM service with Auto-Routing and Zero-Downtime Failover.
 final llmServiceProvider = Provider<LlmService>((ref) {
   final gemini = ref.watch(geminiLlmServiceProvider);
   final claude = ref.watch(claudeLlmServiceProvider);
+  final openSource = ref.watch(openSourceLlmServiceProvider);
   return UnifiedSmartLlmService(
     geminiService: gemini,
     claudeService: claude,
+    openSourceService: openSource,
   );
 });
 

@@ -3,31 +3,41 @@ import 'package:flutter/foundation.dart';
 import 'package:study_vault/core/ai/ai_config.dart';
 import 'package:study_vault/core/ai/ai_models.dart';
 import 'package:study_vault/core/ai/claude_llm_service.dart';
+import 'package:study_vault/core/ai/open_source_llm_service.dart';
 import 'package:study_vault/core/ai/llm_service.dart';
 
-enum LlmProvider { gemini, claude }
+enum LlmProvider { gemini, claude, openSource }
 
-/// Unified AI Engine that combines Google Gemini and Anthropic Claude.
+/// Unified AI Engine that combines Google Gemini, Anthropic Claude, and Open-Source / Local Ollama models.
 ///
 /// Features:
-/// 1. Manual Model Selection: Honors explicit user model choices (Gemini 1.5/2.0 Flash, Claude 3.7/3.5).
-/// 2. Smart Auto-Routing: Intelligently routes image/PDF tasks to Gemini and code/math/quiz tasks to Claude.
+/// 1. Manual Model Selection: Honors explicit user model choices (Gemini 3.5, Claude 3.7/3.5, Gemma 2, Llama 3.2, Qwen 2.5, DeepSeek-R1, Ollama Local).
+/// 2. Smart Auto-Routing: Intelligently routes image/PDF tasks to Gemini, code/math/quiz tasks to Claude, and local edge/offline tasks to Open-Source.
 /// 3. Zero-Downtime Failover: Automatically switches between providers if rate limits (429) or server errors (503/529) occur.
 class UnifiedSmartLlmService implements LlmService {
   final GeminiLlmService geminiService;
   final ClaudeLlmService claudeService;
+  final OpenSourceLlmService openSourceService;
 
   UnifiedSmartLlmService({
     required this.geminiService,
     required this.claudeService,
-  });
+    OpenSourceLlmService? openSourceService,
+  }) : openSourceService = openSourceService ?? OpenSourceLlmService();
 
   @override
   Future<bool> isAvailable() async {
     final hasGemini = await geminiService.isAvailable();
     final hasClaude = await claudeService.isAvailable();
-    return hasGemini || hasClaude;
+    final hasOpenSource = await openSourceService.isAvailable();
+    return hasGemini || hasClaude || hasOpenSource;
   }
+
+  LlmService _serviceFor(LlmProvider provider) => switch (provider) {
+        LlmProvider.claude => claudeService,
+        LlmProvider.openSource => openSourceService,
+        LlmProvider.gemini => geminiService,
+      };
 
   /// Selects the optimal provider and model identifier for a given request.
   Future<({LlmProvider provider, String model})> resolveEngine(AiRequest request) async {
@@ -35,7 +45,9 @@ class UnifiedSmartLlmService implements LlmService {
 
     // 1. Explicit model selection (Not 'auto')
     if (explicitModel != null && explicitModel.isNotEmpty && explicitModel != 'auto') {
-      if (AiConfig.isClaudeModel(explicitModel)) {
+      if (AiConfig.isOpenSourceModel(explicitModel)) {
+        return (provider: LlmProvider.openSource, model: explicitModel);
+      } else if (AiConfig.isClaudeModel(explicitModel)) {
         return (provider: LlmProvider.claude, model: explicitModel);
       } else {
         return (provider: LlmProvider.gemini, model: explicitModel);
@@ -53,8 +65,8 @@ class UnifiedSmartLlmService implements LlmService {
       return (provider: LlmProvider.gemini, model: AiConfig.primaryModel);
     }
     if (!hasGemini && !hasClaude) {
-      // Default fallback when running offline or awaiting setup
-      return (provider: LlmProvider.gemini, model: AiConfig.primaryModel);
+      // Offline fallback: Use open-source mobile edge engine
+      return (provider: LlmProvider.openSource, model: AiConfig.gemma2_2b);
     }
 
     // 3. Both providers available: apply intelligent task heuristics
@@ -96,9 +108,12 @@ class UnifiedSmartLlmService implements LlmService {
     final primaryProvider = resolved.provider;
     final primaryModel = resolved.model;
 
-    LlmService primaryService = primaryProvider == LlmProvider.claude ? claudeService : geminiService;
-    LlmService backupService = primaryProvider == LlmProvider.claude ? geminiService : claudeService;
-    String backupModel = primaryProvider == LlmProvider.claude ? AiConfig.primaryModel : AiConfig.claude35Sonnet;
+    final primaryService = _serviceFor(primaryProvider);
+    final backupCandidate = primaryProvider == LlmProvider.claude
+        ? (await geminiService.isAvailable() ? (geminiService, AiConfig.primaryModel) : (openSourceService, AiConfig.gemma2_2b))
+        : (await claudeService.isAvailable() ? (claudeService, AiConfig.claude35Sonnet) : (openSourceService, AiConfig.gemma2_2b));
+    final backupService = backupCandidate.$1;
+    final backupModel = backupCandidate.$2;
 
     final primaryReq = request.copyWith(modelOverride: primaryModel);
     bool receivedAnyChunk = false;
@@ -174,9 +189,12 @@ class UnifiedSmartLlmService implements LlmService {
     final primaryProvider = resolved.provider;
     final primaryModel = resolved.model;
 
-    LlmService primaryService = primaryProvider == LlmProvider.claude ? claudeService : geminiService;
-    LlmService backupService = primaryProvider == LlmProvider.claude ? geminiService : claudeService;
-    String backupModel = primaryProvider == LlmProvider.claude ? AiConfig.primaryModel : AiConfig.claude35Sonnet;
+    final primaryService = _serviceFor(primaryProvider);
+    final backupCandidate = primaryProvider == LlmProvider.claude
+        ? (await geminiService.isAvailable() ? (geminiService, AiConfig.primaryModel) : (openSourceService, AiConfig.gemma2_2b))
+        : (await claudeService.isAvailable() ? (claudeService, AiConfig.claude35Sonnet) : (openSourceService, AiConfig.gemma2_2b));
+    final backupService = backupCandidate.$1;
+    final backupModel = backupCandidate.$2;
 
     final primaryReq = request.copyWith(modelOverride: primaryModel);
 
@@ -229,12 +247,14 @@ class UnifiedSmartLlmService implements LlmService {
     List<String>? history,
     String? imagePath,
   }) async {
+    final selectedModel = await AiConfig.getSelectedModel();
     final resolved = await resolveEngine(AiRequest(
       mode: AiMode.documentQa,
+      modelOverride: selectedModel,
       userMessage: query,
       context: context,
     ));
-    final service = resolved.provider == LlmProvider.claude ? claudeService : geminiService;
+    final service = _serviceFor(resolved.provider);
     return service.generateAnswer(
       query: query,
       context: context,
@@ -245,16 +265,27 @@ class UnifiedSmartLlmService implements LlmService {
 
   @override
   Future<String> generateSummary({required String context}) async {
-    // Automatically favor Claude for deep structured summary if available, else Gemini
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.summary,
+      modelOverride: selectedModel,
+      userMessage: 'Generate summary',
+      context: context,
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateSummary(context: context);
   }
 
   @override
   Future<String> generateQuestions({required String context, int count = 3}) async {
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.quiz,
+      modelOverride: selectedModel,
+      userMessage: 'Generate questions',
+      context: context,
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateQuestions(context: context, count: count);
   }
 
@@ -264,9 +295,15 @@ class UnifiedSmartLlmService implements LlmService {
     String? context,
     int count = 5,
   }) async {
-    // Favor Claude for structured quiz JSON if available
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.quiz,
+      modelOverride: selectedModel,
+      userMessage: 'Generate quiz on $topic',
+      context: context,
+      outputFormat: AiOutputFormat.json,
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateQuizQuestions(topic: topic, context: context, count: count);
   }
 
@@ -276,8 +313,15 @@ class UnifiedSmartLlmService implements LlmService {
     String? context,
     int count = 5,
   }) async {
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.quiz,
+      modelOverride: selectedModel,
+      userMessage: 'Generate flashcards for $topic',
+      context: context,
+      outputFormat: AiOutputFormat.json,
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateFlashcardDeck(topic: topic, context: context, count: count);
   }
 
@@ -287,8 +331,13 @@ class UnifiedSmartLlmService implements LlmService {
     required String currentStep,
     required String userPrompt,
   }) async {
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.tutor,
+      modelOverride: selectedModel,
+      userMessage: userPrompt,
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateTutorStep(topic: topic, currentStep: currentStep, userPrompt: userPrompt);
   }
 
@@ -300,8 +349,13 @@ class UnifiedSmartLlmService implements LlmService {
     required String studyTime,
     required String difficulty,
   }) async {
-    final hasClaude = await claudeService.isAvailable();
-    final service = hasClaude ? claudeService : geminiService;
+    final selectedModel = await AiConfig.getSelectedModel();
+    final resolved = await resolveEngine(AiRequest(
+      mode: AiMode.quiz,
+      modelOverride: selectedModel,
+      userMessage: 'Exam milestones',
+    ));
+    final service = _serviceFor(resolved.provider);
     return service.generateExamMilestones(
       subject: subject,
       topics: topics,

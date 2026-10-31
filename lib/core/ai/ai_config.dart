@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
@@ -26,14 +28,22 @@ class AiConfig {
   static const String claude35Sonnet = 'claude-3-5-sonnet-20241022';
   static const String claude35Haiku = 'claude-3-5-haiku-20241022';
 
+  // Open-Source Mobile & Local Network Model IDs
+  static const String gemma2_2b = 'gemma-2-2b-it';
+  static const String llama32_3b = 'llama-3.2-3b-instruct';
+  static const String llama32_1b = 'llama-3.2-1b-instruct';
+  static const String qwen25_15b = 'qwen-2.5-1.5b-instruct';
+  static const String deepseekR1_15b = 'deepseek-r1-distill-qwen-1.5b';
+  static const String ollamaLocal = 'ollama-local';
+
   // Supported model registry across providers
   static const List<Map<String, String>> supportedModels = [
     {
       'id': 'auto',
-      'name': 'Auto-Router (Gemini + Claude)',
+      'name': 'Auto-Router (Gemini + Claude + Open-Source)',
       'provider': 'Smart Engine',
       'tag': 'Recommended',
-      'desc': 'Automatically selects Gemini for vision & large docs, and Claude for math, code & quizzes. With automatic failover.',
+      'desc': 'Automatically selects optimal model across Gemini, Claude, and local open-source with automatic failover.',
     },
     {
       'id': 'gemini-3.5-flash-lite',
@@ -77,6 +87,48 @@ class AiConfig {
       'tag': 'High Speed',
       'desc': 'Lightning fast answers, definitions, and quick study drill',
     },
+    {
+      'id': 'gemma-2-2b-it',
+      'name': 'Gemma 2 (2B)',
+      'provider': 'Google Open Source',
+      'tag': 'Mobile Edge (1.4 GB)',
+      'desc': 'Google lightweight on-device open model. Fast offline definitions, notes, and study cards.',
+    },
+    {
+      'id': 'llama-3.2-3b-instruct',
+      'name': 'Llama 3.2 (3B)',
+      'provider': 'Meta Open Source',
+      'tag': 'Mobile Edge (2.1 GB)',
+      'desc': 'Meta compact open model with excellent multilingual tutoring and exam reasoning on mobile.',
+    },
+    {
+      'id': 'llama-3.2-1b-instruct',
+      'name': 'Llama 3.2 (1B)',
+      'provider': 'Meta Open Source',
+      'tag': 'Ultra-Lite (750 MB)',
+      'desc': 'Ultra-compact edge model optimized for low-end mobile hardware, instant quiz drills, and zero lag.',
+    },
+    {
+      'id': 'qwen-2.5-1.5b-instruct',
+      'name': 'Qwen 2.5 (1.5B)',
+      'provider': 'Alibaba Open Source',
+      'tag': 'Math & Code Edge',
+      'desc': 'State-of-the-art small open model for coding syntax, math problem solving, and structured JSON.',
+    },
+    {
+      'id': 'deepseek-r1-distill-qwen-1.5b',
+      'name': 'DeepSeek-R1 (1.5B)',
+      'provider': 'DeepSeek Open Source',
+      'tag': 'Mobile Reasoning CoT',
+      'desc': 'Distilled open reasoning model with step-by-step thinking traces designed for mobile processors.',
+    },
+    {
+      'id': 'ollama-local',
+      'name': 'Ollama Local Network Node',
+      'provider': 'Local Wi-Fi / LAN',
+      'tag': 'PC Power to Mobile',
+      'desc': 'Connect mobile app over Wi-Fi to your PC running Ollama (Llama 3.3, DeepSeek-R1, Qwen 2.5) with 0 mobile battery drain.',
+    },
   ];
 
   // Configurable fallback chain for recoverable provider outages
@@ -102,6 +154,16 @@ class AiConfig {
   static const String _prefVaultContext = 'ai_vault_context_enabled';
   static const String _prefResponseStyle = 'ai_response_style';
   static const String _prefAiConsent = 'ai_consent_granted';
+
+  // Open-Source, Mobile & Ollama Keys
+  static const String _prefOllamaEndpoint = 'ai_ollama_endpoint';
+  static const String _prefOllamaSelectedModel = 'ai_ollama_selected_model';
+  static const String _prefOpenSourceCloudApiKey = 'open_source_cloud_api_key';
+  static const String _prefOpenSourceExecutionMode = 'open_source_execution_mode'; // 'edge_synthesizer', 'ollama_local', 'cloud_open_weights'
+
+  // Default Endpoints & Presets
+  static const String defaultOllamaEndpoint = 'http://10.0.2.2:11434';
+  static const String defaultOllamaModel = 'gemma2:2b';
 
   // Extended Research & Academic Rigor Keys
   static const String _prefResearchDepth = 'ai_research_depth'; // 'summary', 'balanced', 'deep'
@@ -136,6 +198,30 @@ class AiConfig {
 
   /// Determines whether a given model identifier belongs to Anthropic Claude.
   static bool isClaudeModel(String modelId) => modelId.startsWith('claude-');
+
+  /// Determines whether a given model identifier belongs to an open-source or mobile edge model.
+  static bool isOpenSourceModel(String modelId) {
+    final lower = modelId.toLowerCase();
+    return lower == gemma2_2b ||
+        lower == llama32_3b ||
+        lower == llama32_1b ||
+        lower == qwen25_15b ||
+        lower == deepseekR1_15b ||
+        lower == ollamaLocal ||
+        lower.startsWith('gemma') ||
+        lower.startsWith('llama') ||
+        lower.startsWith('qwen') ||
+        lower.startsWith('deepseek') ||
+        lower.startsWith('ollama') ||
+        lower.startsWith('mistral') ||
+        lower.startsWith('phi');
+  }
+
+  /// Determines whether a given model identifier targets a local network Ollama instance.
+  static bool isOllamaModel(String modelId) {
+    final lower = modelId.toLowerCase();
+    return lower == ollamaLocal || lower.startsWith('ollama');
+  }
 
   /// Retrieves the active API key (from local storage or environment define).
   static Future<String> getApiKey() async {
@@ -195,6 +281,120 @@ class AiConfig {
   static Future<void> setSelectedModel(String model) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefSelectedModel, model);
+  }
+
+  /// Gets configured Ollama endpoint (e.g. http://192.168.1.50:11434 or http://10.0.2.2:11434).
+  static Future<String> getOllamaEndpoint() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefOllamaEndpoint) ?? defaultOllamaEndpoint;
+    } catch (e) {
+      debugPrint('AiConfig: Error getting Ollama endpoint: $e');
+      return defaultOllamaEndpoint;
+    }
+  }
+
+  /// Sets Ollama endpoint.
+  static Future<void> setOllamaEndpoint(String endpoint) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefOllamaEndpoint, endpoint.trim());
+  }
+
+  /// Gets the selected model on the Ollama node (e.g. 'gemma2:2b', 'llama3.2:3b').
+  static Future<String> getOllamaSelectedModel() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefOllamaSelectedModel) ?? defaultOllamaModel;
+    } catch (e) {
+      debugPrint('AiConfig: Error getting Ollama model: $e');
+      return defaultOllamaModel;
+    }
+  }
+
+  /// Sets the selected model on the Ollama node.
+  static Future<void> setOllamaSelectedModel(String model) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefOllamaSelectedModel, model.trim());
+  }
+
+  /// Gets open-source cloud API key (e.g. Groq, OpenRouter).
+  static Future<String> getOpenSourceCloudApiKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefOpenSourceCloudApiKey) ?? '';
+    } catch (e) {
+      debugPrint('AiConfig: Error getting Open Source Cloud API key: $e');
+      return '';
+    }
+  }
+
+  /// Sets open-source cloud API key.
+  static Future<void> setOpenSourceCloudApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefOpenSourceCloudApiKey, key.trim());
+  }
+
+  /// Gets open-source execution mode ('edge_synthesizer', 'ollama_local', 'cloud_open_weights').
+  static Future<String> getOpenSourceExecutionMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefOpenSourceExecutionMode) ?? 'edge_synthesizer';
+    } catch (e) {
+      debugPrint('AiConfig: Error getting open source execution mode: $e');
+      return 'edge_synthesizer';
+    }
+  }
+
+  /// Sets open-source execution mode.
+  static Future<void> setOpenSourceExecutionMode(String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefOpenSourceExecutionMode, mode);
+  }
+
+  /// Pings an Ollama endpoint to verify connectivity and lists available models.
+  static Future<({bool isConnected, String message, List<String> models})> testOllamaConnection(
+    String endpoint, {
+    http.Client? client,
+  }) async {
+    final cleanEndpoint = endpoint.trim().replaceAll(RegExp(r'/+$'), '');
+    if (cleanEndpoint.isEmpty) {
+      return (isConnected: false, message: 'Endpoint URL is empty.', models: <String>[]);
+    }
+
+    final httpClient = client ?? http.Client();
+    try {
+      final uri = Uri.parse('$cleanEndpoint/api/tags');
+      final res = await httpClient.get(uri).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+        final modelList = (decoded['models'] as List<dynamic>?)
+                ?.map((m) => (m as Map<String, dynamic>)['name']?.toString() ?? '')
+                .where((name) => name.isNotEmpty)
+                .toList() ??
+            <String>[];
+        return (
+          isConnected: true,
+          message: 'Connected! Found ${modelList.length} models on local node.',
+          models: modelList,
+        );
+      } else {
+        return (
+          isConnected: false,
+          message: 'Node responded with HTTP status ${res.statusCode}.',
+          models: <String>[],
+        );
+      }
+    } catch (e) {
+      return (
+        isConnected: false,
+        message: 'Unable to reach $cleanEndpoint ($e). Ensure Ollama is running and OLLAMA_ORIGINS="*" is set.',
+        models: <String>[],
+      );
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
   }
 
   /// Checks if AI intelligence features are globally enabled.

@@ -18,14 +18,22 @@ class AiSettingsScreen extends ConsumerStatefulWidget {
 class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
   final _apiKeyController = TextEditingController();
   final _claudeKeyController = TextEditingController();
+  final _ollamaEndpointController = TextEditingController();
+  final _ollamaModelController = TextEditingController();
+  final _openSourceCloudKeyController = TextEditingController();
   bool _isAiEnabled = true;
   bool _isVaultContextEnabled = true;
   String _selectedModel = AiConfig.primaryModel;
   bool _obscureKey = true;
   bool _obscureClaudeKey = true;
+  bool _obscureCloudKey = true;
   bool _isTestingKey = false;
+  bool _isTestingOllama = false;
   bool _keyValidated = false;
   bool _claudeKeySaved = false;
+  bool _openSourceCloudKeySaved = false;
+  bool _ollamaConnected = false;
+  String _ollamaStatusMessage = '';
   bool _isLoading = true;
 
   // Professional Research & Academic Rigor State
@@ -48,6 +56,9 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     setState(() => _isLoading = true);
     final key = await AiConfig.getApiKey();
     final claudeKey = await AiConfig.getClaudeApiKey();
+    final ollamaEndpoint = await AiConfig.getOllamaEndpoint();
+    final ollamaModel = await AiConfig.getOllamaSelectedModel();
+    final openSourceCloudKey = await AiConfig.getOpenSourceCloudApiKey();
     final model = await AiConfig.getSelectedModel();
     final enabled = await AiConfig.isAiEnabled();
     final vaultContext = await AiConfig.isVaultContextEnabled();
@@ -66,11 +77,15 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
       setState(() {
         _apiKeyController.text = key;
         _claudeKeyController.text = claudeKey;
+        _ollamaEndpointController.text = ollamaEndpoint;
+        _ollamaModelController.text = ollamaModel;
+        _openSourceCloudKeyController.text = openSourceCloudKey;
         _selectedModel = model;
         _isAiEnabled = enabled;
         _isVaultContextEnabled = vaultContext;
         _keyValidated = key.isNotEmpty;
         _claudeKeySaved = claudeKey.isNotEmpty;
+        _openSourceCloudKeySaved = openSourceCloudKey.isNotEmpty;
 
         _researchDepth = depth;
         _temperature = temp;
@@ -187,6 +202,83 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
     }
   }
 
+  Future<void> _saveOllamaSettings() async {
+    final endpoint = _ollamaEndpointController.text.trim();
+    final model = _ollamaModelController.text.trim();
+    await AiConfig.setOllamaEndpoint(endpoint.isNotEmpty ? endpoint : AiConfig.defaultOllamaEndpoint);
+    await AiConfig.setOllamaSelectedModel(model.isNotEmpty ? model : AiConfig.defaultOllamaModel);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ollama local node settings saved!'),
+          backgroundColor: AppColors.emerald,
+        ),
+      );
+    }
+  }
+
+  Future<void> _testOllamaNode() async {
+    final endpoint = _ollamaEndpointController.text.trim();
+    if (endpoint.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an Ollama node endpoint URL.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isTestingOllama = true;
+      _ollamaStatusMessage = 'Connecting to local node...';
+    });
+
+    final result = await AiConfig.testOllamaConnection(endpoint);
+    await AiConfig.setOllamaEndpoint(endpoint);
+
+    if (mounted) {
+      setState(() {
+        _isTestingOllama = false;
+        _ollamaConnected = result.isConnected;
+        _ollamaStatusMessage = result.message;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: result.isConnected ? AppColors.emerald : AppColors.amber,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveOpenSourceCloudKey() async {
+    final key = _openSourceCloudKeyController.text.trim();
+    await AiConfig.setOpenSourceCloudApiKey(key);
+    if (mounted) {
+      setState(() => _openSourceCloudKeySaved = key.isNotEmpty);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(key.isNotEmpty
+              ? 'Open-source cloud API key saved!'
+              : 'Open-source cloud API key cleared.'),
+          backgroundColor: key.isNotEmpty ? AppColors.emerald : AppColors.amber,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectOpenSourceModel(String modelId, String displayName) async {
+    setState(() => _selectedModel = modelId);
+    await AiConfig.setSelectedModel(modelId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Active AI model set to $displayName!'),
+          backgroundColor: AppColors.emerald,
+        ),
+      );
+    }
+  }
+
   Future<void> _openUrl(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -212,6 +304,9 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
   void dispose() {
     _apiKeyController.dispose();
     _claudeKeyController.dispose();
+    _ollamaEndpointController.dispose();
+    _ollamaModelController.dispose();
+    _openSourceCloudKeyController.dispose();
     super.dispose();
   }
 
@@ -292,6 +387,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
               _buildGeminiConfigCard(context),
               const SizedBox(height: AppSpacing.sm),
               _buildClaudeConfigCard(context),
+              const SizedBox(height: AppSpacing.sm),
+              _buildOpenSourceMobileCard(context),
 
               const SizedBox(height: AppSpacing.lg),
 
@@ -695,6 +792,276 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Dedicated Mobile & Local Open-Source AI Engine card (Ollama, Gemma 2, Llama 3.2, Qwen 2.5, DeepSeek-R1).
+  Widget _buildOpenSourceMobileCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.memory_rounded, size: 18, color: Color(0xFF06B6D4)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Mobile & Open-Source AI Engine',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                  ),
+                ],
+              ),
+              if (_ollamaConnected)
+                const Chip(
+                  label: Text('Ollama Online', style: TextStyle(fontSize: 11, color: AppColors.emerald)),
+                  backgroundColor: Color(0x1A10B981),
+                  side: BorderSide(color: Color(0x3310B981)),
+                  padding: EdgeInsets.zero,
+                )
+              else if (_openSourceCloudKeySaved)
+                const Chip(
+                  label: Text('Cloud Open-Weights', style: TextStyle(fontSize: 11, color: Color(0xFF06B6D4))),
+                  backgroundColor: Color(0x1A06B6D4),
+                  side: BorderSide(color: Color(0x3306B6D4)),
+                  padding: EdgeInsets.zero,
+                )
+              else
+                const Chip(
+                  label: Text('Edge Ready', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  backgroundColor: AppColors.surfaceVariant,
+                  side: BorderSide(color: AppColors.cardBorder),
+                  padding: EdgeInsets.zero,
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Run open models on mobile (Gemma 2, Llama 3.2, Qwen 2.5, DeepSeek-R1) or link to your laptop over Wi-Fi via Ollama with 0 battery drain.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 14),
+
+          // Preset Chips
+          const Text(
+            'One-Tap Mobile & Open Presets',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildPresetChip('⚡ Gemma 2 (2B)', AiConfig.gemma2_2b, 'Google On-Device (1.4GB)'),
+              _buildPresetChip('🦙 Llama 3.2 (3B)', AiConfig.llama32_3b, 'Meta Mobile (2.1GB)'),
+              _buildPresetChip('🪶 Llama 3.2 (1B)', AiConfig.llama32_1b, 'Ultra-Lite (750MB)'),
+              _buildPresetChip('🌐 Qwen 2.5 (1.5B)', AiConfig.qwen25_15b, 'Alibaba Math/Code'),
+              _buildPresetChip('🧠 DeepSeek-R1 (1.5B)', AiConfig.deepseekR1_15b, 'Reasoning CoT'),
+              _buildPresetChip('💻 Ollama Local Node', AiConfig.ollamaLocal, 'PC Wi-Fi Link'),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+          const Divider(color: AppColors.cardBorder),
+          const SizedBox(height: 10),
+
+          // Ollama Local Network Node Settings
+          const Row(
+            children: [
+              Icon(Icons.wifi_tethering_rounded, size: 16, color: Color(0xFF06B6D4)),
+              SizedBox(width: 6),
+              Text(
+                'Ollama Local Network Link (PC over Wi-Fi)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Run 7B/14B/70B models on your PC and query them over Wi-Fi. Default for Android Emulator is http://10.0.2.2:11434. For physical phone use your PC IP (e.g. http://192.168.1.x:11434).',
+            style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: _ollamaEndpointController,
+                  decoration: InputDecoration(
+                    labelText: 'Ollama Node Address',
+                    hintText: 'http://192.168.1.100:11434',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _ollamaModelController,
+                  decoration: InputDecoration(
+                    labelText: 'Node Model',
+                    hintText: 'gemma2:2b',
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06B6D4),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: _isTestingOllama ? null : _testOllamaNode,
+                  icon: _isTestingOllama
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        )
+                      : const Icon(Icons.network_check_rounded, size: 16),
+                  label: Text(_isTestingOllama ? 'Pinging Node...' : 'Ping Local Node'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF06B6D4),
+                  side: const BorderSide(color: Color(0xFF06B6D4)),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: _saveOllamaSettings,
+                icon: const Icon(Icons.save_outlined, size: 16),
+                label: const Text('Save Node'),
+              ),
+            ],
+          ),
+
+          if (_ollamaStatusMessage.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _ollamaConnected ? const Color(0x1A10B981) : const Color(0x1AF59E0B),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _ollamaConnected ? const Color(0x3310B981) : const Color(0x33F59E0B),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _ollamaConnected ? Icons.check_circle_outline : Icons.info_outline,
+                    size: 16,
+                    color: _ollamaConnected ? AppColors.emerald : AppColors.amber,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _ollamaStatusMessage,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: _ollamaConnected ? AppColors.emerald : AppColors.amber,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+          const Divider(color: AppColors.cardBorder),
+          const SizedBox(height: 10),
+
+          // Cloud Open-Weights Key (Groq / OpenRouter)
+          const Text(
+            'Cloud Open-Weights API Key (Optional - 300+ tokens/sec)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'For instant cloud-hosted Gemma, Llama 3.2, Qwen or DeepSeek-R1 inference on mobile without a local PC.',
+            style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _openSourceCloudKeyController,
+            obscureText: _obscureCloudKey,
+            decoration: InputDecoration(
+              hintText: 'gsk_... or sk-or-...',
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureCloudKey ? Icons.visibility_off : Icons.visibility, size: 18),
+                onPressed: () => setState(() => _obscureCloudKey = !_obscureCloudKey),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF06B6D4),
+                side: const BorderSide(color: Color(0xFF06B6D4)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: _saveOpenSourceCloudKey,
+              icon: const Icon(Icons.cloud_upload_outlined, size: 16),
+              label: const Text('Save Cloud Open-Weights Key'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresetChip(String label, String modelId, String tooltip) {
+    final isSelected = _selectedModel == modelId;
+    return Tooltip(
+      message: tooltip,
+      child: FilterChip(
+        selected: isSelected,
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.black : AppColors.textPrimary,
+          ),
+        ),
+        selectedColor: const Color(0xFF06B6D4),
+        backgroundColor: AppColors.surfaceVariant,
+        checkmarkColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? const Color(0xFF06B6D4) : AppColors.cardBorder,
+          ),
+        ),
+        onSelected: (_) => _selectOpenSourceModel(modelId, label),
       ),
     );
   }
