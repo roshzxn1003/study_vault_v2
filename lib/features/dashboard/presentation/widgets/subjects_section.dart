@@ -86,7 +86,7 @@ class SubjectsSection extends StatelessWidget {
           crossAxisCount: 2,
           crossAxisSpacing: AppSpacing.md,
           mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: 2.2,
+          childAspectRatio: 2.0,
         ),
         itemCount: subjects.length,
         itemBuilder: (context, index) {

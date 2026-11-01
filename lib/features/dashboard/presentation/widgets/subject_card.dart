@@ -26,7 +26,10 @@ class SubjectCard extends StatelessWidget {
       borderRadius: AppRadius.card,
       backgroundColor: AppColors.surface,
       border: AppBorders.allStandard,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 12.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -39,7 +42,7 @@ class SubjectCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
-                    vertical: 3,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceSecondary,
@@ -66,21 +69,26 @@ class SubjectCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 4),
 
           // Subject Name
-          Text(
-            subject.name,
-            style: AppTypography.subtitle.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                subject.name,
+                style: AppTypography.subtitle.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
 
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 4),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
