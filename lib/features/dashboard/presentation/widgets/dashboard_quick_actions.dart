@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/design/widgets/app_pressable.dart';
 import 'package:study_vault/core/design/widgets/add_material_sheet.dart';
 import 'package:study_vault/features/vault/presentation/widgets/create_folder_dialog.dart';
 import 'package:study_vault/features/vault/presentation/providers/vault_provider.dart';
@@ -104,64 +105,54 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.button,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 42),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 9,
-          ),
-          decoration: BoxDecoration(
-            color: isPrimary
-                ? AppColors.primary
-                : AppColors.surface,
-            borderRadius: AppRadius.button,
-            border: Border.all(
-              color: isPrimary
-                  ? AppColors.primaryLight
-                  : AppColors.border,
-              width: 1.2,
+    return AppPressable(
+      onTap: onTap,
+      borderRadius: AppRadius.button,
+      backgroundColor: isPrimary ? AppColors.primary : AppColors.surface,
+      border: Border.all(
+        color: isPrimary ? AppColors.primaryLight : AppColors.border,
+        width: 1.2,
+      ),
+      shadows: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.18),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 9,
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 24),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isPrimary
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : accentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: isPrimary ? Colors.white : accentColor,
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                color: isPrimary ? Colors.white : AppColors.textPrimary,
+                fontSize: 13,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isPrimary
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : accentColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: isPrimary ? Colors.white : accentColor,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: isPrimary ? Colors.white : AppColors.textPrimary,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

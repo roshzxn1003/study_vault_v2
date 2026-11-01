@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 
-/// Premium academic AI assistant entry card on Home screen.
+/// Clean academic AI assistant entry card on Home screen adhering to Appllama single-accent lock.
 class AIAssistantCard extends StatelessWidget {
   const AIAssistantCard({super.key});
 
@@ -21,17 +22,16 @@ class AIAssistantCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: AppRadius.card,
         border: Border.all(
-          color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
-          width: 1.2,
+          color: AppColors.primaryLight.withValues(alpha: 0.25),
+          width: 1.0,
         ),
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1E1B4B).withValues(alpha: 0.4),
-            AppColors.surface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,22 +42,24 @@ class AIAssistantCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                  ),
+                  color: AppColors.primary,
                   borderRadius: AppRadius.button,
-                  boxShadow: [
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    width: 1.0,
+                  ),
+                  boxShadow: const [
                     BoxShadow(
-                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      color: Color(0x40000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.auto_awesome_rounded,
                   color: Colors.white,
-                  size: 20,
+                  size: 18,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -92,7 +94,10 @@ class AIAssistantCard extends StatelessWidget {
                   size: 20,
                 ),
                 tooltip: 'Open AI Assistant',
-                onPressed: () => context.push('/ai'),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/ai');
+                },
               ),
             ],
           ),
@@ -103,9 +108,8 @@ class AIAssistantCard extends StatelessWidget {
             children: examples.map((prompt) {
               return ActionChip(
                 backgroundColor: AppColors.surfaceSecondary,
-                side: BorderSide(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
-                ),
+                side: AppBorders.standard,
+                shape: const RoundedRectangleBorder(borderRadius: AppRadius.chip),
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 label: Text(
                   prompt,
@@ -121,6 +125,7 @@ class AIAssistantCard extends StatelessWidget {
                   color: AppColors.primaryLight,
                 ),
                 onPressed: () {
+                  HapticFeedback.selectionClick();
                   context.push(
                     Uri(path: '/ai', queryParameters: {'query': prompt}).toString(),
                   );

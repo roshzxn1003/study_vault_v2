@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
@@ -76,6 +77,7 @@ class DashboardAcademicHeader extends ConsumerWidget {
                     child: ListTile(
                       dense: true,
                       onTap: () {
+                        HapticFeedback.selectionClick();
                         Navigator.pop(ctx);
                         onWorkspaceSelected(ws.id);
                       },

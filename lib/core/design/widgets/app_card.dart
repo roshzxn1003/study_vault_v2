@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../tokens/tokens.dart';
+import 'app_pressable.dart';
 
 enum AppCardVariant { standard, interactive, selected, subtle }
 
@@ -101,7 +102,24 @@ class AppCard extends StatelessWidget {
         break;
     }
 
-    Widget cardBody = Container(
+    if (onTap != null) {
+      return SizedBox(
+        width: width,
+        height: height,
+        child: AppPressable(
+          onTap: onTap,
+          borderRadius: effectiveRadius,
+          backgroundColor: backgroundColor,
+          border: border,
+          shadows: shadows,
+          padding: padding,
+          margin: margin,
+          child: child,
+        ),
+      );
+    }
+
+    return Container(
       width: width,
       height: height,
       margin: margin,
@@ -114,19 +132,5 @@ class AppCard extends StatelessWidget {
       ),
       child: child,
     );
-
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: effectiveRadius,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: effectiveRadius,
-          child: cardBody,
-        ),
-      );
-    }
-
-    return cardBody;
   }
 }

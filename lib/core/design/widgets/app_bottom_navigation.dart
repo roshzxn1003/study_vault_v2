@@ -51,9 +51,11 @@ class AppNavigationItem {
   ];
 }
 
-/// Floating layered glassmorphism navigation bar for Study Vault.
-/// Detached from screen edges, pill-shaped, with frosted glass elevation,
-/// subtle ambient purple glow, and interactive central action.
+/// Precision floating navigation bar for Study Vault adhering to Appllama Anti-slop Laws.
+/// - Restrained obsidian surface with specular hairline border.
+/// - Diffuse black ambient shadow (no neon purple halos).
+/// - 0.96 scale touch feedback on central action with haptic punctuation.
+/// - Tabular labels and crisp single-accent selection indicator.
 class AppBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -77,42 +79,35 @@ class AppBottomNavigation extends StatelessWidget {
     final isNarrow = screenWidth < 360;
 
     return Container(
-      height: 68,
+      height: AppDimensions.bottomNavHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(34),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(AppDimensions.bottomNavHeight / 2),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 32,
-            spreadRadius: 2,
-            offset: const Offset(0, 12),
+            color: Color(0x66000000),
+            blurRadius: 28,
+            spreadRadius: 0,
+            offset: Offset(0, 10),
           ),
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.20),
-            blurRadius: 20,
-            spreadRadius: -2,
-            offset: const Offset(0, 4),
+            color: Color(0x33000000),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
+        borderRadius: BorderRadius.circular(AppDimensions.bottomNavHeight / 2),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF161626).withValues(alpha: 0.65),
-                  const Color(0xFF0F0F1A).withValues(alpha: 0.65),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(34),
+              color: const Color(0xE6141418), // 90% opacity obsidian zinc
+              borderRadius: BorderRadius.circular(AppDimensions.bottomNavHeight / 2),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1.2,
+                color: Colors.white.withValues(alpha: 0.10),
+                width: 1.0,
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -125,59 +120,16 @@ class AppBottomNavigation extends StatelessWidget {
                 if (item.isCentralAction) {
                   return Expanded(
                     child: Center(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            if (onAddTap != null) {
-                              onAddTap!();
-                            } else {
-                              onTap(index);
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(24),
-                          splashColor: Colors.white.withValues(alpha: 0.3),
-                          highlightColor: Colors.white.withValues(alpha: 0.15),
-                          child: Container(
-                            width: isNarrow ? 46 : 50,
-                            height: isNarrow ? 46 : 50,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF8B5CF6),
-                                  Color(0xFF6366F1),
-                                  Color(0xFF4F46E5),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.50),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 4),
-                                ),
-                                BoxShadow(
-                                  color: const Color(0xFF6366F1).withValues(alpha: 0.30),
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.40),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.add_rounded,
-                              size: 28,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                      child: _CentralActionButton(
+                        isNarrow: isNarrow,
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          if (onAddTap != null) {
+                            onAddTap!();
+                          } else {
+                            onTap(index);
+                          }
+                        },
                       ),
                     ),
                   );
@@ -192,75 +144,54 @@ class AppBottomNavigation extends StatelessWidget {
                         onTap(index);
                       },
                       borderRadius: BorderRadius.circular(24),
-                      splashColor: AppColors.primary.withValues(alpha: 0.15),
-                      highlightColor: AppColors.primary.withValues(alpha: 0.08),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
+                      splashColor: AppColors.primary.withValues(alpha: 0.12),
+                      highlightColor: AppColors.primary.withValues(alpha: 0.05),
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
+                              duration: AppAnimations.fast,
+                              curve: AppAnimations.appleEaseOut,
                               padding: EdgeInsets.symmetric(
                                 horizontal: isNarrow ? 10 : 14,
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                gradient: isSelected
-                                    ? LinearGradient(
-                                        colors: [
-                                          const Color(0xFF8B5CF6).withValues(alpha: 0.32),
-                                          const Color(0xFF6366F1).withValues(alpha: 0.20),
-                                        ],
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                      )
-                                    : null,
+                                color: isSelected
+                                    ? AppColors.primarySubtle
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
                                 border: isSelected
                                     ? Border.all(
-                                        color: const Color(0xFFA78BFA).withValues(alpha: 0.40),
+                                        color: AppColors.primaryLight.withValues(alpha: 0.35),
                                         width: 1,
                                       )
-                                    : null,
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.22),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
                                     : null,
                               ),
                               child: Icon(
                                 isSelected ? item.activeIcon : item.icon,
                                 size: isNarrow ? 20 : 22,
                                 color: isSelected
-                                    ? Colors.white
-                                    : AppColors.textSecondary.withValues(alpha: 0.85),
+                                    ? AppColors.primaryLight
+                                    : AppColors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
-                              child: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.caption.copyWith(
-                                  fontSize: isNarrow ? 9.5 : 10.5,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppColors.textSecondary.withValues(alpha: 0.80),
-                                  letterSpacing: isSelected ? 0.2 : 0,
-                                ),
+                            Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                fontSize: isNarrow ? 9.5 : 10.5,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? AppColors.textPrimary
+                                    : AppColors.textMuted,
                               ),
                             ),
                           ],
@@ -271,6 +202,66 @@ class AppBottomNavigation extends StatelessWidget {
                 );
               }),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CentralActionButton extends StatefulWidget {
+  final bool isNarrow;
+  final VoidCallback onTap;
+
+  const _CentralActionButton({
+    required this.isNarrow,
+    required this.onTap,
+  });
+
+  @override
+  State<_CentralActionButton> createState() => _CentralActionButtonState();
+}
+
+class _CentralActionButtonState extends State<_CentralActionButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.isNarrow ? 46.0 : 48.0;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? AppAnimations.buttonPressScale : 1.0,
+        duration: AppAnimations.press,
+        curve: AppAnimations.appleEaseOut,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 1.2,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x4D000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 26,
+            color: Colors.white,
           ),
         ),
       ),

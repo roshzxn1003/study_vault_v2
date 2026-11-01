@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
@@ -106,42 +107,38 @@ class _DailyDueCardsSectionState extends State<DailyDueCardsSection> {
     return Container(
       key: const ValueKey('daily_due_cards_section'),
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF1E1E2E), const Color(0xFF2D1B4E)]
-              : [const Color(0xFFF5F3FF), const Color(0xFFEDE9FE)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.35 : 0.25),
-        ),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: AppBorders.allStandard,
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.20 : 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Color(0x2E000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.20),
+              color: AppColors.primarySubtle,
               shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryLight.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
             child: const Icon(
               Icons.psychology_rounded,
-              color: Color(0xFF8B5CF6),
-              size: 28,
+              color: AppColors.primaryLight,
+              size: 24,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,23 +147,27 @@ class _DailyDueCardsSectionState extends State<DailyDueCardsSection> {
                   children: [
                     Text(
                       'Daily Spaced Drill',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: AppTypography.title.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.destructiveSubtle,
+                        borderRadius: AppRadius.chip,
+                        border: Border.all(
+                          color: AppColors.destructiveLight.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Text(
                         '$_dueCount Due',
-                        style: const TextStyle(
+                        style: AppTypography.caption.tabular.copyWith(
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.destructiveLight,
                         ),
                       ),
                     ),
@@ -175,27 +176,39 @@ class _DailyDueCardsSectionState extends State<DailyDueCardsSection> {
                 const SizedBox(height: 4),
                 Text(
                   'Reinforce active recall for $_dominantTopic before memory decays.',
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.35,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.sm),
           ElevatedButton.icon(
             key: const ValueKey('start_daily_drill_button'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B5CF6),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.button),
+              elevation: 0,
             ),
             onPressed: () {
+              HapticFeedback.lightImpact();
               context.push('/study/flashcards/${Uri.encodeComponent(_dominantTopic)}');
             },
             icon: const Icon(Icons.play_arrow_rounded, size: 18),
-            label: const Text('Drill', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            label: Text(
+              'Drill',
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),

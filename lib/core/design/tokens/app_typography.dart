@@ -109,7 +109,38 @@ class AppTypography {
   static TextStyle get bodyMedium => body;
   static TextStyle get labelSmall => caption;
 
+  // Numeric and statistics displays with tabular figures
+  static TextStyle get statLarge => _style(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        height: 1.2,
+        letterSpacing: -0.5,
+      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+  static TextStyle get statMedium => _style(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        height: 1.25,
+        letterSpacing: -0.3,
+      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+  static TextStyle get statSmall => _style(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        height: 1.3,
+      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
   // Helper extension for quickly coloring tokens
   static TextStyle withColor(TextStyle style, Color color) =>
       style.copyWith(color: color);
+}
+
+/// Extension for adding tabular numbers to any TextStyle (avoids horizontal jitter during counter animations)
+extension TabularFiguresExtension on TextStyle {
+  TextStyle get tabular => copyWith(
+        fontFeatures: [
+          ...?fontFeatures,
+          const FontFeature.tabularFigures(),
+        ],
+      );
 }

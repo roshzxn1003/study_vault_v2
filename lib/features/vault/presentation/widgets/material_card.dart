@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/design/widgets/app_pressable.dart';
 import '../../domain/models/models.dart';
 import 'material_action_sheet.dart';
 import 'material_preview_widget.dart';
@@ -48,32 +49,27 @@ class MaterialCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = material.type;
 
-    return InkWell(
+    return AppPressable(
       onTap: isSelectionMode ? () => onSelectChanged?.call(!isSelected) : onTap,
       onLongPress: onLongPress,
       borderRadius: AppRadius.card,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : AppColors.surface,
-          borderRadius: AppRadius.card,
-          border: isSelected
-              ? Border.all(color: AppColors.primary, width: 1.5)
-              : AppBorders.allStandard,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+      backgroundColor: isSelected
+          ? AppColors.primary.withValues(alpha: 0.08)
+          : AppColors.surface,
+      border: isSelected
+          ? Border.all(color: AppColors.primary, width: 1.5)
+          : AppBorders.allStandard,
+      shadows: const [
+        BoxShadow(
+          color: Color(0x26000000),
+          blurRadius: 4,
+          offset: Offset(0, 2),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      ],
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // Top Row: Type badge + File size + Privacy badge + Actions
             Row(
               children: [
@@ -287,7 +283,7 @@ class MaterialCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: AppSpacing.xs),
               child: Text(
                 'Updated ${material.relativeUpdatedTime}',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.caption.tabular.copyWith(
                   color: AppColors.textMuted,
                   fontSize: 11,
                 ),
@@ -295,7 +291,6 @@ class MaterialCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

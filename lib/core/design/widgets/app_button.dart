@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../tokens/tokens.dart';
 
 enum AppButtonVariant { primary, secondary, tertiary, destructive }
@@ -92,7 +93,12 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = onPressed == null || isLoading;
-    final effectiveOnPressed = isDisabled ? null : onPressed;
+    final effectiveOnPressed = isDisabled
+        ? null
+        : () {
+            HapticFeedback.lightImpact();
+            onPressed!();
+          };
 
     Widget childContent;
     if (isLoading) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/core/design/widgets/app_empty_state.dart';
+import 'package:study_vault/core/design/widgets/app_loading_state.dart';
 import 'package:study_vault/features/academic/presentation/widgets/personal_topic_edit_dialog.dart';
 import 'package:study_vault/features/academic/presentation/widgets/subject_edit_dialog.dart';
 import 'package:study_vault/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -60,6 +61,27 @@ class DashboardScreen extends ConsumerWidget {
                 description: state.errorMessage ?? 'We couldn\'t load your study space.',
                 actionText: 'Try again',
                 onAction: () => notifier.init(),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Initial Loading State (Precision Shimmer Skeleton)
+    if (state.isLoading && state.subjects.isEmpty && state.activeWorkspace == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.lg,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: const AppDashboardSkeleton(),
               ),
             ),
           ),
@@ -204,7 +226,7 @@ class DashboardScreen extends ConsumerWidget {
                     const UpcomingAcademicSection(),
 
                     // Bottom clearance for floating navigation bar
-                    const SizedBox(height: 120),
+                    SizedBox(height: AppDimensions.bottomNavClearance(context)),
                   ],
                 ),
               ),

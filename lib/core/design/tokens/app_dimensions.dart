@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Centralized control heights and dimensions for Study Vault.
 class AppDimensions {
   AppDimensions._();
@@ -13,9 +15,16 @@ class AppDimensions {
 
   // Component Heights
   static const double topBarHeight = 56.0;
-  static const double bottomNavHeight = 64.0;
+  static const double bottomNavHeight = 68.0;
   static const double sidebarWidth = 240.0;
   static const double navRailWidth = 72.0;
+
+  // Dynamic Clearance Helper for floating navigation bar
+  static double bottomNavClearance(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final floatingMargin = bottomPadding > 0 ? bottomPadding + 8.0 : 20.0;
+    return bottomNavHeight + floatingMargin + 16.0;
+  }
 
   // Max Readable Widths
   static const double authContainerMaxWidth = 440.0;

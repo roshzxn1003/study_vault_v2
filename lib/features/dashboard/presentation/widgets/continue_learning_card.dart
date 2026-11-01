@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/features/dashboard/domain/models/dashboard_models.dart';
@@ -31,11 +32,11 @@ class ContinueLearningCard extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.35),
           width: 1.2,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Color(0x26000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -74,7 +75,7 @@ class ContinueLearningCard extends StatelessWidget {
               const Spacer(),
               Text(
                 item.relativeTime,
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.caption.tabular.copyWith(
                   color: AppColors.textMuted,
                   fontSize: 11,
                 ),
@@ -139,7 +140,10 @@ class ContinueLearningCard extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: const Text('Resume', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                onPressed: () => context.push('/material/${item.id}'),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/material/${item.id}');
+                },
               ),
             ],
           ),

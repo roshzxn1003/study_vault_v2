@@ -145,3 +145,93 @@ class AppListSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// Shimmer skeleton matching the exact layout hierarchy of the Study Vault Dashboard.
+class AppDashboardSkeleton extends StatelessWidget {
+  const AppDashboardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Academic Header Skeleton
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSkeletonBox(width: 170, height: 22, borderRadius: AppRadius.chip),
+                SizedBox(height: AppSpacing.xs),
+                AppSkeletonBox(width: 110, height: 12, borderRadius: AppRadius.chip),
+              ],
+            ),
+            AppSkeletonBox(width: 38, height: 38, borderRadius: BorderRadius.all(Radius.circular(19))),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // 2. Search Field Skeleton
+        const AppSkeletonBox(width: double.infinity, height: 48, borderRadius: AppRadius.field),
+        const SizedBox(height: AppSpacing.md),
+
+        // 3. Quick Action Pills Skeleton
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Row(
+            children: List.generate(
+              4,
+              (i) => const Padding(
+                padding: EdgeInsets.only(right: AppSpacing.sm),
+                child: AppSkeletonBox(width: 105, height: 40, borderRadius: AppRadius.button),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // 4. Subjects Section Header Skeleton
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppSkeletonBox(width: 130, height: 18, borderRadius: AppRadius.chip),
+            AppSkeletonBox(width: 60, height: 14, borderRadius: AppRadius.chip),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // 5. Subjects Grid 2x2 Skeleton
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: AppSpacing.md,
+            crossAxisSpacing: AppSpacing.md,
+            childAspectRatio: 1.35,
+          ),
+          itemCount: 4,
+          itemBuilder: (_, _) => Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: AppRadius.card,
+              border: AppBorders.allStandard,
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppSkeletonBox(width: 50, height: 16, borderRadius: AppRadius.chip),
+                AppSkeletonBox(width: 100, height: 16, borderRadius: AppRadius.chip),
+                AppSkeletonBox(width: 65, height: 12, borderRadius: AppRadius.chip),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
