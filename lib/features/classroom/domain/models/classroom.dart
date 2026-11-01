@@ -98,7 +98,7 @@ class Classroom {
       section: map['section'] as String?,
       subject: map['subject'] as String?,
       room: map['room'] as String?,
-      code: map['code'] as String? ?? 'SV-DEMO',
+      code: map['code'] as String? ?? 'SV-${(map['id'] as String? ?? '000000').hashCode.abs().toString().padLeft(6, '0').substring(0, 6)}',
       description: map['description'] as String?,
       bannerTheme: map['banner_theme'] as String? ?? 'indigo',
       creatorId: map['creator_id'] as String? ?? '',

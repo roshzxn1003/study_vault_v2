@@ -213,14 +213,14 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       {
         'id': 'auto',
         'title': 'Auto-Router (Gemini + Claude)',
-        'desc': 'Smart task routing with automatic failover. Uses Gemini for vision & large docs, Claude for math, code & quizzes.',
+        'desc': 'Smart task routing with automatic failover across Gemini, Claude, and open models.',
         'icon': Icons.psychology_rounded,
         'badge': 'Recommended',
       },
       {
         'id': 'gemini-3.5-flash-lite',
         'title': 'Gemini 3.5 Flash-Lite',
-        'desc': 'Fast, lightweight & verified. Ideal for everyday questions and lecture notes.',
+        'desc': 'Fast, lightweight & responsive. Ideal for everyday questions and lecture notes.',
         'icon': Icons.bolt_rounded,
         'badge': 'Verified Fast',
       },
@@ -258,6 +258,48 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         'desc': 'High-speed micro-tutor for rapid definitions and active recall drills.',
         'icon': Icons.speed_rounded,
         'badge': 'High Speed',
+      },
+      {
+        'id': 'gemma-2-2b-it',
+        'title': 'Gemma 2 (2B)',
+        'desc': 'Google lightweight on-device open model. Fast offline definitions, notes, and study cards.',
+        'icon': Icons.memory_rounded,
+        'badge': 'Mobile Edge (1.4 GB)',
+      },
+      {
+        'id': 'llama-3.2-3b-instruct',
+        'title': 'Llama 3.2 (3B)',
+        'desc': 'Meta compact open model with excellent multilingual tutoring and exam reasoning on mobile.',
+        'icon': Icons.memory_rounded,
+        'badge': 'Mobile Edge (2.1 GB)',
+      },
+      {
+        'id': 'llama-3.2-1b-instruct',
+        'title': 'Llama 3.2 (1B)',
+        'desc': 'Ultra-compact edge model optimized for low-end mobile hardware, instant quiz drills, and zero lag.',
+        'icon': Icons.bolt_outlined,
+        'badge': 'Ultra-Lite (750 MB)',
+      },
+      {
+        'id': 'qwen-2.5-1.5b-instruct',
+        'title': 'Qwen 2.5 (1.5B)',
+        'desc': 'State-of-the-art small open model for coding syntax, math problem solving, and structured JSON.',
+        'icon': Icons.code_rounded,
+        'badge': 'Math & Code (1.1 GB)',
+      },
+      {
+        'id': 'deepseek-r1-distill-qwen-1.5b',
+        'title': 'DeepSeek-R1 (1.5B)',
+        'desc': 'Distilled open reasoning model with step-by-step thinking traces designed for mobile processors.',
+        'icon': Icons.psychology_outlined,
+        'badge': 'Reasoning CoT (1.2 GB)',
+      },
+      {
+        'id': 'ollama-local',
+        'title': 'Ollama Local Network Node',
+        'desc': 'Connect mobile app over Wi-Fi to your PC running Ollama with 0 mobile battery drain.',
+        'icon': Icons.wifi_tethering_rounded,
+        'badge': 'PC Wi-Fi Link',
       },
     ];
 
@@ -496,6 +538,12 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       'claude-3-7-sonnet-20250219' => 'Claude 3.7 Sonnet',
       'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
       'claude-3-5-haiku-20241022' => 'Claude 3.5 Haiku',
+      'gemma-2-2b-it' => 'Gemma 2 (2B)',
+      'llama-3.2-3b-instruct' => 'Llama 3.2 (3B)',
+      'llama-3.2-1b-instruct' => 'Llama 3.2 (1B)',
+      'qwen-2.5-1.5b-instruct' => 'Qwen 2.5 (1.5B)',
+      'deepseek-r1-distill-qwen-1.5b' => 'DeepSeek-R1 (1.5B)',
+      'ollama-local' => 'Ollama Local Node',
       _ => chatState.activeModel,
     };
 
@@ -507,6 +555,12 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       'claude-3-7-sonnet-20250219' => Icons.calculate_rounded,
       'claude-3-5-sonnet-20241022' => Icons.terminal_rounded,
       'claude-3-5-haiku-20241022' => Icons.speed_rounded,
+      'gemma-2-2b-it' => Icons.memory_rounded,
+      'llama-3.2-3b-instruct' => Icons.memory_rounded,
+      'llama-3.2-1b-instruct' => Icons.bolt_outlined,
+      'qwen-2.5-1.5b-instruct' => Icons.code_rounded,
+      'deepseek-r1-distill-qwen-1.5b' => Icons.psychology_outlined,
+      'ollama-local' => Icons.wifi_tethering_rounded,
       _ => Icons.bolt_rounded,
     };
 
@@ -676,71 +730,56 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
   Widget _buildGroundingBar(ChatState chatState, ThemeData theme, bool isDark) {
     final hasAttached = chatState.activeMaterialTitle != null;
+    if (!hasAttached && chatState.activeSubject == null) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      color: isDark ? const Color(0xFF1B1B22) : const Color(0xFFF9FAFB),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      color: isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5),
       child: Row(
         children: [
           Icon(
-            hasAttached ? Icons.description_rounded : Icons.all_inclusive_rounded,
+            hasAttached ? Icons.description_rounded : Icons.folder_open_rounded,
             size: 15,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Expanded(
-            child: InkWell(
-              onTap: () => MaterialAttachmentDialog.show(context),
-              child: Row(
-                children: [
-                  Text(
-                    hasAttached ? 'Attached Doc: ' : 'Grounding: ',
+            child: Row(
+              children: [
+                Text(
+                  hasAttached ? 'Grounded in: ' : 'Subject: ',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    hasAttached
+                        ? chatState.activeMaterialTitle!
+                        : chatState.activeSubject!,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white60 : Colors.black54,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  Flexible(
-                    child: Text(
-                      hasAttached
-                          ? chatState.activeMaterialTitle!
-                          : (chatState.activeSubject != null
-                              ? 'Subject (${chatState.activeSubject})'
-                              : 'All Library Materials'),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          if (hasAttached)
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 16),
-              tooltip: 'Clear document attachment',
-              onPressed: () => ref.read(chatProvider.notifier).clearMaterial(),
-              constraints: const BoxConstraints(),
-              padding: const EdgeInsets.all(4),
-            )
-          else
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              icon: const Icon(Icons.tune_rounded, size: 14),
-              label: const Text('Change', style: TextStyle(fontSize: 11.5)),
-              onPressed: () => MaterialAttachmentDialog.show(context),
-            ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 16),
+            tooltip: 'Clear grounding context',
+            onPressed: () => ref.read(chatProvider.notifier).clearMaterial(),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(4),
+          ),
         ],
       ),
     );
@@ -796,91 +835,208 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   }
 
   Widget _buildEmptyState(ChatState chatState, ThemeData theme, bool isDark) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.25)),
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              size: 38,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'What do you want to learn today?',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Ask questions, solve problems, or quiz yourself. Answers are strictly grounded in your study materials with page citations.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isDark ? Colors.white60 : Colors.black54,
-              height: 1.45,
-              fontSize: 13.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Attach material shortcut button
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.4)),
-            ),
-            icon: Icon(Icons.attach_file_rounded, size: 18, color: theme.colorScheme.primary),
-            label: Text(
-              chatState.activeMaterialTitle != null
-                  ? 'Grounded: ${chatState.activeMaterialTitle}'
-                  : '+ Attach Material from Vault',
-              style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
-            ),
-            onPressed: () => MaterialAttachmentDialog.show(context),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Prompt starter cards
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _suggestionChip('💡 Explain key concepts with analogies'),
-              _suggestionChip('📝 Summarize my uploaded notes'),
-              _suggestionChip('🎯 Generate a 5-question mastery quiz'),
-              _suggestionChip('🃏 Create active recall flashcards'),
-              _suggestionChip('🔍 Extract key definitions and formulas'),
-              _suggestionChip('🧠 Master concepts with Socratic questioning'),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : Colors.black12,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 26,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'What do you want to learn today?',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Ask questions, solve problems, or quiz yourself. Answers are strictly grounded in your study materials with page citations.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  height: 1.45,
+                  fontSize: 13.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Attach material shortcut button
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  side: BorderSide(
+                    color: isDark ? Colors.white12 : Colors.black12,
+                  ),
+                  backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
+                ),
+                icon: Icon(
+                  chatState.activeMaterialTitle != null
+                      ? Icons.description_rounded
+                      : Icons.attach_file_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                label: Text(
+                  chatState.activeMaterialTitle != null
+                      ? 'Grounded: ${chatState.activeMaterialTitle}'
+                      : '+ Attach Material from Vault',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                onPressed: () => MaterialAttachmentDialog.show(context),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ChatGPT style 2x2 prompt cards
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 480;
+                  final cards = [
+                    (
+                      icon: Icons.lightbulb_outline_rounded,
+                      title: 'Explain Concepts',
+                      subtitle: 'Break down complex proofs with intuitive analogies',
+                      query: 'Explain key concepts from my study material with intuitive analogies.',
+                    ),
+                    (
+                      icon: Icons.summarize_outlined,
+                      title: 'Summarize Materials',
+                      subtitle: 'Extract formulas, theorems, and core definitions',
+                      query: 'Summarize my uploaded notes highlighting core formulas and definitions.',
+                    ),
+                    (
+                      icon: Icons.quiz_outlined,
+                      title: 'Mastery Quiz',
+                      subtitle: 'Generate challenging exam-level recall questions',
+                      query: 'Generate a 5-question mastery quiz testing my understanding of this topic.',
+                    ),
+                    (
+                      icon: Icons.psychology_outlined,
+                      title: 'Step-by-Step Mentoring',
+                      subtitle: 'Interactive reasoning hints and active recall',
+                      query: 'Act as my tutor and guide me step-by-step through solving problems on this material.',
+                    ),
+                  ];
+
+                  if (isWide) {
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: _buildPromptCard(cards[0], isDark)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildPromptCard(cards[1], isDark)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(child: _buildPromptCard(cards[2], isDark)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildPromptCard(cards[3], isDark)),
+                          ],
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    children: cards
+                        .map((c) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: _buildPromptCard(c, isDark),
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _suggestionChip(String label) {
-    return ActionChip(
-      backgroundColor: AppColors.surfaceElevated,
-      side: const BorderSide(color: AppColors.cardBorder),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      label: Text(label, style: const TextStyle(fontSize: 12.5, color: AppColors.textPrimary)),
-      onPressed: () => _sendQuery(label),
+  Widget _buildPromptCard(
+    ({IconData icon, String title, String subtitle, String query}) card,
+    bool isDark,
+  ) {
+    return Material(
+      color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _sendQuery(card.query),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(card.icon, size: 18, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      card.title,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                card.subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  height: 1.35,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -918,112 +1074,132 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
   Widget _buildChatGPTInputArea(ChatState chatState, ThemeData theme, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: const Border(top: BorderSide(color: AppColors.cardBorder)),
+        color: isDark ? const Color(0xFF121216) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF282830) : const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: isDark ? Colors.white12 : Colors.black12,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // + Attachment Button
-              IconButton(
-                icon: const Icon(Icons.add_rounded, size: 24),
-                color: isDark ? Colors.white70 : Colors.black54,
-                tooltip: 'Attach Vault Material or Photo',
-                onPressed: chatState.isGenerating ? null : _showAttachmentOptions,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                ),
               ),
-
-              // Expanding Multi-line Text Field
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  enabled: !chatState.isGenerating,
-                  minLines: 1,
-                  maxLines: 5,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: _sendQuery,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: _isListening
-                        ? 'Listening...'
-                        : (chatState.isGenerating
-                            ? 'Generating response...'
-                            : (chatState.activeMaterialTitle != null
-                                ? 'Ask about ${chatState.activeMaterialTitle}...'
-                                : 'Message Study Vault...')),
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // + Attachment Button
+                  IconButton(
+                    icon: const Icon(Icons.add_rounded, size: 24),
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    tooltip: 'Attach Vault Material or Photo',
+                    onPressed: chatState.isGenerating ? null : _showAttachmentOptions,
                   ),
-                ),
-              ),
 
-              // Voice Mic Button
-              IconButton(
-                icon: Icon(
-                  _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                  color: _isListening ? Colors.redAccent : (isDark ? Colors.white60 : Colors.black45),
-                ),
-                tooltip: 'Voice Input',
-                onPressed: chatState.isGenerating ? null : _toggleListening,
-              ),
-
-              // Circular Send / Stop Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4, right: 4),
-                child: chatState.isGenerating
-                    ? Material(
-                        color: AppColors.rose,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => ref.read(chatProvider.notifier).stopGeneration(),
-                          child: const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Icon(Icons.stop_rounded, size: 20, color: Colors.white),
-                          ),
+                  // Expanding Multi-line Text Field
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      enabled: !chatState.isGenerating,
+                      minLines: 1,
+                      maxLines: 5,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: _sendQuery,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: _isListening
+                            ? 'Listening...'
+                            : (chatState.isGenerating
+                                ? 'Generating response...'
+                                : (chatState.activeMaterialTitle != null
+                                    ? 'Ask about ${chatState.activeMaterialTitle}...'
+                                    : 'Message Study Vault...')),
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white38 : Colors.black38,
                         ),
-                      )
-                    : Material(
-                        color: _controller.text.trim().isNotEmpty
-                            ? (isDark ? Colors.white : Colors.black87)
-                            : (isDark ? Colors.white24 : Colors.black12),
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: _controller.text.trim().isNotEmpty
-                              ? () => _sendQuery(_controller.text)
-                              : null,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Icon(
-                              Icons.arrow_upward_rounded,
-                              size: 20,
-                              color: _controller.text.trim().isNotEmpty
-                                  ? (isDark ? Colors.black87 : Colors.white)
-                                  : (isDark ? Colors.white38 : Colors.black26),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      ),
+                    ),
+                  ),
+
+                  // Voice Mic Button
+                  IconButton(
+                    icon: Icon(
+                      _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      color: _isListening
+                          ? Colors.redAccent
+                          : (isDark ? Colors.white60 : Colors.black45),
+                    ),
+                    tooltip: 'Voice Input',
+                    onPressed: chatState.isGenerating ? null : _toggleListening,
+                  ),
+
+                  // Circular Send / Stop Button
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4, right: 4),
+                    child: chatState.isGenerating
+                        ? Material(
+                            color: AppColors.rose,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => ref.read(chatProvider.notifier).stopGeneration(),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Icon(Icons.stop_rounded, size: 20, color: Colors.white),
+                              ),
+                            ),
+                          )
+                        : Material(
+                            color: _controller.text.trim().isNotEmpty
+                                ? (isDark ? Colors.white : Colors.black87)
+                                : (isDark ? Colors.white24 : Colors.black12),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _controller.text.trim().isNotEmpty
+                                  ? () => _sendQuery(_controller.text)
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.arrow_upward_rounded,
+                                  size: 20,
+                                  color: _controller.text.trim().isNotEmpty
+                                      ? (isDark ? Colors.black87 : Colors.white)
+                                      : (isDark ? Colors.white38 : Colors.black26),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Study Vault AI can make mistakes. Verify important facts with your course materials.',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white38 : Colors.black38,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

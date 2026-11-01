@@ -208,15 +208,15 @@ class StreamingMessageWidget extends ConsumerWidget {
             vertical: 11,
           ),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF312E81) : const Color(0xFFE0E7FF),
+            color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(6),
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(18),
+              bottomRight: Radius.circular(4),
             ),
             border: Border.all(
-              color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE),
+              color: isDark ? const Color(0xFF3F3F46) : const Color(0xFFE4E4E7),
               width: 1.0,
             ),
           ),
@@ -305,20 +305,20 @@ class StreamingMessageWidget extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             margin: const EdgeInsets.only(top: 2, right: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
+              color: isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5),
               shape: BoxShape.circle,
               border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                width: 1.2,
+                color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
+                width: 1.0,
               ),
             ),
             child: Icon(
               Icons.auto_awesome_rounded,
-              size: 17,
+              size: 15,
               color: theme.colorScheme.primary,
             ),
           ),
@@ -327,49 +327,27 @@ class StreamingMessageWidget extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (message.content.isEmpty && isPartial)
-                  _buildGeneratingPlaceholder()
+                  _buildGeneratingPlaceholder(theme, isDark)
                 else
-                  _buildMarkdownContent(context, message.content),
+                  _buildMarkdownContent(context, message.content, isStreaming: isPartial),
 
-                // Streaming Progress / Typing Indicator
-                if (isPartial) ...[
+                // Stop Generating button (discreet, during streaming)
+                if (isPartial && onStop != null) ...[
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primaryLight,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Reasoning & retrieving citations...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (onStop != null)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
-                          label: const Text(
-                            'Stop',
-                            style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
-                          ),
-                          onPressed: onStop,
-                        ),
-                    ],
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: AppColors.rose.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.stop_circle_outlined, size: 14, color: AppColors.rose),
+                    label: const Text(
+                      'Stop generating',
+                      style: TextStyle(fontSize: 12, color: AppColors.rose, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: onStop,
                   ),
                 ],
 
@@ -467,24 +445,36 @@ class StreamingMessageWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildGeneratingPlaceholder() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.0),
+  Widget _buildGeneratingPlaceholder(ThemeData theme, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryLight),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
           ),
-          SizedBox(width: 8),
-          Text(
-            'Retrieving vault context...',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
+          const SizedBox(width: 5),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
             ),
           ),
         ],
@@ -492,9 +482,10 @@ class StreamingMessageWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildMarkdownContent(BuildContext context, String content) {
+  Widget _buildMarkdownContent(BuildContext context, String content, {bool isStreaming = false}) {
+    final displayContent = isStreaming ? '$content ▎' : content;
     return MarkdownBody(
-      data: content,
+      data: displayContent,
       selectable: true,
       styleSheet: MarkdownStyleSheet(
         p: const TextStyle(
