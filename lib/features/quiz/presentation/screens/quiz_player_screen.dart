@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:study_vault/core/theme/app_colors.dart';
+import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/design/widgets/app_pressable.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/features/progress/presentation/providers/progress_provider.dart';
@@ -102,6 +104,7 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
 
   void _submitAnswer(int optionIndex) {
     if (_isAnswerSubmitted) return;
+    HapticFeedback.lightImpact();
     setState(() {
       _selectedOption = optionIndex;
       _isAnswerSubmitted = true;
@@ -110,6 +113,7 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
   }
 
   void _nextQuestion() {
+    HapticFeedback.lightImpact();
     if (_currentQuestionIndex < _questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
@@ -283,43 +287,38 @@ class _QuizPlayerScreenState extends ConsumerState<QuizPlayerScreen> {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
+                child: AppPressable(
+                  borderRadius: AppRadius.card,
+                  backgroundColor: bgColor,
+                  border: Border.all(color: borderColor, width: 1.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   onTap: _isAnswerSubmitted ? null : () => _submitAnswer(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: borderColor, width: 1.5),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundColor: borderColor.withValues(alpha: 0.2),
-                          child: Text(
-                            String.fromCharCode(65 + index),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: borderColor == AppColors.cardBorder ? AppColors.textPrimary : borderColor,
-                            ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: borderColor.withValues(alpha: 0.2),
+                        child: Text(
+                          String.fromCharCode(65 + index),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: borderColor == AppColors.cardBorder ? AppColors.textPrimary : borderColor,
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            optionText,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                          ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          optionText,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                         ),
-                        if (_isAnswerSubmitted && isCorrect)
-                          const Icon(Icons.check_circle, color: AppColors.emerald, size: 20),
-                        if (_isAnswerSubmitted && isSelected && !isCorrect)
-                          const Icon(Icons.cancel, color: AppColors.rose, size: 20),
-                      ],
-                    ),
+                      ),
+                      if (_isAnswerSubmitted && isCorrect)
+                        const Icon(Icons.check_circle, color: AppColors.emerald, size: 20),
+                      if (_isAnswerSubmitted && isSelected && !isCorrect)
+                        const Icon(Icons.cancel, color: AppColors.rose, size: 20),
+                    ],
                   ),
                 ),
               );

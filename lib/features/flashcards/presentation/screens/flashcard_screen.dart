@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:study_vault/core/theme/app_colors.dart';
+import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/core/providers/ai_providers.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/core/services/spaced_repetition_service.dart';
@@ -24,7 +26,8 @@ class FlashcardScreen extends ConsumerStatefulWidget {
   ConsumerState<FlashcardScreen> createState() => _FlashcardScreenState();
 }
 
-class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
+class _FlashcardScreenState extends ConsumerState<FlashcardScreen>
+    with SingleTickerProviderStateMixin {
   bool _isFlipped = false;
   int _currentIndex = 0;
   int _masteredCount = 0;
@@ -32,16 +35,45 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   bool _isCompleted = false;
   bool _isLoading = true;
 
+  late final AnimationController _flipController;
+  late final Animation<double> _flipAnimation;
+
   List<Map<String, String>> _cards = [];
 
   @override
   void initState() {
     super.initState();
+    _flipController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _flipAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutCubic),
+    );
+
     if (widget.initialCards != null && widget.initialCards!.isNotEmpty) {
       _cards = List.from(widget.initialCards!);
       _isLoading = false;
     } else {
       _fetchDynamicFlashcards();
+    }
+  }
+
+  @override
+  void dispose() {
+    _flipController.dispose();
+    super.dispose();
+  }
+
+  void _toggleFlip() {
+    if (_flipController.isAnimating) return;
+    HapticFeedback.lightImpact();
+    if (_isFlipped) {
+      _flipController.reverse();
+      setState(() => _isFlipped = false);
+    } else {
+      _flipController.forward();
+      setState(() => _isFlipped = true);
     }
   }
 
@@ -109,6 +141,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
   }
 
   void _rateCard(FlashcardRating rating) {
+    HapticFeedback.lightImpact();
     final result = SpacedRepetitionService.calculateNextReview(
       rating: rating,
       currentRepetitions: rating == FlashcardRating.hard ? 0 : 1,
@@ -131,6 +164,7 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
       _masteredCount++;
     }
 
+    _flipController.reset();
     if (_currentIndex < _cards.length - 1) {
       setState(() {
         _currentIndex++;
@@ -141,9 +175,8 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
     }
   }
 
-
-
   void _restartDeck() {
+    _flipController.reset();
     setState(() {
       _currentIndex = 0;
       _masteredCount = 0;
@@ -302,17 +335,20 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
               children: [
                 Text(
                   "Card ${_currentIndex + 1} of ${_cards.length}",
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                  style: AppTypography.caption.tabular.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.check_circle, size: 16, color: AppColors.emerald),
+                    const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.emerald),
                     const SizedBox(width: 4),
-                    Text("$_masteredCount", style: const TextStyle(color: AppColors.emerald, fontWeight: FontWeight.bold)),
+                    Text("$_masteredCount", style: AppTypography.caption.tabular.copyWith(color: AppColors.emerald, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 12),
-                    const Icon(Icons.cancel, size: 16, color: AppColors.rose),
+                    const Icon(Icons.cancel_rounded, size: 16, color: AppColors.rose),
                     const SizedBox(width: 4),
-                    Text("$_reviewCount", style: const TextStyle(color: AppColors.rose, fontWeight: FontWeight.bold)),
+                    Text("$_reviewCount", style: AppTypography.caption.tabular.copyWith(color: AppColors.rose, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -329,80 +365,40 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Flashcard Interactive Box
+            // 3D Perspective Flashcard Interactive Box
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _isFlipped = !_isFlipped),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _isFlipped
-                          ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                          : [const Color(0xFF4F46E5), const Color(0xFF6366F1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: _isFlipped ? AppColors.cyan.withValues(alpha: 0.4) : Colors.white24,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _isFlipped ? Colors.black45 : const Color(0xFF6366F1).withValues(alpha: 0.3),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              _isFlipped ? 'ANSWER / DEFINITION' : 'QUESTION / TERM',
-                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1),
-                            ),
-                          ),
-                          const Icon(Icons.touch_app, color: Colors.white60, size: 20),
-                        ],
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(
-                                _isFlipped ? (card['back'] ?? '') : (card['front'] ?? ''),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: _isFlipped ? 17 : 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  height: 1.5,
-                                ),
+                onTap: _toggleFlip,
+                child: AnimatedBuilder(
+                  animation: _flipAnimation,
+                  builder: (context, child) {
+                    final angle = _flipAnimation.value * math.pi;
+                    final isUnder = angle > math.pi / 2;
+
+                    return Transform(
+                      transform: Matrix4.identity()
+                        ..setEntry(3, 2, 0.001)
+                        ..rotateY(angle),
+                      alignment: Alignment.center,
+                      child: isUnder
+                          ? Transform(
+                              transform: Matrix4.identity()..rotateY(math.pi),
+                              alignment: Alignment.center,
+                              child: _buildCardSide(
+                                title: 'ANSWER / DEFINITION',
+                                content: card['back'] ?? '',
+                                hint: 'Tap to see question',
+                                isAnswer: true,
                               ),
+                            )
+                          : _buildCardSide(
+                              title: 'QUESTION / TERM',
+                              content: card['front'] ?? '',
+                              hint: 'Tap to reveal answer',
+                              isAnswer: false,
                             ),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        _isFlipped ? 'Tap to see question' : 'Tap to reveal answer',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -481,6 +477,92 @@ class _FlashcardScreenState extends ConsumerState<FlashcardScreen> {
             const SizedBox(height: 12),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCardSide({
+    required String title,
+    required String content,
+    required String hint,
+    required bool isAnswer,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: isAnswer ? const Color(0xFF141923) : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: isAnswer
+              ? AppColors.fileImage.withValues(alpha: 0.45)
+              : AppColors.primaryLight.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isAnswer ? AppColors.fileImage : AppColors.primary).withValues(alpha: 0.15),
+                  borderRadius: AppRadius.chip,
+                ),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isAnswer ? AppColors.fileImage : AppColors.primaryLight,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.touch_app_rounded,
+                color: isAnswer
+                    ? AppColors.fileImage.withValues(alpha: 0.6)
+                    : AppColors.primaryLight.withValues(alpha: 0.6),
+                size: 20,
+              ),
+            ],
+          ),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: isAnswer ? 18 : 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Text(
+            hint,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
       ),
     );
   }

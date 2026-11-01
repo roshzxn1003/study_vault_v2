@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
 import 'package:study_vault/core/database/local_db_service.dart';
 import 'package:study_vault/features/profile/presentation/providers/profile_provider.dart';
-import 'package:study_vault/features/profile/ai_settings_screen.dart';
 import 'package:study_vault/features/sharing/presentation/widgets/qr_discovery_modal.dart';
 import 'package:study_vault/features/sharing/presentation/screens/privacy_sharing_settings_screen.dart';
 import 'package:study_vault/features/sharing/presentation/providers/sharing_providers.dart';
@@ -327,7 +326,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const Divider(height: 1, color: AppColors.borderSubtle),
                     ListTile(
-                      leading: _buildTileIcon(Icons.pie_chart_outline_rounded, const Color(0xFF8B5CF6)),
+                      leading: _buildTileIcon(Icons.pie_chart_outline_rounded, AppColors.primaryLight),
                       title: const Text('Storage Breakdown', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: const Text('Local cache size and offline copies'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
@@ -445,13 +444,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildCardGroup(
                   children: [
                     ListTile(
-                      leading: _buildTileIcon(Icons.auto_awesome_rounded, const Color(0xFF8B5CF6)),
+                      leading: _buildTileIcon(Icons.auto_awesome_rounded, AppColors.primaryLight),
                       title: const Text('AI Assistant Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       subtitle: const Text('Model configuration, API key & RAG indexing'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AiSettingsScreen()),
-                      ),
+                      onTap: () => context.push('/ai/settings'),
                     ),
                     const Divider(height: 1, color: AppColors.borderSubtle),
                     ListTile(
