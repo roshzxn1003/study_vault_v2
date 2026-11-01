@@ -19,3 +19,4 @@ export 'app_error_state.dart';
 export 'app_file_type_icon.dart';
 export 'app_modal.dart';
 export 'app_bottom_sheet.dart';
+export 'contextual_ai_floating_button.dart';

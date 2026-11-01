@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/design/widgets/app_pressable.dart';
 import 'package:study_vault/features/dashboard/domain/models/dashboard_models.dart';
 
 /// Small dashboard preview of unorganized pending items in the Inbox.
@@ -61,7 +62,7 @@ class InboxPreviewSection extends StatelessWidget {
                   ),
                   child: Text(
                     '$totalCount',
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.caption.tabular.copyWith(
                       color: AppColors.primaryLight,
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
@@ -110,36 +111,41 @@ class InboxPreviewSection extends StatelessWidget {
               ),
               itemBuilder: (context, index) {
                 final item = items[index];
-                return Row(
-                  children: [
-                    Icon(
-                      item.type.toUpperCase() == 'NOTE'
-                          ? Icons.description_outlined
-                          : Icons.picture_as_pdf_outlined,
-                      size: 16,
-                      color: AppColors.textMuted,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: AppTypography.body.copyWith(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      item.relativeTime,
-                      style: AppTypography.caption.copyWith(
+                return AppPressable(
+                  onTap: () => context.push('/inbox'),
+                  borderRadius: AppRadius.brSm,
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: Row(
+                    children: [
+                      Icon(
+                        item.type.toUpperCase() == 'NOTE'
+                            ? Icons.description_outlined
+                            : Icons.picture_as_pdf_outlined,
+                        size: 16,
                         color: AppColors.textMuted,
-                        fontSize: 11,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: AppTypography.body.copyWith(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        item.relativeTime,
+                        style: AppTypography.caption.tabular.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),

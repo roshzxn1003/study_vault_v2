@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:study_vault/core/design/tokens/tokens.dart';
+import 'package:study_vault/core/design/widgets/app_pressable.dart';
 import 'package:study_vault/features/dashboard/domain/models/dashboard_models.dart';
 
 /// Preview section displaying recent materials across the active workspace.
@@ -76,30 +77,31 @@ class RecentMaterialsSection extends StatelessWidget {
                 switch (item.type.toUpperCase()) {
                   case 'NOTE':
                     iconData = Icons.edit_note_rounded;
-                    iconColor = const Color(0xFFF59E0B);
+                    iconColor = AppColors.fileNote;
                     break;
                   case 'IMAGE':
                   case 'IMG':
                     iconData = Icons.image_rounded;
-                    iconColor = const Color(0xFF10B981);
+                    iconColor = AppColors.fileImage;
                     break;
                   case 'LINK':
                   case 'URL':
                     iconData = Icons.link_rounded;
-                    iconColor = const Color(0xFF8B5CF6);
+                    iconColor = AppColors.fileAudio;
                     break;
                   case 'PDF':
                     iconData = Icons.picture_as_pdf_rounded;
-                    iconColor = const Color(0xFFEF4444);
+                    iconColor = AppColors.filePdf;
                     break;
                   default:
                     iconData = Icons.description_rounded;
-                    iconColor = const Color(0xFF3B82F6);
+                    iconColor = AppColors.primaryLight;
                 }
 
-                return InkWell(
+                return AppPressable(
                   onTap: () => context.push('/vault/material/${item.id}'),
-                  borderRadius: AppRadius.card,
+                  borderRadius: AppRadius.brSm,
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -134,7 +136,7 @@ class RecentMaterialsSection extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               item.formattedSubtitle,
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.caption.tabular.copyWith(
                                 color: AppColors.textMuted,
                                 fontSize: 11,
                               ),

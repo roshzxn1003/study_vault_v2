@@ -521,7 +521,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0x2210B981),
+                                color: AppColors.emerald.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text('100% FREE', style: TextStyle(color: AppColors.emerald, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -570,10 +570,10 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0x228B5CF6),
+                                color: AppColors.primaryLight.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text('PRO REASONING', style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 11, fontWeight: FontWeight.bold)),
+                              child: const Text('PRO REASONING', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 8),
                             const Text('Anthropic Claude API Key', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
@@ -590,8 +590,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                         const SizedBox(height: 10),
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF8B5CF6)),
-                            foregroundColor: const Color(0xFF8B5CF6),
+                            side: const BorderSide(color: AppColors.primaryLight),
+                            foregroundColor: AppColors.primaryLight,
                             visualDensity: VisualDensity.compact,
                           ),
                           icon: const Icon(Icons.open_in_new_rounded, size: 14),
@@ -636,10 +636,10 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                 ],
               ),
               if (_keyValidated)
-                const Chip(
-                  label: Text('Verified', style: TextStyle(fontSize: 11, color: AppColors.emerald)),
-                  backgroundColor: Color(0x1A10B981),
-                  side: BorderSide(color: Color(0x3310B981)),
+                Chip(
+                  label: const Text('Verified', style: TextStyle(fontSize: 11, color: AppColors.emerald)),
+                  backgroundColor: AppColors.emerald.withValues(alpha: 0.15),
+                  side: BorderSide(color: AppColors.emerald.withValues(alpha: 0.25)),
                   padding: EdgeInsets.zero,
                 ),
             ],
@@ -740,7 +740,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.psychology_rounded, size: 18, color: Color(0xFF8B5CF6)),
+                  Icon(Icons.psychology_rounded, size: 18, color: AppColors.primaryLight),
                   SizedBox(width: 8),
                   Text(
                     'Anthropic Claude API Key',
@@ -749,10 +749,10 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                 ],
               ),
               if (_claudeKeySaved)
-                const Chip(
-                  label: Text('Saved', style: TextStyle(fontSize: 11, color: Color(0xFF8B5CF6))),
-                  backgroundColor: Color(0x1A8B5CF6),
-                  side: BorderSide(color: Color(0x338B5CF6)),
+                Chip(
+                  label: const Text('Saved', style: TextStyle(fontSize: 11, color: AppColors.primaryLight)),
+                  backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
+                  side: BorderSide(color: AppColors.primaryLight.withValues(alpha: 0.25)),
                   padding: EdgeInsets.zero,
                 ),
             ],
@@ -781,8 +781,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF8B5CF6),
-                side: const BorderSide(color: Color(0xFF8B5CF6)),
+                foregroundColor: AppColors.primaryLight,
+                side: const BorderSide(color: AppColors.primaryLight),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -813,7 +813,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.memory_rounded, size: 18, color: Color(0xFF06B6D4)),
+                  Icon(Icons.memory_rounded, size: 18, color: AppColors.cyan),
                   SizedBox(width: 8),
                   Text(
                     'Mobile & Open-Source AI Engine',
@@ -822,17 +822,17 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
                 ],
               ),
               if (_ollamaConnected)
-                const Chip(
-                  label: Text('Ollama Online', style: TextStyle(fontSize: 11, color: AppColors.emerald)),
-                  backgroundColor: Color(0x1A10B981),
-                  side: BorderSide(color: Color(0x3310B981)),
+                Chip(
+                  label: const Text('Ollama Online', style: TextStyle(fontSize: 11, color: AppColors.emerald)),
+                  backgroundColor: AppColors.emerald.withValues(alpha: 0.15),
+                  side: BorderSide(color: AppColors.emerald.withValues(alpha: 0.25)),
                   padding: EdgeInsets.zero,
                 )
               else if (_openSourceCloudKeySaved)
-                const Chip(
-                  label: Text('Cloud Open-Weights', style: TextStyle(fontSize: 11, color: Color(0xFF06B6D4))),
-                  backgroundColor: Color(0x1A06B6D4),
-                  side: BorderSide(color: Color(0x3306B6D4)),
+                Chip(
+                  label: const Text('Cloud Open-Weights', style: TextStyle(fontSize: 11, color: AppColors.cyan)),
+                  backgroundColor: AppColors.cyan.withValues(alpha: 0.15),
+                  side: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
                   padding: EdgeInsets.zero,
                 )
               else
@@ -877,7 +877,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
           // Ollama Local Network Node Settings
           const Row(
             children: [
-              Icon(Icons.wifi_tethering_rounded, size: 16, color: Color(0xFF06B6D4)),
+              Icon(Icons.wifi_tethering_rounded, size: 16, color: AppColors.cyan),
               SizedBox(width: 6),
               Text(
                 'Ollama Local Network Link (PC over Wi-Fi)',
@@ -926,7 +926,7 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF06B6D4),
+                    backgroundColor: AppColors.cyan,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -945,8 +945,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF06B6D4),
-                  side: const BorderSide(color: Color(0xFF06B6D4)),
+                  foregroundColor: AppColors.cyan,
+                  side: const BorderSide(color: AppColors.cyan),
                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
@@ -962,10 +962,14 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _ollamaConnected ? const Color(0x1A10B981) : const Color(0x1AF59E0B),
+                color: _ollamaConnected
+                    ? AppColors.emerald.withValues(alpha: 0.15)
+                    : AppColors.warning.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _ollamaConnected ? const Color(0x3310B981) : const Color(0x33F59E0B),
+                  color: _ollamaConnected
+                      ? AppColors.emerald.withValues(alpha: 0.25)
+                      : AppColors.warning.withValues(alpha: 0.25),
                 ),
               ),
               child: Row(
@@ -1023,8 +1027,8 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF06B6D4),
-                side: const BorderSide(color: Color(0xFF06B6D4)),
+                foregroundColor: AppColors.cyan,
+                side: const BorderSide(color: AppColors.cyan),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -1052,13 +1056,13 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
             color: isSelected ? Colors.black : AppColors.textPrimary,
           ),
         ),
-        selectedColor: const Color(0xFF06B6D4),
+        selectedColor: AppColors.cyan,
         backgroundColor: AppColors.surfaceVariant,
         checkmarkColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: isSelected ? const Color(0xFF06B6D4) : AppColors.cardBorder,
+            color: isSelected ? AppColors.cyan : AppColors.cardBorder,
           ),
         ),
         onSelected: (_) => _selectOpenSourceModel(modelId, label),

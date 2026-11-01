@@ -129,7 +129,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: isGuest
-                          ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
+                          ? AppColors.warning.withValues(alpha: 0.15)
                           : AppColors.emerald.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -138,7 +138,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: isGuest ? const Color(0xFFF59E0B) : AppColors.emerald,
+                        color: isGuest ? AppColors.warning : AppColors.emerald,
                       ),
                     ),
                   ),
@@ -170,7 +170,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
               _buildSectionHeader('AI REASONING & RESEARCH SUITE'),
               _buildCardGroup([
                 ListTile(
-                  leading: _buildTileIcon(Icons.auto_awesome_rounded, const Color(0xFF8B5CF6)),
+                  leading: _buildTileIcon(Icons.auto_awesome_rounded, AppColors.primaryLight),
                   title: const Text('AI & Research Command Center', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: Text(
                     _isLoadingAiInfo
@@ -180,9 +180,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                   ),
                   trailing: const Icon(Icons.chevron_right, size: 20),
                   onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const AiSettingsScreen()),
-                    );
+                    await context.push('/ai/settings');
                     _loadAiSummary();
                   },
                 ),
@@ -226,7 +224,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                 ),
                 const Divider(height: 1, color: AppColors.borderSubtle),
                 SwitchListTile(
-                  secondary: _buildTileIcon(Icons.vibration_rounded, const Color(0xFFF59E0B)),
+                  secondary: _buildTileIcon(Icons.vibration_rounded, AppColors.warning),
                   title: const Text('Haptic Feedback', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: const Text('Tactile response on flashcard flips and button actions'),
                   value: _hapticFeedback,
@@ -256,7 +254,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
               _buildSectionHeader('STORAGE & MAINTENANCE'),
               _buildCardGroup([
                 ListTile(
-                  leading: _buildTileIcon(Icons.pie_chart_outline_rounded, const Color(0xFF8B5CF6)),
+                  leading: _buildTileIcon(Icons.pie_chart_outline_rounded, AppColors.primaryLight),
                   title: const Text('Storage Breakdown & Cloud Sync', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: const Text('Offline cache metrics, outbox queue & cloud backup'),
                   trailing: const Icon(Icons.chevron_right, size: 20),
@@ -264,7 +262,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
                 ),
                 const Divider(height: 1, color: AppColors.borderSubtle),
                 ListTile(
-                  leading: _buildTileIcon(Icons.cleaning_services_outlined, const Color(0xFFF59E0B)),
+                  leading: _buildTileIcon(Icons.cleaning_services_outlined, AppColors.warning),
                   title: const Text('Clear Preview Cache', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: const Text('Free up temporary thumbnail and PDF preview memory'),
                   trailing: TextButton(

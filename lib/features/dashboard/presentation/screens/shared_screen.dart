@@ -14,23 +14,6 @@ import 'package:study_vault/features/sharing/presentation/screens/create_study_p
 import 'package:study_vault/features/sharing/presentation/screens/study_pack_detail_screen.dart';
 import 'package:study_vault/features/sharing/presentation/screens/privacy_sharing_settings_screen.dart';
 
-/// Custom FAB location ensuring buttons in sub-tabs float comfortably above the bottom navigation bar.
-class FloatingAboveNavLocation extends FloatingActionButtonLocation {
-  final double bottomClearance;
-  const FloatingAboveNavLocation({this.bottomClearance = 124.0});
-
-  @override
-  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    final double fabX = scaffoldGeometry.scaffoldSize.width -
-        scaffoldGeometry.floatingActionButtonSize.width -
-        20.0;
-    final double fabY = scaffoldGeometry.scaffoldSize.height -
-        scaffoldGeometry.floatingActionButtonSize.height -
-        bottomClearance;
-    return Offset(fabX, fabY);
-  }
-}
-
 /// Phase 9: Student Sharing, Study Groups, Study Packs, and Collaboration Suite.
 class SharedScreen extends ConsumerStatefulWidget {
   const SharedScreen({super.key});
@@ -403,10 +386,10 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
                 children: [
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 18,
-                        backgroundColor: Color(0x1A10B981),
-                        child: Icon(Icons.arrow_outward_rounded, size: 18, color: Color(0xFF10B981)),
+                        backgroundColor: AppColors.emerald.withValues(alpha: 0.15),
+                        child: const Icon(Icons.arrow_outward_rounded, size: 18, color: AppColors.emerald),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
@@ -678,7 +661,7 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
       backgroundColor: Colors.transparent,
       floatingActionButtonLocation: const FloatingAboveNavLocation(),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF8B5CF6),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.folder_zip_outlined),
         label: const Text('Create Pack'),
@@ -715,52 +698,48 @@ class _SharedScreenState extends ConsumerState<SharedScreen> with SingleTickerPr
                     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
                     itemBuilder: (ctx, index) {
                       final pack = packsState.packs[index];
-                      return Card(
-                        color: AppColors.surface,
-                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
-                        child: InkWell(
-                          borderRadius: AppRadius.card,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => StudyPackDetailScreen(pack: pack)),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-                                  child: const Icon(Icons.folder_zip_outlined, color: Color(0xFF8B5CF6)),
-                                ),
-                                const SizedBox(width: AppSpacing.md),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(pack.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
-                                      if (pack.description?.isNotEmpty == true) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          pack.description!,
-                                          style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Created by ${pack.displayOwner} • ${pack.itemCount} materials',
-                                        style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                              ],
+                      return AppPressable(
+                        backgroundColor: AppColors.surface,
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: AppRadius.card,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => StudyPackDetailScreen(pack: pack)),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
+                              child: const Icon(Icons.folder_zip_outlined, color: AppColors.primaryLight),
                             ),
-                          ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(pack.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  if (pack.description?.isNotEmpty == true) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      pack.description!,
+                                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Created by ${pack.displayOwner} • ${pack.itemCount} materials',
+                                    style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                          ],
                         ),
                       );
                     },

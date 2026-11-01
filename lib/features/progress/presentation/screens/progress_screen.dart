@@ -170,20 +170,10 @@ class ProgressScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.surface,
         borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.cardOutline),
+        boxShadow: AppElevation.subtle,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,13 +183,14 @@ class ProgressScreen extends ConsumerWidget {
             children: [
               Text(
                 'Overall Accuracy',
-                style: AppTypography.caption.copyWith(color: Colors.white70, fontWeight: FontWeight.w600),
+                style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: AppRadius.brSm,
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: AppRadius.chip,
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -208,7 +199,7 @@ class ProgressScreen extends ConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       '$streak day streak',
-                      style: AppTypography.caption.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: AppTypography.caption.tabular.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -218,9 +209,8 @@ class ProgressScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             '${(accuracy * 100).toStringAsFixed(1)}%',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 44,
+            style: AppTypography.display.tabular.copyWith(
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
               letterSpacing: -1,
             ),
@@ -228,7 +218,7 @@ class ProgressScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             'Across $totalQuestions practice questions answered',
-            style: AppTypography.caption.copyWith(color: Colors.white60),
+            style: AppTypography.caption.copyWith(color: AppColors.textMuted),
           ),
         ],
       ),
@@ -243,47 +233,51 @@ class ProgressScreen extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-      decoration: BoxDecoration(
+      child: AppPressable(
+        backgroundColor: AppColors.surface,
+        border: Border.all(color: AppColors.border),
         borderRadius: AppRadius.card,
-        border: AppBorders.allStandard,
-      ),
-      child: Material(
-        color: AppColors.surface,
-        borderRadius: AppRadius.card,
-        clipBehavior: Clip.antiAlias,
-        child: ListTile(
-          onTap: () => context.push('/study/${Uri.encodeComponent(stat.topic)}'),
-          title: Text(
-            stat.topic,
-            style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: stat.accuracy.clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: AppColors.surfaceSecondary,
-                valueColor: AlwaysStoppedAnimation<Color>(barColor),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        onTap: () => context.push('/study/${Uri.encodeComponent(stat.topic)}'),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    stat.topic,
+                    style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: stat.accuracy.clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: AppColors.surfaceSecondary,
+                      valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: barColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '$percent%',
-              style: TextStyle(
-                color: barColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+            const SizedBox(width: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: barColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$percent%',
+                style: AppTypography.caption.tabular.copyWith(
+                  color: barColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
